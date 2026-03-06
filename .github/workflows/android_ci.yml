@@ -40,8 +40,17 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > keystore.jks
+          else
+            keytool -genkeypair -v -keystore keystore.jks -keyalg RSA -keysize 2048 \
+              -validity 10000 -alias key0 \
+              -storepass android -keypass android \
+              -dname "CN=WaterMonitor, OU=Test, O=Test, L=Test, S=Test, C=US"
+          fi
         working-directory: "Monitoring, Dashboard, and Control/WaterMonitor/app"
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build signed Debug APK
         run: ./gradlew assembleDebug --stacktrace
@@ -52,9 +61,9 @@ jobs:
         working-directory: "Monitoring, Dashboard, and Control/WaterMonitor"
         env:
           SIGNING_STORE_FILE: keystore.jks
-          SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD || 'android' }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'key0' }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
 
       - name: Upload signed Debug APK
         uses: actions/upload-artifact@v4
