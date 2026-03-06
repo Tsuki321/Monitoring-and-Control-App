@@ -14,7 +14,7 @@
     </style>
 
     <!-- Base style required by all Style.WaterMonitor.* dot-notation child styles -->
-    <style name="Style.WaterMonitor" />
+    <style name="Style.WaterMonitor" parent="" />
 
     <!-- Glass card style -->
     <style name="Style.WaterMonitor.GlassCard" parent="Widget.Material3.CardView.Elevated">
