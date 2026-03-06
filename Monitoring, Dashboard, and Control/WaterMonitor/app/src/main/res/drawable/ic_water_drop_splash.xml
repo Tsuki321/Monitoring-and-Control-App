@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Animated splash water drop.
+  Viewport: 48 × 56 (drop occupies y 4–44; ripple rings at y 46–50).
+
+  Named groups/paths targeted by avd_water_drop_splash.xml:
+    dropGroup  – outer group; scales in from bottom-centre pivot
+    fillGroup  – water fill rectangle; translates upward to simulate rising water
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="140dp"
+    android:viewportWidth="48"
+    android:viewportHeight="56">
+
+    <!-- Outer group anchored at base of drop; animated scale-in -->
+    <group
+        android:name="dropGroup"
+        android:pivotX="24"
+        android:pivotY="44"
+        android:scaleX="0.01"
+        android:scaleY="0.01">
+
+        <!-- Soft shadow behind drop -->
+        <path
+            android:pathData="M24,6 C24,6 9,23 9,32.5 C9,41.3 15.8,44.5 24,44.5 C32.2,44.5 39,41.3 39,32.5 C39,23 24,6 24,6 Z"
+            android:fillColor="#201A237E" />
+
+        <!-- Clip group: everything inside is clipped to the drop shape -->
+        <group android:name="clipGroup">
+            <clip-path
+                android:pathData="M24,4 C24,4 8,22 8,32 C8,40.8 15.2,44 24,44 C32.8,44 40,40.8 40,32 C40,22 24,4 24,4 Z" />
+
+            <!-- Light-blue base fill (drop body when empty) -->
+            <path
+                android:pathData="M0,0 L48,0 L48,56 L0,56 Z"
+                android:fillColor="#A8E6EF" />
+
+            <!-- Rising-water group; starts fully below the drop and moves up -->
+            <group
+                android:name="fillGroup"
+                android:translateY="44">
+
+                <!-- Deep water body -->
+                <path
+                    android:pathData="M0,0 L48,0 L48,56 L0,56 Z"
+                    android:fillColor="#4DB8C8" />
+
+                <!-- Animated wave crest on the water surface -->
+                <path
+                    android:pathData="M-4,0 C0,-3.5 4,-3.5 8,0 C12,3.5 16,3.5 20,0 C24,-3.5 28,-3.5 32,0 C36,3.5 40,3.5 44,0 C48,-3.5 52,-3.5 56,0 L56,5 L-4,5 Z"
+                    android:fillColor="#7ED5E0" />
+
+                <!-- Subtle lighter band just below the surface -->
+                <path
+                    android:pathData="M0,3 L48,3 L48,8 L0,8 Z"
+                    android:fillColor="#20FFFFFF" />
+            </group>
+        </group>
+
+        <!-- Drop outline (rendered above the fill, not clipped) -->
+        <path
+            android:pathData="M24,4 C24,4 8,22 8,32 C8,40.8 15.2,44 24,44 C32.8,44 40,40.8 40,32 C40,22 24,4 24,4 Z"
+            android:fillColor="#00000000"
+            android:strokeColor="#0D7A8A"
+            android:strokeWidth="1.2" />
+
+        <!-- Curved shine stroke on left side of drop -->
+        <path
+            android:pathData="M14,21 C14,21 11,29 11,32 C11,33 12,34 13,33"
+            android:fillColor="#00000000"
+            android:strokeColor="#80FFFFFF"
+            android:strokeWidth="2.5"
+            android:strokeLineCap="round" />
+
+        <!-- Small circular shine highlight near top -->
+        <path
+            android:pathData="M18,12 m-2.5,0 a2.5,2.5 0 1,0 5,0 a2.5,2.5 0 1,0 -5,0"
+            android:fillColor="#60FFFFFF" />
+
+        <!-- Ripple ring 1 (small, close below drop) -->
+        <path
+            android:pathData="M14,47 Q24,44 34,47"
+            android:fillColor="#00000000"
+            android:strokeColor="#4DB8C8"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round" />
+
+        <!-- Ripple ring 2 (wider, further below) -->
+        <path
+            android:pathData="M9,50 Q24,46 39,50"
+            android:fillColor="#00000000"
+            android:strokeColor="#604DB8C8"
+            android:strokeWidth="1"
+            android:strokeLineCap="round" />
+    </group>
+</vector>
