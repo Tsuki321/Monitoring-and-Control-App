@@ -1,12 +1,21 @@
-# Gradle build output and caches
+# Built application files
+*.apk
+*.aar
+*.ap_
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Gradle files
 .gradle/
 build/
-
-# Android Studio / IDE
-.idea/
-*.iml
 local.properties
 
-# Generated APKs / AABs
-*.apk
-*.aab
+# Signing keystores (never commit these)
+*.jks
+*.keystore
+
+# IntelliJ/Android Studio
+*.iml
+.idea/
+*.DS_Store
