@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Language display names shown in the spinner -->
+    <string-array name="language_names">
+        <item>English</item>
+        <item>Filipino</item>
+    </string-array>
+
+    <!-- ISO language codes matching the display names above -->
+    <string-array name="language_codes">
+        <item>en</item>
+        <item>fil</item>
+    </string-array>
+</resources>

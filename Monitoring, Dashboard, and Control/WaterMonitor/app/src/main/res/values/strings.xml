@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">WaterMonitor</string>
+    <string name="app_name">HydroSense</string>
 
     <!-- Navigation labels -->
     <string name="nav_home">HOME</string>
@@ -61,5 +61,28 @@
     <!-- Settings -->
     <string name="settings">Settings</string>
     <string name="settings_placeholder">Settings coming in a future update.</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_select_language">Select Language</string>
+    <string name="settings_about">About HydroSense</string>
     <string name="ok">OK</string>
+
+    <!-- About -->
+    <string name="about_version">Version 1.0</string>
+    <string name="about_description_title">About</string>
+    <string name="about_description">HydroSense is a smart water monitoring and control application that provides real-time sensor data, tank level monitoring, and remote control of pumps and valves.</string>
+    <string name="about_developers_title">Developers</string>
+    <string name="about_dev1_name">Tsuki321</string>
+    <string name="about_dev1_role">Lead Developer</string>
+    <string name="about_group_name">Group 1</string>
+    <string name="about_group_role">Development Team</string>
+
+    <!-- Language array strings (also defined in arrays.xml) -->
+    <string name="lang_english">English</string>
+    <string name="lang_filipino">Filipino</string>
+
+    <!-- Title Settings and About -->
+    <string name="title_settings">Settings</string>
+    <string name="title_about">About</string>
 </resources>

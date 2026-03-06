@@ -1,10 +1,10 @@
 package com.watermonitor.app
 
+import android.content.Context
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -12,6 +12,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.watermonitor.app.databinding.ActivityMainBinding
+import com.watermonitor.app.utils.LocaleHelper
+import com.watermonitor.app.utils.ThemeHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -27,7 +29,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeHelper.applyTheme(ThemeHelper.getSavedThemeMode(this))
         super.onCreate(savedInstanceState)
 
         // Edge-to-edge rendering
@@ -59,7 +66,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupNavigation()
-        setupTopBar()
         updateClock()
         clockHandler.postDelayed(clockRunnable, 30_000)
     }
@@ -70,24 +76,28 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
         binding.bottomNav.setupWithNavController(navController)
 
-        // Update title based on destination
+        // Update title and bottom nav visibility based on destination
         navController.addOnDestinationChangedListener { _, destination, _ ->
             binding.tvTitle.text = when (destination.id) {
                 R.id.dashboardFragment -> getString(R.string.title_dashboard)
                 R.id.monitoringFragment -> getString(R.string.title_monitoring)
                 R.id.controlFragment -> getString(R.string.title_control)
+                R.id.settingsFragment -> getString(R.string.title_settings)
+                R.id.aboutFragment -> getString(R.string.title_about)
                 else -> getString(R.string.app_name)
             }
-        }
-    }
 
-    private fun setupTopBar() {
+            // Hide bottom nav when on settings or about pages
+            val hideBottomNav = destination.id == R.id.settingsFragment ||
+                    destination.id == R.id.aboutFragment
+            binding.bottomNav.visibility = if (hideBottomNav) View.GONE else View.VISIBLE
+        }
+
+        // Navigate to settings when gear button is tapped
         binding.btnSettings.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.settings)
-                .setMessage(R.string.settings_placeholder)
-                .setPositiveButton(R.string.ok, null)
-                .show()
+            if (navController.currentDestination?.id != R.id.settingsFragment) {
+                navController.navigate(R.id.settingsFragment)
+            }
         }
     }
 
@@ -101,3 +111,4 @@ class MainActivity : AppCompatActivity() {
         clockHandler.removeCallbacks(clockRunnable)
     }
 }
+
