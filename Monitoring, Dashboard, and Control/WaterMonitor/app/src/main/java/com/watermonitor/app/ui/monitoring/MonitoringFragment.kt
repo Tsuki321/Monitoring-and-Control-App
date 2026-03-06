@@ -95,5 +95,6 @@ class MonitoringFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        hasAnimatedEntrance = false
     }
 }
