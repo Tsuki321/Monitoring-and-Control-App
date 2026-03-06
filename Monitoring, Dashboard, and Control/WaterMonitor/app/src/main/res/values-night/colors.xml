@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ocean base palette – night variants -->
+    <color name="teal_deep">#0D7A8A</color>
+    <color name="teal_mid">#4DB8C8</color>
+    <color name="teal_light">#1F5C66</color>
+
+    <!-- Background gradient colors – dark -->
+    <color name="bg_gradient_start">#0A1628</color>
+    <color name="bg_gradient_end">#0D1F38</color>
+
+    <!-- Glassmorphism card – dark -->
+    <color name="glass_white">#30FFFFFF</color>
+    <color name="glass_white_border">#40FFFFFF</color>
+    <color name="card_border">#404DB8C8</color>
+
+    <!-- Text colors – night -->
+    <color name="accent_blue">#4DB8C8</color>
+    <color name="text_dark">#E0F7FA</color>
+    <color name="text_medium">#B2EBF2</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="text_on_glass">#E0F7FA</color>
+
+    <!-- Status colors – unchanged -->
+    <color name="status_green">#2ECC71</color>
+    <color name="status_yellow">#F39C12</color>
+    <color name="status_red">#E74C3C</color>
+    <color name="status_grey">#90A4AE</color>
+
+    <!-- Bottom nav – dark -->
+    <color name="bottom_nav_bg">#B00A1628</color>
+    <color name="bottom_nav_selected">#4DB8C8</color>
+    <color name="bottom_nav_unselected">#7090A4</color>
+
+    <!-- Top bar – dark -->
+    <color name="top_bar_bg">#DD0A1628</color>
+
+    <!-- Wave animation layers -->
+    <color name="wave_layer_1">#504DB8C8</color>
+    <color name="wave_layer_2">#400D7A8A</color>
+    <color name="wave_layer_3">#300A1628</color>
+
+    <!-- Switch colors – unchanged -->
+    <color name="switch_thumb_on">#2ECC71</color>
+    <color name="switch_thumb_off">#90A4AE</color>
+    <color name="switch_track_on">#802ECC71</color>
+    <color name="switch_track_off">#4090A4AE</color>
+
+    <!-- Tank colors – dark -->
+    <color name="tank_water_deep">#4DB8C8</color>
+    <color name="tank_water_light">#1F5C66</color>
+    <color name="tank_border">#4DB8C8</color>
+    <color name="tank_bg">#20FFFFFF</color>
+</resources>

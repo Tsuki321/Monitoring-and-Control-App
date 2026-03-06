@@ -1,6 +1,7 @@
 package com.watermonitor.app
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Animatable
 import android.os.Bundle
@@ -10,6 +11,8 @@ import android.view.ViewPropertyAnimator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import com.watermonitor.app.databinding.ActivitySplashBinding
+import com.watermonitor.app.utils.LocaleHelper
+import com.watermonitor.app.utils.ThemeHelper
 
 /**
  * Entry-point splash screen that plays an animated water-drop SVG, then
@@ -38,7 +41,12 @@ class SplashActivity : AppCompatActivity() {
     /** Tracks running property animators so they can be cancelled on destroy. */
     private val runningAnimators = mutableListOf<ViewPropertyAnimator>()
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeHelper.applyTheme(ThemeHelper.getSavedThemeMode(this))
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 

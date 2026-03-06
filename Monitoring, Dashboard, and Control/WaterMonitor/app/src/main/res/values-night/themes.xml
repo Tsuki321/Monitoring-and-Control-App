@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WaterMonitor" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/teal_deep</item>
+        <item name="colorPrimaryVariant">@color/teal_mid</item>
+        <item name="colorSecondary">@color/accent_blue</item>
+        <item name="colorOnPrimary">@color/text_light</item>
+        <item name="android:colorBackground">@color/bg_gradient_start</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+    </style>
+
+    <style name="Theme.WaterMonitor.Splash" parent="Theme.WaterMonitor">
+        <item name="android:windowBackground">@drawable/bg_ocean_gradient</item>
+        <item name="android:windowIsTranslucent">false</item>
+    </style>
+</resources>
