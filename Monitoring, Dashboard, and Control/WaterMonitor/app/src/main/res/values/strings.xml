@@ -53,6 +53,10 @@
     <string name="control_valve_bypass">Bypass Valve</string>
     <string name="state_on">ON</string>
     <string name="state_off">OFF</string>
+    <string name="system_label">System:</string>
+
+    <!-- Dashboard -->
+    <string name="pump_status_title">Pump Status</string>
 
     <!-- Splash screen -->
     <string name="splash_tagline">Smart Water Monitoring &amp; Control</string>

@@ -35,10 +35,10 @@ class DashboardFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.btnGoMonitoring.setOnClickListener {
-            findNavController().navigate(R.id.monitoringFragment)
+            findNavController().navigate(R.id.action_dashboardFragment_to_monitoringFragment)
         }
         binding.btnGoControl.setOnClickListener {
-            findNavController().navigate(R.id.controlFragment)
+            findNavController().navigate(R.id.action_dashboardFragment_to_controlFragment)
         }
 
         observeState()
@@ -93,5 +93,6 @@ class DashboardFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        hasAnimatedEntrance = false
     }
 }
