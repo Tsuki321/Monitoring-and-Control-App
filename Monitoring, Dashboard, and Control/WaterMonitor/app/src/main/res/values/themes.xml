@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WaterMonitor" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/teal_deep</item>
+        <item name="colorPrimaryVariant">@color/teal_mid</item>
+        <item name="colorSecondary">@color/accent_blue</item>
+        <item name="colorOnPrimary">@color/text_light</item>
+        <item name="android:colorBackground">@color/bg_gradient_start</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+    </style>
+
+    <!-- Glass card style -->
+    <style name="Style.WaterMonitor.GlassCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/glass_white</item>
+        <item name="cardCornerRadius">@dimen/card_corner_radius</item>
+        <item name="cardElevation">@dimen/card_elevation</item>
+        <item name="strokeColor">@color/glass_white_border</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Sensor value text -->
+    <style name="Style.WaterMonitor.SensorValue">
+        <item name="android:textSize">@dimen/sensor_value_text_size</item>
+        <item name="android:textColor">@color/accent_blue</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Sensor title text -->
+    <style name="Style.WaterMonitor.SensorTitle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_dark</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Sensor unit text -->
+    <style name="Style.WaterMonitor.SensorUnit">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_medium</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- Status text -->
+    <style name="Style.WaterMonitor.StatusText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/text_medium</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <!-- Top bar title -->
+    <style name="Style.WaterMonitor.TopBarTitle">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textColor">@color/accent_blue</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
+
+    <!-- Navigation button style -->
+    <style name="Style.WaterMonitor.NavButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/accent_blue</item>
+        <item name="strokeColor">@color/teal_mid</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="android:backgroundTint">@color/glass_white</item>
+        <item name="cornerRadius">@dimen/card_corner_radius</item>
+    </style>
+
+    <!-- Control card label -->
+    <style name="Style.WaterMonitor.ControlLabel">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/text_dark</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

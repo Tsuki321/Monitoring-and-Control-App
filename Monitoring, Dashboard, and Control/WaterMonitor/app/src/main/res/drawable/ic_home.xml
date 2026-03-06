@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home / house icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+
+    <!-- Roof -->
+    <path
+        android:pathData="M14,2 L26,13 L22,13 L22,26 L16,26 L16,19 L12,19 L12,26 L6,26 L6,13 L2,13 Z"
+        android:fillColor="#1A237E" />
+
+    <!-- Door -->
+    <path
+        android:pathData="M12,19 L16,19 L16,26 L12,26 Z"
+        android:fillColor="#4DB8C8" />
+
+    <!-- Window left -->
+    <path
+        android:pathData="M8,15 L11,15 L11,18 L8,18 Z"
+        android:fillColor="#A8E6EF" />
+
+    <!-- Window right -->
+    <path
+        android:pathData="M17,15 L20,15 L20,18 L17,18 Z"
+        android:fillColor="#A8E6EF" />
+</vector>

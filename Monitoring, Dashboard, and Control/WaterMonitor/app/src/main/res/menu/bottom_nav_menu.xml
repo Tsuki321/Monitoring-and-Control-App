@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/dashboardFragment"
+        android:icon="@drawable/ic_home"
+        android:title="@string/nav_home" />
+
+    <item
+        android:id="@+id/monitoringFragment"
+        android:icon="@drawable/ic_wave"
+        android:title="@string/nav_monitoring" />
+
+    <item
+        android:id="@+id/controlFragment"
+        android:icon="@drawable/ic_pump"
+        android:title="@string/nav_control" />
+
+</menu>

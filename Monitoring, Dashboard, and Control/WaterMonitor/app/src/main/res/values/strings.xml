@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WaterMonitor</string>
+
+    <!-- Navigation labels -->
+    <string name="nav_home">HOME</string>
+    <string name="nav_monitoring">MONITORING</string>
+    <string name="nav_control">CONTROL</string>
+
+    <!-- Screen titles -->
+    <string name="title_monitoring">Monitoring</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_control">Control</string>
+
+    <!-- Sensor cards -->
+    <string name="sensor_ph">pH Sensor</string>
+    <string name="sensor_tds">TDS Sensor</string>
+    <string name="sensor_turbidity">Turbidity Sensor</string>
+    <string name="unit_ph">pH</string>
+    <string name="unit_ppm">ppm</string>
+    <string name="unit_ntu">NTU</string>
+
+    <!-- Status labels -->
+    <string name="status_prefix">Status: </string>
+    <string name="status_neutral">Neutral</string>
+    <string name="status_acidic">Acidic</string>
+    <string name="status_alkaline">Alkaline</string>
+    <string name="status_excellent">Excellent</string>
+    <string name="status_good">Good</string>
+    <string name="status_poor">Poor</string>
+    <string name="status_clear">Clear</string>
+    <string name="status_slightly_turbid">Slightly Turbid</string>
+    <string name="status_turbid">Turbid</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+
+    <!-- Dashboard -->
+    <string name="tank_level_label">Tank Level</string>
+    <string name="pump_a_label">Pump A</string>
+    <string name="pump_b_label">Pump B</string>
+    <string name="sensor_status_title">Sensor Status</string>
+    <string name="btn_go_monitoring">Go to Monitoring</string>
+    <string name="btn_go_control">Go to Control</string>
+    <string name="system_active">System Active</string>
+    <string name="system_standby">System Standby</string>
+    <string name="tank_full">FULL</string>
+    <string name="tank_low">LOW</string>
+
+    <!-- Control screen -->
+    <string name="control_pump_a">Pump A</string>
+    <string name="control_pump_b">Pump B</string>
+    <string name="control_valve_main">Main Valve</string>
+    <string name="control_valve_bypass">Bypass Valve</string>
+    <string name="state_on">ON</string>
+    <string name="state_off">OFF</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="settings_placeholder">Settings coming in a future update.</string>
+    <string name="ok">OK</string>
+</resources>

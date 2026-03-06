@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pump + water drop control icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+
+    <!-- Pump body (rectangle) -->
+    <path
+        android:pathData="M4,12 L14,12 L14,22 L4,22 Z"
+        android:fillColor="#1A237E" />
+
+    <!-- Pump motor circle -->
+    <path
+        android:pathData="M9,17 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"
+        android:fillColor="#4DB8C8" />
+    <path
+        android:pathData="M9,17 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
+        android:fillColor="#1A237E" />
+
+    <!-- Pipe going right -->
+    <path
+        android:pathData="M14,15 L20,15 L20,12"
+        android:fillColor="#00000000"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Water drop -->
+    <path
+        android:pathData="M20,4 C20,4 16,9 16,12 C16,14.2 17.8,16 20,16 C22.2,16 24,14.2 24,12 C24,9 20,4 20,4 Z"
+        android:fillColor="#804DB8C8"
+        android:strokeColor="#0D7A8A"
+        android:strokeWidth="1" />
+
+    <!-- Drop highlight -->
+    <path
+        android:pathData="M18,9 C18,9 17,11 17,12"
+        android:fillColor="#00000000"
+        android:strokeColor="#A8E6EF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+</vector>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ocean base palette -->
+    <color name="teal_deep">#0D7A8A</color>
+    <color name="teal_mid">#4DB8C8</color>
+    <color name="teal_light">#A8E6EF</color>
+
+    <!-- Background gradient colors -->
+    <color name="bg_gradient_start">#7ED5E0</color>
+    <color name="bg_gradient_end">#B8EBF5</color>
+
+    <!-- Glassmorphism card -->
+    <color name="glass_white">#40FFFFFF</color>
+    <color name="glass_white_border">#60FFFFFF</color>
+    <color name="card_border">#80A8E6EF</color>
+
+    <!-- Text colors -->
+    <color name="accent_blue">#1A237E</color>
+    <color name="text_dark">#0D2B4E</color>
+    <color name="text_medium">#1E4A6E</color>
+    <color name="text_light">#FFFFFF</color>
+    <color name="text_on_glass">#0D2B4E</color>
+
+    <!-- Status colors -->
+    <color name="status_green">#2ECC71</color>
+    <color name="status_yellow">#F39C12</color>
+    <color name="status_red">#E74C3C</color>
+    <color name="status_grey">#90A4AE</color>
+
+    <!-- Bottom nav -->
+    <color name="bottom_nav_bg">#B0C8E8F5</color>
+    <color name="bottom_nav_selected">#1A237E</color>
+    <color name="bottom_nav_unselected">#4D6B8E</color>
+
+    <!-- Top bar -->
+    <color name="top_bar_bg">#CC7ED5E0</color>
+
+    <!-- Wave animation layers -->
+    <color name="wave_layer_1">#504DB8C8</color>
+    <color name="wave_layer_2">#400D7A8A</color>
+    <color name="wave_layer_3">#300D2B4E</color>
+
+    <!-- Switch colors -->
+    <color name="switch_thumb_on">#2ECC71</color>
+    <color name="switch_thumb_off">#90A4AE</color>
+    <color name="switch_track_on">#802ECC71</color>
+    <color name="switch_track_off">#4090A4AE</color>
+
+    <!-- Tank colors -->
+    <color name="tank_water_deep">#4DB8C8</color>
+    <color name="tank_water_light">#A8E6EF</color>
+    <color name="tank_border">#1A237E</color>
+    <color name="tank_bg">#20FFFFFF</color>
+</resources>

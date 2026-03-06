@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Card -->
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_elevation">8dp</dimen>
+    <dimen name="card_margin">12dp</dimen>
+    <dimen name="card_padding">16dp</dimen>
+
+    <!-- Sensor value text -->
+    <dimen name="sensor_value_text_size">52sp</dimen>
+
+    <!-- Top bar -->
+    <dimen name="top_bar_height">64dp</dimen>
+    <dimen name="top_bar_padding_horizontal">16dp</dimen>
+
+    <!-- Bottom nav -->
+    <dimen name="bottom_nav_height">72dp</dimen>
+
+    <!-- Screen padding -->
+    <dimen name="screen_padding">16dp</dimen>
+
+    <!-- Icon sizes -->
+    <dimen name="sensor_icon_size">40dp</dimen>
+    <dimen name="nav_icon_size">28dp</dimen>
+    <dimen name="gear_icon_size">32dp</dimen>
+
+    <!-- Water tank -->
+    <dimen name="tank_width">160dp</dimen>
+    <dimen name="tank_height">200dp</dimen>
+
+    <!-- Status dot -->
+    <dimen name="status_dot_size">10dp</dimen>
+
+    <!-- Control card -->
+    <dimen name="control_card_height">88dp</dimen>
+</resources>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ornate frame border for Monitoring screen -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer shadow layer -->
+    <item
+        android:left="2dp"
+        android:top="2dp"
+        android:right="2dp"
+        android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke
+                android:width="3dp"
+                android:color="#400D7A8A" />
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <!-- Main border -->
+    <item
+        android:left="6dp"
+        android:top="6dp"
+        android:right="6dp"
+        android:bottom="6dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke
+                android:width="2dp"
+                android:color="#604DB8C8" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    <!-- Inner subtle frame -->
+    <item
+        android:left="10dp"
+        android:top="10dp"
+        android:right="10dp"
+        android:bottom="10dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+            <stroke
+                android:width="1dp"
+                android:color="#40A8E6EF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</layer-list>

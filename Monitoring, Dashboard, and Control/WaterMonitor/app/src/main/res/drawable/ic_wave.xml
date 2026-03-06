@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wave monitoring icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+
+    <!-- Wave line 1 (top) -->
+    <path
+        android:pathData="M2,9 Q7,4 12,9 Q17,14 22,9 Q25,6 26,9"
+        android:fillColor="#00000000"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Wave line 2 (middle) -->
+    <path
+        android:pathData="M2,15 Q7,10 12,15 Q17,20 22,15 Q25,12 26,15"
+        android:fillColor="#00000000"
+        android:strokeColor="#4DB8C8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Wave line 3 (bottom) -->
+    <path
+        android:pathData="M2,21 Q7,16 12,21 Q17,26 22,21 Q25,18 26,21"
+        android:fillColor="#00000000"
+        android:strokeColor="#A8E6EF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

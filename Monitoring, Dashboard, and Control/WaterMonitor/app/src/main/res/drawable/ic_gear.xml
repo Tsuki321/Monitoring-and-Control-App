@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings gear icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <!-- Outer gear ring with teeth -->
+    <path
+        android:pathData="M16,0 L18.5,4.5 L23.5,3 L23.5,8 L28,10 L25.5,14.5 L28,19.5 L23.5,20 L23.5,25 
+                          L18.5,23.5 L16,28 L13.5,23.5 L8.5,25 L8.5,20 L4,19.5 L6.5,14.5 L4,10 
+                          L8.5,8 L8.5,3 L13.5,4.5 Z"
+        android:fillColor="#1A237E" />
+
+    <!-- Inner circle (hole) -->
+    <path
+        android:pathData="M16,10 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"
+        android:fillColor="#7ED5E0" />
+
+    <!-- Center dot -->
+    <path
+        android:pathData="M16,14 m-2,0 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
+        android:fillColor="#1A237E" />
+</vector>

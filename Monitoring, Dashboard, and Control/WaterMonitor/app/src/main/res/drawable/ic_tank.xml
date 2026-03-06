@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tank vessel outline -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="48dp"
+    android:viewportWidth="40"
+    android:viewportHeight="48">
+
+    <!-- Tank body outline (rounded rect) -->
+    <path
+        android:pathData="M5,8 Q5,4 9,4 L31,4 Q35,4 35,8 L35,40 Q35,44 31,44 L9,44 Q5,44 5,40 Z"
+        android:fillColor="#20FFFFFF"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="2" />
+
+    <!-- Tank cap / lid -->
+    <path
+        android:pathData="M14,2 L26,2 L26,6 L14,6 Z"
+        android:fillColor="#1A237E" />
+
+    <!-- Tank bottom outlet pipe -->
+    <path
+        android:pathData="M17,44 L17,47 M23,44 L23,47"
+        android:fillColor="#00000000"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+    <!-- Gauge tick marks on right side -->
+    <path
+        android:pathData="M35,16 L38,16 M35,24 L38,24 M35,32 L38,32"
+        android:fillColor="#00000000"
+        android:strokeColor="#4DB8C8"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+</vector>

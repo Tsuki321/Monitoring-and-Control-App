@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pH Test Tube icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+
+    <!-- Test tube body -->
+    <path
+        android:pathData="M15,6 L15,26 Q15,34 20,34 Q25,34 25,26 L25,6 Z"
+        android:fillColor="#400D7A8A"
+        android:strokeColor="#0D7A8A"
+        android:strokeWidth="1.5" />
+
+    <!-- Test tube neck/top -->
+    <path
+        android:pathData="M13,4 L27,4 L27,7 L13,7 Z"
+        android:fillColor="#0D7A8A" />
+
+    <!-- Liquid fill inside tube -->
+    <path
+        android:pathData="M16,20 L16,26 Q16,33 20,33 Q24,33 24,26 L24,20 Z"
+        android:fillColor="#804DB8C8" />
+
+    <!-- Liquid surface line -->
+    <path
+        android:pathData="M16,20 Q20,18 24,20"
+        android:strokeColor="#4DB8C8"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000" />
+
+    <!-- Bubbles -->
+    <path
+        android:pathData="M18,24 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0"
+        android:fillColor="#A8E6EF" />
+    <path
+        android:pathData="M21,27 m-0.8,0 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0"
+        android:fillColor="#A8E6EF" />
+
+    <!-- Graduation marks -->
+    <path
+        android:pathData="M25,14 L27,14 M25,18 L27,18 M25,22 L27,22"
+        android:strokeColor="#0D7A8A"
+        android:strokeWidth="1"
+        android:fillColor="#00000000" />
+</vector>
