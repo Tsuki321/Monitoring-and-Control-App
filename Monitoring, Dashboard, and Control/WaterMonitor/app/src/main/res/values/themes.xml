@@ -77,4 +77,12 @@
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">bold</item>
     </style>
+
+    <!-- Splash screen theme: same base as the app but with the ocean-gradient
+         window background so there is no white flash before the layout inflates. -->
+    <style name="Theme.WaterMonitor.Splash" parent="Theme.WaterMonitor">
+        <item name="android:windowBackground">@drawable/bg_ocean_gradient</item>
+        <item name="android:windowIsTranslucent">false</item>
+    </style>
+
 </resources>

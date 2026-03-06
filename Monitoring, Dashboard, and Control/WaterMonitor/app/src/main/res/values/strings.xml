@@ -54,6 +54,10 @@
     <string name="state_on">ON</string>
     <string name="state_off">OFF</string>
 
+    <!-- Splash screen -->
+    <string name="splash_tagline">Smart Water Monitoring &amp; Control</string>
+    <string name="splash_drop_description">Animated water drop</string>
+
     <!-- Settings -->
     <string name="settings">Settings</string>
     <string name="settings_placeholder">Settings coming in a future update.</string>

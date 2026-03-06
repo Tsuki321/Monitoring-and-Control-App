@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Scales the dropGroup from near-zero to full size with an overshoot bounce.
+     Targets both scaleX and scaleY of the named group. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:ordering="together">
+
+    <objectAnimator
+        android:propertyName="scaleX"
+        android:valueFrom="0.01"
+        android:valueTo="1.0"
+        android:duration="650"
+        android:interpolator="@android:interpolator/overshoot" />
+
+    <objectAnimator
+        android:propertyName="scaleY"
+        android:valueFrom="0.01"
+        android:valueTo="1.0"
+        android:duration="650"
+        android:interpolator="@android:interpolator/overshoot" />
+
+</set>

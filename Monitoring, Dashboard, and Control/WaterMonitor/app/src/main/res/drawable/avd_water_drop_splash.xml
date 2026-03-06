@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AnimatedVectorDrawable that drives the water-drop splash animation.
+     Targets:
+       dropGroup → scale in with bounce
+       fillGroup → water fill rises up -->
+<animated-vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_water_drop_splash">
+
+    <!-- Scale the whole drop in from the bottom-centre pivot -->
+    <target
+        android:name="dropGroup"
+        android:animation="@animator/anim_splash_drop_scale" />
+
+    <!-- Water fill rises inside the drop after it has appeared -->
+    <target
+        android:name="fillGroup"
+        android:animation="@animator/anim_splash_fill_rise" />
+
+</animated-vector>
