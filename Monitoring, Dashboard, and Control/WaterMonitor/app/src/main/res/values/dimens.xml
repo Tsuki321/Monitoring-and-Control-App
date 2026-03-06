@@ -14,14 +14,14 @@
     <dimen name="top_bar_padding_horizontal">16dp</dimen>
 
     <!-- Bottom nav -->
-    <dimen name="bottom_nav_height">72dp</dimen>
+    <dimen name="bottom_nav_height">80dp</dimen>
 
     <!-- Screen padding -->
     <dimen name="screen_padding">16dp</dimen>
 
     <!-- Icon sizes -->
     <dimen name="sensor_icon_size">40dp</dimen>
-    <dimen name="nav_icon_size">28dp</dimen>
+    <dimen name="nav_icon_size">32dp</dimen>
     <dimen name="gear_icon_size">32dp</dimen>
 
     <!-- Water tank -->
