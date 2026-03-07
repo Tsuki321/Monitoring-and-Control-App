@@ -192,6 +192,7 @@
                 style="@style/Style.WaterMonitor.GlassCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:alpha="0"
                 app:cardBackgroundColor="@color/glass_white"
                 app:cardCornerRadius="16dp"
