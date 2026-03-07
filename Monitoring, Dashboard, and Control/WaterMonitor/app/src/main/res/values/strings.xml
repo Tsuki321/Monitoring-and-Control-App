@@ -28,6 +28,7 @@
     <string name="status_excellent">Excellent</string>
     <string name="status_good">Good</string>
     <string name="status_poor">Poor</string>
+    <string name="status_very_low">Very Low</string>
     <string name="status_clear">Clear</string>
     <string name="status_slightly_turbid">Slightly Turbid</string>
     <string name="status_turbid">Turbid</string>
@@ -45,6 +46,11 @@
     <string name="system_standby">System Standby</string>
     <string name="tank_full">FULL</string>
     <string name="tank_low">LOW</string>
+    <string name="tank_percent_format">Tank: %d%%</string>
+    <string name="sensor_ph_short">pH</string>
+    <string name="sensor_tds_short">TDS</string>
+    <string name="sensor_turbidity_short">Turbidity</string>
+    <string name="sensor_status_format">%1$s: %2$s</string>
 
     <!-- Control screen -->
     <string name="control_pump_a">Pump A</string>

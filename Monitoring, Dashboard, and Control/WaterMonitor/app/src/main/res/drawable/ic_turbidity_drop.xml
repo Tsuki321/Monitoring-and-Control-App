@@ -6,16 +6,16 @@
     android:viewportWidth="40"
     android:viewportHeight="40">
 
-    <!-- Water drop body -->
+    <!-- Water drop body (shifted 2 units up to give ripple rings room at bottom) -->
     <path
-        android:pathData="M20,4 C20,4 8,18 8,25 C8,32 13.4,37 20,37 C26.6,37 32,32 32,25 C32,18 20,4 20,4 Z"
+        android:pathData="M20,2 C20,2 8,16 8,23 C8,30 13.4,35 20,35 C26.6,35 32,30 32,23 C32,16 20,2 20,2 Z"
         android:fillColor="#804DB8C8"
         android:strokeColor="#0D7A8A"
         android:strokeWidth="1.5" />
 
     <!-- Inner highlight on drop -->
     <path
-        android:pathData="M14,20 C14,20 11,26 11,28 C11,30 12,31 13,30"
+        android:pathData="M14,18 C14,18 11,24 11,26 C11,28 12,29 13,28"
         android:fillColor="#00000000"
         android:strokeColor="#A8E6EF"
         android:strokeWidth="2"
@@ -23,7 +23,7 @@
 
     <!-- Ripple ring 1 (small, close) -->
     <path
-        android:pathData="M14,38 Q20,35 26,38"
+        android:pathData="M14,36 Q20,33 26,36"
         android:fillColor="#00000000"
         android:strokeColor="#4DB8C8"
         android:strokeWidth="1.5"
@@ -31,14 +31,14 @@
 
     <!-- Ripple ring 2 (medium) -->
     <path
-        android:pathData="M10,39.5 Q20,36 30,39.5"
+        android:pathData="M10,37.5 Q20,34 30,37.5"
         android:fillColor="#00000000"
         android:strokeColor="#804DB8C8"
         android:strokeWidth="1"
         android:strokeLineCap="round" />
 
     <!-- Turbidity particles inside drop -->
-    <path android:pathData="M17,24 m-1.2,0 a1.2,1.2 0 1,0 2.4,0 a1.2,1.2 0 1,0 -2.4,0" android:fillColor="#40FFFFFF" />
-    <path android:pathData="M22,22 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0" android:fillColor="#40FFFFFF" />
-    <path android:pathData="M20,28 m-0.8,0 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0" android:fillColor="#40FFFFFF" />
+    <path android:pathData="M17,22 m-1.2,0 a1.2,1.2 0 1,0 2.4,0 a1.2,1.2 0 1,0 -2.4,0" android:fillColor="#40FFFFFF" />
+    <path android:pathData="M22,20 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0" android:fillColor="#40FFFFFF" />
+    <path android:pathData="M20,26 m-0.8,0 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0" android:fillColor="#40FFFFFF" />
 </vector>

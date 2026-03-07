@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HydroSense</string>
+
+    <!-- Navigation labels -->
+    <string name="nav_home">TAHANAN</string>
+    <string name="nav_monitoring">PAGMAMASID</string>
+    <string name="nav_control">KONTROL</string>
+
+    <!-- Screen titles -->
+    <string name="title_monitoring">Pagmamasid</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_control">Kontrol</string>
+
+    <!-- Sensor cards -->
+    <string name="sensor_ph">pH Sensor</string>
+    <string name="sensor_tds">TDS Sensor</string>
+    <string name="sensor_turbidity">Turbidity Sensor</string>
+    <string name="sensor_ph_short">pH</string>
+    <string name="sensor_tds_short">TDS</string>
+    <string name="sensor_turbidity_short">Turbidity</string>
+    <string name="unit_ph">pH</string>
+    <string name="unit_ppm">ppm</string>
+    <string name="unit_ntu">NTU</string>
+
+    <!-- Status labels -->
+    <string name="status_prefix">Katayuan: </string>
+    <string name="status_neutral">Neutral</string>
+    <string name="status_acidic">Asidiko</string>
+    <string name="status_alkaline">Alkalina</string>
+    <string name="status_excellent">Napakahusay</string>
+    <string name="status_good">Maganda</string>
+    <string name="status_poor">Mahina</string>
+    <string name="status_very_low">Napakababa</string>
+    <string name="status_clear">Malinaw</string>
+    <string name="status_slightly_turbid">Bahagyang Malabo</string>
+    <string name="status_turbid">Malabo</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+
+    <!-- Dashboard -->
+    <string name="tank_level_label">Antas ng Tangke</string>
+    <string name="pump_a_label">Pump A</string>
+    <string name="pump_b_label">Pump B</string>
+    <string name="sensor_status_title">Katayuan ng Sensor</string>
+    <string name="btn_go_monitoring">Pumunta sa Pagmamasid</string>
+    <string name="btn_go_control">Pumunta sa Kontrol</string>
+    <string name="system_active">Aktibo ang Sistema</string>
+    <string name="system_standby">Naka-standby ang Sistema</string>
+    <string name="tank_full">PUNO</string>
+    <string name="tank_low">MABABA</string>
+    <string name="tank_percent_format">Tangke: %d%%</string>
+    <string name="sensor_status_format">%1$s: %2$s</string>
+
+    <!-- Control screen -->
+    <string name="control_pump_a">Pump A</string>
+    <string name="control_pump_b">Pump B</string>
+    <string name="control_valve_main">Pangunahing Balbula</string>
+    <string name="control_valve_bypass">Bypass Balbula</string>
+    <string name="state_on">BUKAS</string>
+    <string name="state_off">PATAY</string>
+    <string name="system_label">Sistema:</string>
+
+    <!-- Dashboard -->
+    <string name="pump_status_title">Katayuan ng Pump</string>
+
+    <!-- Splash screen -->
+    <string name="splash_tagline">Matalinong Pagmamasid at Kontrol ng Tubig</string>
+    <string name="splash_drop_description">Animated na patak ng tubig</string>
+
+    <!-- Settings -->
+    <string name="settings">Mga Setting</string>
+    <string name="settings_placeholder">Mga setting ay darating sa susunod na update.</string>
+    <string name="settings_appearance">Hitsura</string>
+    <string name="settings_dark_mode">Dark Mode</string>
+    <string name="settings_language">Wika</string>
+    <string name="settings_select_language">Pumili ng Wika</string>
+    <string name="settings_about">Tungkol sa HydroSense</string>
+    <string name="ok">OK</string>
+
+    <!-- About -->
+    <string name="about_version">Bersyon 1.0</string>
+    <string name="about_description_title">Tungkol</string>
+    <string name="about_description">Ang HydroSense ay isang matalinong aplikasyon para sa pagmamasid at kontrol ng tubig na nagbibigay ng real-time na datos ng sensor, pagmamasid sa antas ng tangke, at remote na kontrol ng mga pump at balbula.</string>
+    <string name="about_developers_title">Mga Developer</string>
+    <string name="about_dev1_name">Tsuki321</string>
+    <string name="about_dev1_role">Punong Developer</string>
+    <string name="about_group_name">Grupo 1</string>
+    <string name="about_group_role">Koponan ng Pagpapaunlad</string>
+
+    <!-- Language array strings -->
+    <string name="lang_english">Ingles</string>
+    <string name="lang_filipino">Filipino</string>
+
+    <!-- Title Settings and About -->
+    <string name="title_settings">Mga Setting</string>
+    <string name="title_about">Tungkol</string>
+</resources>

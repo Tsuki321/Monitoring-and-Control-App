@@ -24,6 +24,6 @@ object ThemeHelper {
 
     fun getSavedThemeMode(context: Context): Int {
         return context.getSharedPreferences(HYDROSENSE_PREFS, Context.MODE_PRIVATE)
-            .getInt(KEY_DARK_MODE, FOLLOW_SYSTEM)
+            .getInt(KEY_DARK_MODE, LIGHT_MODE)
     }
 }

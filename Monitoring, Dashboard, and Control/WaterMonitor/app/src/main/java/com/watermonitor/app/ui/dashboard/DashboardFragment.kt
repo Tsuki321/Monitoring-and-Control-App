@@ -63,18 +63,20 @@ class DashboardFragment : Fragment() {
 
                 // Tank
                 binding.waterTankView.setFillPercent(state.tankStatus.fillPercent)
-                binding.tvTankPercent.text = "Tank: ${state.tankStatus.fillPercent.toInt()}%"
+                binding.tvTankPercent.text = getString(R.string.tank_percent_format, state.tankStatus.fillPercent.toInt())
 
                 // Pump status
                 val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
                 val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
 
                 binding.tvPumpAStatus.apply {
-                    text = "Pump A: ${if (state.pumpState.pumpA) "ON" else "OFF"}"
+                    val stateLabel = getString(if (state.pumpState.pumpA) R.string.state_on else R.string.state_off)
+                    text = getString(R.string.sensor_status_format, getString(R.string.pump_a_label), stateLabel)
                     setTextColor(if (state.pumpState.pumpA) greenColor else greyColor)
                 }
                 binding.tvPumpBStatus.apply {
-                    text = "Pump B: ${if (state.pumpState.pumpB) "ON" else "OFF"}"
+                    val stateLabel = getString(if (state.pumpState.pumpB) R.string.state_on else R.string.state_off)
+                    text = getString(R.string.sensor_status_format, getString(R.string.pump_b_label), stateLabel)
                     setTextColor(if (state.pumpState.pumpB) greenColor else greyColor)
                 }
 
@@ -83,11 +85,16 @@ class DashboardFragment : Fragment() {
                 binding.dotTds.setColorFilter(if (state.sensorStatus.tdsOnline) greenColor else greyColor)
                 binding.dotTurbidity.setColorFilter(if (state.sensorStatus.turbidityOnline) greenColor else greyColor)
 
-                binding.tvPhOnline.text = "pH: ${if (state.sensorStatus.phOnline) "Online" else "Offline"}"
-                binding.tvTdsOnline.text = "TDS: ${if (state.sensorStatus.tdsOnline) "Online" else "Offline"}"
-                binding.tvTurbidityOnline.text = "Turbidity: ${if (state.sensorStatus.turbidityOnline) "Online" else "Offline"}"
+                binding.tvPhOnline.text = sensorOnlineLabel(R.string.sensor_ph_short, state.sensorStatus.phOnline)
+                binding.tvTdsOnline.text = sensorOnlineLabel(R.string.sensor_tds_short, state.sensorStatus.tdsOnline)
+                binding.tvTurbidityOnline.text = sensorOnlineLabel(R.string.sensor_turbidity_short, state.sensorStatus.turbidityOnline)
             }
         }
+    }
+
+    private fun sensorOnlineLabel(sensorNameRes: Int, isOnline: Boolean): String {
+        val statusRes = if (isOnline) R.string.status_online else R.string.status_offline
+        return getString(R.string.sensor_status_format, getString(sensorNameRes), getString(statusRes))
     }
 
     override fun onDestroyView() {
