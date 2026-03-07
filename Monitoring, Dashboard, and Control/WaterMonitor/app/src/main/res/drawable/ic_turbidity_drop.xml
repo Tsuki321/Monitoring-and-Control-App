@@ -38,7 +38,7 @@
         android:strokeLineCap="round" />
 
     <!-- Turbidity particles inside drop -->
-    <path android:pathData="M17,22 m-1.2,0 a1.2,1.2 0 1,0 2.4,0 a1.2,1.2 0 1,0 -2.4,0" android:fillColor="#40FFFFFF" />
-    <path android:pathData="M22,20 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0" android:fillColor="#40FFFFFF" />
-    <path android:pathData="M20,26 m-0.8,0 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0" android:fillColor="#40FFFFFF" />
+    <path android:pathData="M17,22 m-1.2,0 a1.2,1.2 0 1,0 2.4,0 a1.2,1.2 0 1,0 -2.4,0" android:fillColor="#CC1A237E" />
+    <path android:pathData="M22,20 m-1,0 a1,1 0 1,0 2,0 a1,1 0 1,0 -2,0" android:fillColor="#CC1A237E" />
+    <path android:pathData="M20,26 m-0.8,0 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0" android:fillColor="#CC1A237E" />
 </vector>
