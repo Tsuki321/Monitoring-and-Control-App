@@ -80,7 +80,7 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="0dp"
-        android:layout_height="@dimen/bottom_nav_height"
+        android:layout_height="wrap_content"
         android:background="@drawable/bg_bottom_nav"
         app:menu="@menu/bottom_nav_menu"
         app:itemIconTint="@color/bottom_nav_item_color"
