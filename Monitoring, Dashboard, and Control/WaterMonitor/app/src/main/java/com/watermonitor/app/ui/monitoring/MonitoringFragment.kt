@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentMonitoringBinding
 import com.watermonitor.app.utils.AnimationUtils
 import kotlinx.coroutines.launch
@@ -58,7 +59,7 @@ class MonitoringFragment : Fragment() {
                     decimals = 2
                 )
                 binding.tvPhStatus.apply {
-                    text = "Status: ${state.phStatus.statusLabel}"
+                    text = "${getString(R.string.status_prefix)}${getString(state.phStatus.statusLabelRes)}"
                     setTextColor(state.phStatus.statusColorRes)
                 }
                 prevPh = state.sensorData.ph
@@ -71,7 +72,7 @@ class MonitoringFragment : Fragment() {
                     decimals = 0
                 )
                 binding.tvTdsStatus.apply {
-                    text = "Status: ${state.tdsStatus.statusLabel}"
+                    text = "${getString(R.string.status_prefix)}${getString(state.tdsStatus.statusLabelRes)}"
                     setTextColor(state.tdsStatus.statusColorRes)
                 }
                 prevTds = state.sensorData.tds.toDouble()
@@ -84,7 +85,7 @@ class MonitoringFragment : Fragment() {
                     decimals = 1
                 )
                 binding.tvTurbidityStatus.apply {
-                    text = "Status: ${state.turbidityStatus.statusLabel}"
+                    text = "${getString(R.string.status_prefix)}${getString(state.turbidityStatus.statusLabelRes)}"
                     setTextColor(state.turbidityStatus.statusColorRes)
                 }
                 prevTurbidity = state.sensorData.turbidity
