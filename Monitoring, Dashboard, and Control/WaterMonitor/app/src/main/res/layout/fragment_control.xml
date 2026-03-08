@@ -311,13 +311,22 @@
                     android:padding="16dp">
 
                     <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/system_label"
+                        android:textSize="16sp"
+                        android:textColor="@color/text_dark"
+                        android:fontFamily="sans-serif-black" />
+
+                    <TextView
                         android:id="@+id/tvSystemStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/system_standby"
                         android:textSize="16sp"
                         android:textColor="@color/status_grey"
-                        android:fontFamily="sans-serif-black" />
+                        android:fontFamily="sans-serif-black"
+                        android:layout_marginStart="4dp" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         val navController = navHostFragment.navController
         binding.bottomNav.setupWithNavController(navController)
 
-        // Update title and bottom nav visibility based on destination
+        // Update title, bottom nav visibility, and top-bar button based on destination
         navController.addOnDestinationChangedListener { _, destination, _ ->
             binding.tvTitle.text = when (destination.id) {
                 R.id.dashboardFragment -> getString(R.string.title_dashboard)
@@ -87,15 +87,23 @@ class MainActivity : AppCompatActivity() {
                 else -> getString(R.string.app_name)
             }
 
-            // Hide bottom nav when on settings or about pages
-            val hideBottomNav = destination.id == R.id.settingsFragment ||
+            // Hide bottom nav on Settings or About pages
+            val isSecondaryPage = destination.id == R.id.settingsFragment ||
                     destination.id == R.id.aboutFragment
-            binding.bottomNav.visibility = if (hideBottomNav) View.GONE else View.VISIBLE
+            binding.bottomNav.visibility = if (isSecondaryPage) View.GONE else View.VISIBLE
+
+            // Show back arrow on secondary pages, gear icon on main pages
+            binding.btnSettings.setImageResource(
+                if (isSecondaryPage) R.drawable.ic_back else R.drawable.ic_gear
+            )
         }
 
-        // Navigate to settings when gear button is tapped
+        // Navigate to Settings (from main pages) or navigate up (from secondary pages)
         binding.btnSettings.setOnClickListener {
-            if (navController.currentDestination?.id != R.id.settingsFragment) {
+            val currentId = navController.currentDestination?.id
+            if (currentId == R.id.settingsFragment || currentId == R.id.aboutFragment) {
+                navController.navigateUp()
+            } else {
                 navController.navigate(R.id.settingsFragment)
             }
         }
