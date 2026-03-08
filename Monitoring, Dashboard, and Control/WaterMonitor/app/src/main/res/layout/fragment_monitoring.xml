@@ -220,6 +220,8 @@
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_turbidity_drop"
+                        android:layout_marginEnd="4dp"
+                        android:layout_marginTop="4dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
