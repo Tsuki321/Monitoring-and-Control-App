@@ -60,6 +60,9 @@ class WaterTankView @JvmOverloads constructor(
         textAlign = Paint.Align.CENTER
     }
 
+    // Computed once in onSizeChanged; uses the same 20 dp value as card_corner_radius
+    private var cornerRadius = 0f
+
     private var wavePhase = 0f
     private val waveAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
         duration = 2500
@@ -99,13 +102,14 @@ class WaterTankView @JvmOverloads constructor(
         tankRect.set(pad, pad, w - pad, h - pad)
         textPaint.textSize = w * 0.22f
         labelPaint.textSize = w * 0.10f
+        // Derive corner radius from the shared dimension (card_corner_radius = 20 dp)
+        cornerRadius = resources.getDimension(R.dimen.card_corner_radius)
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val w = width.toFloat()
         val h = height.toFloat()
-        val cornerRadius = 20f
 
         // Draw tank background
         canvas.drawRoundRect(tankRect, cornerRadius, cornerRadius, tankBgPaint)
@@ -116,7 +120,7 @@ class WaterTankView @JvmOverloads constructor(
         val tankInnerHeight = tankInnerBottom - tankInnerTop
         val waterTop = tankInnerBottom - (tankInnerHeight * displayFill / 100f)
 
-        // Clip to tank shape for water
+        // Clip to tank shape — water, wave, AND overlay text all stay inside the rounded border
         canvas.save()
         val clipPath = Path().apply {
             addRoundRect(tankRect, cornerRadius, cornerRadius, Path.Direction.CW)
@@ -130,23 +134,23 @@ class WaterTankView @JvmOverloads constructor(
         // Draw wave on top of water
         drawSurfaceWave(canvas, waterTop, w)
 
-        canvas.restore()
-
-        // Draw tank border on top
-        canvas.drawRoundRect(tankRect, cornerRadius, cornerRadius, tankBorderPaint)
-
-        // Percentage text centered in the view
+        // Percentage text centered in the view (inside clip so it respects rounded corners)
         val cx = w / 2f
         val textY = h * 0.45f
         canvas.drawText("${displayFill.toInt()}%", cx, textY, textPaint)
 
-        // Label: FULL / LOW / level indicator
+        // Label: FULL / LOW / level indicator (inside clip)
         val label = when {
             displayFill >= 90f -> "FULL"
             displayFill <= 15f -> "LOW"
             else -> "Level"
         }
         canvas.drawText(label, cx, textY + labelPaint.textSize + 4f, labelPaint)
+
+        canvas.restore()
+
+        // Draw tank border on top of everything
+        canvas.drawRoundRect(tankRect, cornerRadius, cornerRadius, tankBorderPaint)
     }
 
     private fun drawSurfaceWave(canvas: Canvas, surfaceY: Float, w: Float) {

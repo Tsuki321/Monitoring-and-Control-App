@@ -8,7 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentDashboardBinding
 import com.watermonitor.app.utils.AnimationUtils
@@ -34,11 +34,12 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottomNav)
         binding.btnGoMonitoring.setOnClickListener {
-            findNavController().navigate(R.id.action_dashboardFragment_to_monitoringFragment)
+            bottomNav.selectedItemId = R.id.monitoringFragment
         }
         binding.btnGoControl.setOnClickListener {
-            findNavController().navigate(R.id.action_dashboardFragment_to_controlFragment)
+            bottomNav.selectedItemId = R.id.controlFragment
         }
 
         observeState()

@@ -59,7 +59,7 @@ class MonitoringFragment : Fragment() {
                     decimals = 2
                 )
                 binding.tvPhStatus.apply {
-                    text = "${getString(R.string.status_prefix)}${getString(state.phStatus.statusLabelRes)}"
+                    text = getString(R.string.status_format, getString(state.phStatus.statusLabelRes))
                     setTextColor(state.phStatus.statusColorRes)
                 }
                 prevPh = state.sensorData.ph
@@ -72,7 +72,7 @@ class MonitoringFragment : Fragment() {
                     decimals = 0
                 )
                 binding.tvTdsStatus.apply {
-                    text = "${getString(R.string.status_prefix)}${getString(state.tdsStatus.statusLabelRes)}"
+                    text = getString(R.string.status_format, getString(state.tdsStatus.statusLabelRes))
                     setTextColor(state.tdsStatus.statusColorRes)
                 }
                 prevTds = state.sensorData.tds.toDouble()
@@ -85,7 +85,7 @@ class MonitoringFragment : Fragment() {
                     decimals = 1
                 )
                 binding.tvTurbidityStatus.apply {
-                    text = "${getString(R.string.status_prefix)}${getString(state.turbidityStatus.statusLabelRes)}"
+                    text = getString(R.string.status_format, getString(state.turbidityStatus.statusLabelRes))
                     setTextColor(state.turbidityStatus.statusColorRes)
                 }
                 prevTurbidity = state.sensorData.turbidity

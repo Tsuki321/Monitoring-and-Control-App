@@ -24,7 +24,8 @@
     <string name="unit_ntu">NTU</string>
 
     <!-- Status labels -->
-    <string name="status_prefix">Katayuan: </string>
+    <string name="status_prefix">Katayuan:</string>
+    <string name="status_format">Katayuan: %s</string>
     <string name="status_neutral">Neutral</string>
     <string name="status_acidic">Asidiko</string>
     <string name="status_alkaline">Alkalina</string>
@@ -45,8 +46,8 @@
     <string name="sensor_status_title">Katayuan ng Sensor</string>
     <string name="btn_go_monitoring">Pumunta sa Pagmamasid</string>
     <string name="btn_go_control">Pumunta sa Kontrol</string>
-    <string name="system_active">Aktibo ang Sistema</string>
-    <string name="system_standby">Naka-standby ang Sistema</string>
+    <string name="system_active">Aktibo</string>
+    <string name="system_standby">Naka-standby</string>
     <string name="tank_full">PUNO</string>
     <string name="tank_low">MABABA</string>
     <string name="tank_percent_format">Tangke: %d%%</string>

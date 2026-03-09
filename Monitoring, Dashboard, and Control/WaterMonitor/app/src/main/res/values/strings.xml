@@ -21,7 +21,8 @@
     <string name="unit_ntu">NTU</string>
 
     <!-- Status labels -->
-    <string name="status_prefix">Status: </string>
+    <string name="status_prefix">Status:</string>
+    <string name="status_format">Status: %s</string>
     <string name="status_neutral">Neutral</string>
     <string name="status_acidic">Acidic</string>
     <string name="status_alkaline">Alkaline</string>
@@ -42,8 +43,8 @@
     <string name="sensor_status_title">Sensor Status</string>
     <string name="btn_go_monitoring">Go to Monitoring</string>
     <string name="btn_go_control">Go to Control</string>
-    <string name="system_active">System Active</string>
-    <string name="system_standby">System Standby</string>
+    <string name="system_active">Active</string>
+    <string name="system_standby">Standby</string>
     <string name="tank_full">FULL</string>
     <string name="tank_low">LOW</string>
     <string name="tank_percent_format">Tank: %d%%</string>
