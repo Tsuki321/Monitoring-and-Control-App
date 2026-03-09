@@ -66,6 +66,8 @@
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_ph_tube"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginTop="8dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
@@ -143,6 +145,8 @@
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_tds_particles"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginTop="8dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
@@ -220,8 +224,8 @@
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_turbidity_drop"
-                        android:layout_marginEnd="4dp"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginTop="8dp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 

@@ -30,7 +30,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPumpA"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/control_card_height"
+                android:layout_height="wrap_content"
                 android:layout_marginBottom="14dp"
                 android:alpha="0"
                 app:cardBackgroundColor="@color/glass_white"
@@ -41,8 +41,9 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingHorizontal="16dp">
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/control_card_height"
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/imgPumpAIcon"
@@ -96,7 +97,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPumpB"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/control_card_height"
+                android:layout_height="wrap_content"
                 android:layout_marginBottom="14dp"
                 android:alpha="0"
                 app:cardBackgroundColor="@color/glass_white"
@@ -107,8 +108,9 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingHorizontal="16dp">
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/control_card_height"
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/imgPumpBIcon"
@@ -162,7 +164,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardValveMain"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/control_card_height"
+                android:layout_height="wrap_content"
                 android:layout_marginBottom="14dp"
                 android:alpha="0"
                 app:cardBackgroundColor="@color/glass_white"
@@ -173,8 +175,9 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingHorizontal="16dp">
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/control_card_height"
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/imgValveMainIcon"
@@ -229,7 +232,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardValveBypass"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/control_card_height"
+                android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:alpha="0"
                 app:cardBackgroundColor="@color/glass_white"
@@ -240,8 +243,9 @@
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:paddingHorizontal="16dp">
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/control_card_height"
+                    android:padding="16dp">
 
                     <ImageView
                         android:id="@+id/imgValveBypassIcon"
