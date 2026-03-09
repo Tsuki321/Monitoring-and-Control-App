@@ -104,7 +104,6 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/tvPhUnit"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         android:layout_marginTop="4dp"
                         android:layout_marginBottom="4dp" />
 
@@ -183,7 +182,6 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/tvTdsUnit"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         android:layout_marginTop="4dp"
                         android:layout_marginBottom="4dp" />
 
@@ -262,7 +260,6 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/tvTurbidityUnit"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         android:layout_marginTop="4dp"
                         android:layout_marginBottom="4dp" />
 
