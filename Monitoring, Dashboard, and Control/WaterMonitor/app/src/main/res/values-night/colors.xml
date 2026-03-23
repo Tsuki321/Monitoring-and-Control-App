@@ -10,8 +10,8 @@
     <color name="bg_gradient_end">#0D1F38</color>
 
     <!-- Glassmorphism card – dark -->
-    <color name="glass_white">#30FFFFFF</color>
-    <color name="glass_white_border">#40FFFFFF</color>
+    <color name="glass_white">#33FFFFFF</color>
+    <color name="glass_white_border">#404DB8C8</color>
     <color name="card_border">#404DB8C8</color>
 
     <!-- Text colors – night -->
