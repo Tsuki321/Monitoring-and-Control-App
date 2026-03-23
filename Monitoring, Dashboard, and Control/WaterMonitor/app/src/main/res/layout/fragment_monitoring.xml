@@ -28,9 +28,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="20dp"
-            android:paddingBottom="20dp">
+            android:clipToPadding="false"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="32dp">
 
             <!-- pH Sensor Card -->
             <com.google.android.material.card.MaterialCardView
@@ -54,28 +55,27 @@
                     <TextView
                         android:id="@+id/tvPhTitle"
                         style="@style/Style.WaterMonitor.SensorTitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/sensor_ph"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/imgPhIcon"
-                        app:layout_constraintHorizontal_bias="0.0" />
+                        android:layout_marginEnd="8dp" />
 
                     <ImageView
                         android:id="@+id/imgPhIcon"
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_ph_tube"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginTop="8dp"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="@id/tvPhTitle" />
 
                     <TextView
                         android:id="@+id/tvPhValue"
                         style="@style/Style.WaterMonitor.SensorValue"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="7.00"
@@ -86,7 +86,7 @@
                     <TextView
                         android:id="@+id/tvPhUnit"
                         style="@style/Style.WaterMonitor.SensorUnit"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="@string/unit_ph"
@@ -97,7 +97,7 @@
                     <TextView
                         android:id="@+id/tvPhStatus"
                         style="@style/Style.WaterMonitor.StatusText"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="Status: Neutral"
@@ -133,28 +133,27 @@
                     <TextView
                         android:id="@+id/tvTdsTitle"
                         style="@style/Style.WaterMonitor.SensorTitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/sensor_tds"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/imgTdsIcon"
-                        app:layout_constraintHorizontal_bias="0.0" />
+                        android:layout_marginEnd="8dp" />
 
                     <ImageView
                         android:id="@+id/imgTdsIcon"
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_tds_particles"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginTop="8dp"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="@id/tvTdsTitle" />
 
                     <TextView
                         android:id="@+id/tvTdsValue"
                         style="@style/Style.WaterMonitor.SensorValue"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="150"
@@ -165,7 +164,7 @@
                     <TextView
                         android:id="@+id/tvTdsUnit"
                         style="@style/Style.WaterMonitor.SensorUnit"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="@string/unit_ppm"
@@ -176,7 +175,7 @@
                     <TextView
                         android:id="@+id/tvTdsStatus"
                         style="@style/Style.WaterMonitor.StatusText"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="Status: Excellent"
@@ -212,28 +211,27 @@
                     <TextView
                         android:id="@+id/tvTurbidityTitle"
                         style="@style/Style.WaterMonitor.SensorTitle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:text="@string/sensor_turbidity"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/imgTurbidityIcon"
-                        app:layout_constraintHorizontal_bias="0.0" />
+                        android:layout_marginEnd="8dp" />
 
                     <ImageView
                         android:id="@+id/imgTurbidityIcon"
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
                         android:src="@drawable/ic_turbidity_drop"
-                        android:layout_marginEnd="8dp"
-                        android:layout_marginTop="8dp"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="@id/tvTurbidityTitle" />
 
                     <TextView
                         android:id="@+id/tvTurbidityValue"
                         style="@style/Style.WaterMonitor.SensorValue"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="1.5"
@@ -244,7 +242,7 @@
                     <TextView
                         android:id="@+id/tvTurbidityUnit"
                         style="@style/Style.WaterMonitor.SensorUnit"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="@string/unit_ntu"
@@ -255,7 +253,7 @@
                     <TextView
                         android:id="@+id/tvTurbidityStatus"
                         style="@style/Style.WaterMonitor.StatusText"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="Status: Clear"

@@ -22,9 +22,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="20dp"
-            android:paddingBottom="24dp">
+            android:clipToPadding="false"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="24dp"
+            android:paddingBottom="32dp">
 
             <!-- Pump A Card -->
             <com.google.android.material.card.MaterialCardView
@@ -43,7 +44,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="@dimen/control_card_height"
-                    android:padding="16dp">
+                    android:padding="@dimen/card_padding">
 
                     <ImageView
                         android:id="@+id/imgPumpAIcon"
@@ -111,7 +112,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="@dimen/control_card_height"
-                    android:padding="16dp">
+                    android:padding="@dimen/card_padding">
 
                     <ImageView
                         android:id="@+id/imgPumpBIcon"
@@ -179,7 +180,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="@dimen/control_card_height"
-                    android:padding="16dp">
+                    android:padding="@dimen/card_padding">
 
                     <ImageView
                         android:id="@+id/imgValveMainIcon"
@@ -248,7 +249,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="@dimen/control_card_height"
-                    android:padding="16dp">
+                    android:padding="@dimen/card_padding">
 
                     <ImageView
                         android:id="@+id/imgValveBypassIcon"
@@ -316,7 +317,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center"
-                    android:padding="16dp">
+                    android:padding="@dimen/card_padding">
 
                     <TextView
                         android:layout_width="wrap_content"

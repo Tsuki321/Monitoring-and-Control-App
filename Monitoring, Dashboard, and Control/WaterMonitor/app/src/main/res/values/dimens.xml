@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Card -->
-    <dimen name="card_corner_radius">20dp</dimen>
+    <dimen name="card_corner_radius">24dp</dimen>
     <dimen name="card_elevation">8dp</dimen>
-    <dimen name="card_margin">12dp</dimen>
-    <dimen name="card_padding">16dp</dimen>
+    <dimen name="card_margin">16dp</dimen>
+    <dimen name="card_padding">20dp</dimen>
 
     <!-- Sensor value text -->
     <dimen name="sensor_value_text_size">52sp</dimen>
 
     <!-- Top bar -->
     <dimen name="top_bar_height">64dp</dimen>
-    <dimen name="top_bar_padding_horizontal">16dp</dimen>
+    <dimen name="top_bar_padding_horizontal">24dp</dimen>
 
     <!-- Bottom nav -->
     <dimen name="bottom_nav_height">80dp</dimen>
