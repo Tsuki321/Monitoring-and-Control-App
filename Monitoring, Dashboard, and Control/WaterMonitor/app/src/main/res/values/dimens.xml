@@ -2,7 +2,7 @@
 <resources>
     <!-- Card -->
     <dimen name="card_corner_radius">24dp</dimen>
-    <dimen name="card_elevation">8dp</dimen>
+    <dimen name="card_elevation">0dp</dimen>
     <dimen name="card_margin">16dp</dimen>
     <dimen name="card_padding">20dp</dimen>
 
@@ -32,5 +32,5 @@
     <dimen name="status_dot_size">10dp</dimen>
 
     <!-- Control card -->
-    <dimen name="control_card_height">88dp</dimen>
+    <dimen name="control_card_height">96dp</dimen>
 </resources>
