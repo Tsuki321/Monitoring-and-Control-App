@@ -8,7 +8,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentRegisterBinding
 
@@ -46,18 +47,33 @@ class RegisterFragment : Fragment() {
 
             binding.btnRegister.isEnabled = false
 
-            val db = FirebaseFirestore.getInstance()
-            val userMap = hashMapOf(
-                "email" to email,
-                "username" to user,
-                "password" to pass
-            )
+            val auth = FirebaseAuth.getInstance()
+            auth.createUserWithEmailAndPassword(email, pass)
+                .addOnSuccessListener { authResult ->
+                    val firebaseUser = authResult.user
+                    if (firebaseUser != null) {
+                        val profileUpdates = UserProfileChangeRequest.Builder()
+                            .setDisplayName(user)
+                            .build()
 
-            db.collection("users").document(email.lowercase()).set(userMap)
-                .addOnSuccessListener {
-                    if (context != null) {
-                        Snackbar.make(view, "Registration successful!", Snackbar.LENGTH_SHORT).show()
-                        findNavController().popBackStack()
+                        firebaseUser.updateProfile(profileUpdates)
+                            .addOnCompleteListener { profileTask ->
+                                binding.btnRegister.isEnabled = true
+                                if (context != null) {
+                                    if (profileTask.isSuccessful) {
+                                        Snackbar.make(view, "Registration successful!", Snackbar.LENGTH_SHORT).show()
+                                        findNavController().popBackStack()
+                                    } else {
+                                        Snackbar.make(view, "Error setting username: ${profileTask.exception?.message}", Snackbar.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                    } else {
+                        binding.btnRegister.isEnabled = true
+                        if (context != null) {
+                            Snackbar.make(view, "Registration successful!", Snackbar.LENGTH_SHORT).show()
+                            findNavController().popBackStack()
+                        }
                     }
                 }
                 .addOnFailureListener { e ->

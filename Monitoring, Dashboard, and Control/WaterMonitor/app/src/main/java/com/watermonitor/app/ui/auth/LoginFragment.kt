@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentLoginBinding
 
@@ -45,17 +45,12 @@ class LoginFragment : Fragment() {
 
             binding.btnLogin.isEnabled = false
 
-            val db = FirebaseFirestore.getInstance()
-            db.collection("users").document(email.lowercase()).get()
-                .addOnSuccessListener { document ->
+            FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass)
+                .addOnSuccessListener {
                     binding.btnLogin.isEnabled = true
                     if (context != null) {
-                        if (document.exists() && document.getString("password") == pass) {
-                            Snackbar.make(view, "Login successful!", Snackbar.LENGTH_SHORT).show()
-                            findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
-                        } else {
-                            Snackbar.make(view, "Invalid email or password", Snackbar.LENGTH_LONG).show()
-                        }
+                        Snackbar.make(view, "Login successful!", Snackbar.LENGTH_SHORT).show()
+                        findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
                     }
                 }
                 .addOnFailureListener { e ->
