@@ -8,6 +8,10 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.watermonitor.app.R
+import androidx.navigation.fragment.findNavController
+import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.firestore.FirebaseFirestore
+import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentLoginBinding
 
 class LoginFragment : Fragment() {
@@ -33,21 +37,35 @@ class LoginFragment : Fragment() {
         }
 
         binding.btnLogin.setOnClickListener {
-            // PLACEHOLDER BEHAVIOR: 
-            // Skip verification and navigate directly to Home (Dashboard)
-            
-            /* TODO: Firebase Implementation
-            val email = binding.etEmail.text.toString()
-            val pass = binding.etPassword.text.toString()
-            FirebaseAuth.getInstance().signInWithEmailAndPassword(email, pass)
-                .addOnSuccessListener {
-                    findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
-                }.addOnFailureListener {
-                    // Show error
+            val email = binding.etEmail.text.toString().trim()
+            val pass = binding.etPassword.text.toString().trim()
+
+            if (email.isEmpty() || pass.isEmpty()) {
+                Snackbar.make(view, "Please enter email and password", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            binding.btnLogin.isEnabled = false
+
+            val db = FirebaseFirestore.getInstance()
+            db.collection("users").document(email.lowercase()).get()
+                .addOnSuccessListener { document ->
+                    binding.btnLogin.isEnabled = true
+                    if (context != null) {
+                        if (document.exists() && document.getString("password") == pass) {
+                            Snackbar.make(view, "Login successful!", Snackbar.LENGTH_SHORT).show()
+                            findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+                        } else {
+                            Snackbar.make(view, "Invalid email or password", Snackbar.LENGTH_LONG).show()
+                        }
+                    }
                 }
-            */
-            
-            findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+                .addOnFailureListener { e ->
+                    binding.btnLogin.isEnabled = true
+                    if (context != null) {
+                        Snackbar.make(view, "Error: ${e.message}", Snackbar.LENGTH_LONG).show()
+                    }
+                }
         }
 
         binding.tvGoToRegister.setOnClickListener {

@@ -8,6 +8,10 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.watermonitor.app.R
+import androidx.navigation.fragment.findNavController
+import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.firestore.FirebaseFirestore
+import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentRegisterBinding
 
 class RegisterFragment : Fragment() {
@@ -33,23 +37,37 @@ class RegisterFragment : Fragment() {
         }
 
         binding.btnRegister.setOnClickListener {
-            // PLACEHOLDER BEHAVIOR:
-            // Just simulate a successful registration, go back to login screen.
-            
-            /* TODO: Firebase Implementation
-            val email = binding.etEmail.text.toString()
-            val pass = binding.etPassword.text.toString()
-            val user = binding.etUsername.text.toString()
-            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, pass)
-                .addOnSuccessListener { authResult ->
-                    // Store user profile details in Firestore/RTDB
-                    // findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment) 
-                    // or popBackStack()
+            val email = binding.etEmail.text.toString().trim()
+            val pass = binding.etPassword.text.toString().trim()
+            val user = binding.etUsername.text.toString().trim()
+
+            if (email.isEmpty() || pass.isEmpty() || user.isEmpty()) {
+                Snackbar.make(view, "Please fill all fields", Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            binding.btnRegister.isEnabled = false
+
+            val db = FirebaseFirestore.getInstance()
+            val userMap = hashMapOf(
+                "email" to email,
+                "username" to user,
+                "password" to pass
+            )
+
+            db.collection("users").document(email.lowercase()).set(userMap)
+                .addOnSuccessListener {
+                    if (context != null) {
+                        Snackbar.make(view, "Registration successful!", Snackbar.LENGTH_SHORT).show()
+                        findNavController().popBackStack()
+                    }
                 }
-            */
-            
-            // For placeholder, we will just return to login
-            findNavController().popBackStack()
+                .addOnFailureListener { e ->
+                    binding.btnRegister.isEnabled = true
+                    if (context != null) {
+                        Snackbar.make(view, "Error: ${e.message}", Snackbar.LENGTH_LONG).show()
+                    }
+                }
         }
 
         binding.tvGoToLogin.setOnClickListener {
