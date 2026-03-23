@@ -62,10 +62,12 @@
                         android:id="@+id/imgPhIcon"
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
+                        android:layout_marginEnd="8dp"
                         android:src="@drawable/ic_ph_tube"
+                        app:layout_constraintBottom_toBottomOf="@id/tvPhTitle"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="@id/tvPhTitle" />
+                        app:layout_constraintVertical_bias="0.0" />
 
                     <TextView
                         android:id="@+id/tvPhValue"
@@ -140,10 +142,12 @@
                         android:id="@+id/imgTdsIcon"
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
+                        android:layout_marginEnd="8dp"
                         android:src="@drawable/ic_tds_particles"
+                        app:layout_constraintBottom_toBottomOf="@id/tvTdsTitle"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="@id/tvTdsTitle" />
+                        app:layout_constraintVertical_bias="0.0" />
 
                     <TextView
                         android:id="@+id/tvTdsValue"
@@ -218,10 +222,12 @@
                         android:id="@+id/imgTurbidityIcon"
                         android:layout_width="@dimen/sensor_icon_size"
                         android:layout_height="@dimen/sensor_icon_size"
+                        android:layout_marginEnd="8dp"
                         android:src="@drawable/ic_turbidity_drop"
+                        app:layout_constraintBottom_toBottomOf="@id/tvTurbidityTitle"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="@id/tvTurbidityTitle" />
+                        app:layout_constraintVertical_bias="0.0" />
 
                     <TextView
                         android:id="@+id/tvTurbidityValue"
