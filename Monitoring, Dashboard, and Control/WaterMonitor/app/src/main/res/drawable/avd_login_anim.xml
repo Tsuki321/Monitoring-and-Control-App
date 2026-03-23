@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_auth_key">
+
+    <!-- Bouncing scale in for the group -->
+    <target android:name="keyGroup">
+        <aapt:attr name="android:animation" xmlns:aapt="http://schemas.android.com/aapt">
+            <set android:ordering="together">
+                <!-- Scale X -->
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:duration="600"
+                    android:interpolator="@android:anim/overshoot_interpolator" />
+                <!-- Scale Y -->
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:duration="600"
+                    android:interpolator="@android:anim/overshoot_interpolator" />
+            </set>
+        </aapt:attr>
+    </target>
+
+    <!-- Fade in sparkle -->
+    <target android:name="sparklePath">
+        <aapt:attr name="android:animation" xmlns:aapt="http://schemas.android.com/aapt">
+            <set android:ordering="sequentially">
+                <objectAnimator
+                    android:propertyName="fillColor"
+                    android:valueFrom="#00FFFFFF"
+                    android:valueTo="#FFFFFFFF"
+                    android:startOffset="400"
+                    android:duration="400" />
+                <objectAnimator
+                    android:propertyName="fillColor"
+                    android:valueFrom="#FFFFFFFF"
+                    android:valueTo="#00FFFFFF"
+                    android:duration="400" />
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>

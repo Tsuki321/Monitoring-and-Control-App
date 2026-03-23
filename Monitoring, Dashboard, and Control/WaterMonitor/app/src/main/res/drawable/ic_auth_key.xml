@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Group for animation: scale in -->
+    <group
+        android:name="keyGroup"
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.0"
+        android:scaleY="0.0">
+        
+        <!-- Outer circle or shield background -->
+        <path
+            android:pathData="M12,2 C17.52,2 22,6.48 22,12 C22,17.52 17.52,22 12,22 C6.48,22 2,17.52 2,12 C2,6.48 6.48,2 12,2 Z"
+            android:fillColor="#1A4DB8C8" />
+        
+        <!-- Inner keyhole -->
+        <path
+            android:name="keyPath"
+            android:pathData="M12,7 C10.34,7 9,8.34 9,10 C9,11.25 9.77,12.31 10.9,12.78 L10.9,17 L13.1,17 L13.1,12.78 C14.23,12.31 15,11.25 15,10 C15,8.34 13.66,7 12,7 Z"
+            android:fillColor="#0D7A8A"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="0.5" />
+            
+        <!-- A small animated shine or sparkle effect -->
+        <path
+            android:name="sparklePath"
+            android:pathData="M12,3 L12.5,4.5 L14,5 L12.5,5.5 L12,7 L11.5,5.5 L10,5 L11.5,4.5 Z"
+            android:fillColor="#00FFFFFF" /> <!-- animated to opacity 1 -->
+    </group>
+</vector>

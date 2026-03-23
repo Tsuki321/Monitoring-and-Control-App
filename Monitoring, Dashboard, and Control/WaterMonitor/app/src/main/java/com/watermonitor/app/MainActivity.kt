@@ -84,13 +84,21 @@ class MainActivity : AppCompatActivity() {
                 R.id.controlFragment -> getString(R.string.title_control)
                 R.id.settingsFragment -> getString(R.string.title_settings)
                 R.id.aboutFragment -> getString(R.string.title_about)
+                R.id.loginFragment -> getString(R.string.title_login)
+                R.id.registerFragment -> getString(R.string.title_register)
                 else -> getString(R.string.app_name)
             }
 
-            // Hide bottom nav on Settings or About pages
+            // Hide bottom nav on Settings, About, and Auth pages
             val isSecondaryPage = destination.id == R.id.settingsFragment ||
                     destination.id == R.id.aboutFragment
-            binding.bottomNav.visibility = if (isSecondaryPage) View.GONE else View.VISIBLE
+            val isAuthPage = destination.id == R.id.loginFragment ||
+                    destination.id == R.id.registerFragment
+                    
+            binding.bottomNav.visibility = if (isSecondaryPage || isAuthPage) View.GONE else View.VISIBLE
+            
+            // Hide top bar on Auth pages
+            binding.topBar.visibility = if (isAuthPage) View.GONE else View.VISIBLE
 
             // Show back arrow on secondary pages, gear icon on main pages
             binding.btnSettings.setImageResource(

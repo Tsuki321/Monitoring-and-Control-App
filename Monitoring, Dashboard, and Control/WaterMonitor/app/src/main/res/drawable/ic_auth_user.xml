@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Group for animation: scale in -->
+    <group
+        android:name="userGroup"
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.0"
+        android:scaleY="0.0">
+
+        <!-- Background circle -->
+        <path
+            android:pathData="M12,2 C17.52,2 22,6.48 22,12 C22,17.52 17.52,22 12,22 C6.48,22 2,17.52 2,12 C2,6.48 6.48,2 12,2 Z"
+            android:fillColor="#1A4DB8C8" />
+            
+        <!-- Person Icon -->
+        <path
+            android:name="personPath"
+            android:pathData="M12,4 C9.79,4 8,5.79 8,8 C8,10.21 9.79,12 12,12 C14.21,12 16,10.21 16,8 C16,5.79 14.21,4 12,4 Z M12,14 C9.33,14 4,15.34 4,18 L4,20 L20,20 L20,18 C20,15.34 14.67,14 12,14 Z"
+            android:fillColor="#4DB8C8" />
+            
+        <!-- Plus Sign (For register) -->
+        <path
+            android:name="plusPath"
+            android:pathData="M17,8 L17,6 L19,6 L19,8 L21,8 L21,10 L19,10 L19,12 L17,12 L17,10 L15,10 L15,8 Z"
+            android:fillColor="#0D7A8A" />
+    </group>
+</vector>

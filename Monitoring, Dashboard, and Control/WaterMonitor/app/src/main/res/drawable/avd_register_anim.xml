@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_auth_user">
+
+    <!-- Bouncing scale in for the group -->
+    <target android:name="userGroup">
+        <aapt:attr name="android:animation" xmlns:aapt="http://schemas.android.com/aapt">
+            <set android:ordering="together">
+                <!-- Scale X -->
+                <objectAnimator
+                    android:propertyName="scaleX"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:duration="600"
+                    android:interpolator="@android:anim/overshoot_interpolator" />
+                <!-- Scale Y -->
+                <objectAnimator
+                    android:propertyName="scaleY"
+                    android:valueFrom="0.0"
+                    android:valueTo="1.0"
+                    android:duration="600"
+                    android:interpolator="@android:anim/overshoot_interpolator" />
+            </set>
+        </aapt:attr>
+    </target>
+
+    <!-- Bounce the plus sign separately -->
+    <target android:name="plusPath">
+        <aapt:attr name="android:animation" xmlns:aapt="http://schemas.android.com/aapt">
+            <set android:ordering="together">
+                <objectAnimator
+                    android:propertyName="fillColor"
+                    android:valueFrom="#007A8A"
+                    android:valueTo="#0D7A8A"
+                    android:duration="500" />
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>
