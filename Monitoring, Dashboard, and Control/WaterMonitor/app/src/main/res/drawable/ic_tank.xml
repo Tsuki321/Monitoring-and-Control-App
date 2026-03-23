@@ -20,7 +20,7 @@
 
     <!-- Tank bottom outlet pipe -->
     <path
-        android:pathData="M17,44 L17,47 M23,44 L23,47"
+        android:pathData="M17,44 L17,46 M23,44 L23,46"
         android:fillColor="#00000000"
         android:strokeColor="#1A237E"
         android:strokeWidth="2"
