@@ -12,8 +12,12 @@ android {
         applicationId = "com.watermonitor.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        
+        val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+        versionCode = runNumber ?: 2
+        versionName = if (runNumber != null) "1.1.$runNumber" else "1.1.0"
+        
+        resValue("string", "about_version", "Version $versionName")
     }
 
     val storeFilePath = System.getenv("SIGNING_STORE_FILE")
@@ -79,4 +83,5 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation("com.facebook.android:facebook-login:18.2.3")
 }

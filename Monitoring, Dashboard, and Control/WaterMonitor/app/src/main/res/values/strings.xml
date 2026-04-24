@@ -80,7 +80,6 @@
     <string name="ok">OK</string>
 
     <!-- About -->
-    <string name="about_version">Version 1.0</string>
     <string name="about_description_title">About</string>
     <string name="about_description">HydroSense is a smart water monitoring and control application that provides real-time sensor data, tank level monitoring, and remote control of pumps and valves.</string>
     <string name="about_developers_title">Developers</string>
@@ -117,5 +116,10 @@
     <string name="auth_or_divider">— OR —</string>
     <string name="auth_google_login">Continue with Google</string>
     <string name="auth_facebook_login">Continue with Facebook</string>
+
+    <!-- Facebook Info -->
+    <string name="facebook_app_id">975973774805992</string>
+    <string name="facebook_client_token">78eb357ce3e037649a04e15059301840</string>
+    <string name="facebook_login_protocol_scheme">fb975973774805992</string>
 
 </resources>

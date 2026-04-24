@@ -18,6 +18,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.auth.FacebookAuthProvider
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import android.content.Intent
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentRegisterBinding
 import kotlinx.coroutines.launch
@@ -26,6 +33,7 @@ class RegisterFragment : Fragment() {
 
     private var _binding: FragmentRegisterBinding? = null
     private val bindingSafe get() = _binding
+    private val callbackManager = CallbackManager.Factory.create()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -45,6 +53,19 @@ class RegisterFragment : Fragment() {
         if (drawable is Animatable) {
             drawable.start()
         }
+
+        // Register CallbackManager for Facebook Login
+        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+            override fun onSuccess(result: LoginResult) {
+                firebaseAuthWithFacebook(result.accessToken.token)
+            }
+            override fun onCancel() {
+                showError("Facebook login cancelled")
+            }
+            override fun onError(error: FacebookException) {
+                showError("Facebook login error: ${error.message}")
+            }
+        })
 
         binding.btnRegister.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
@@ -139,25 +160,7 @@ class RegisterFragment : Fragment() {
     }
 
     private fun signInWithFacebook() {
-        val provider = OAuthProvider.newBuilder("facebook.com")
-        val auth = FirebaseAuth.getInstance()
-        
-        val pendingResultTask = auth.pendingAuthResult
-        if (pendingResultTask != null) {
-            pendingResultTask.addOnSuccessListener {
-                bindingSafe?.let { findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment) }
-            }.addOnFailureListener { e ->
-                showError("Facebook authentication failed: ${e.message}")
-            }
-        } else {
-            auth.startActivityForSignInWithProvider(requireActivity(), provider.build())
-                .addOnSuccessListener {
-                    bindingSafe?.let { findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment) }
-                }
-                .addOnFailureListener { e ->
-                    showError("Facebook authentication failed: ${e.message}")
-                }
-        }
+        LoginManager.getInstance().logInWithReadPermissions(this, listOf("email", "public_profile"))
     }
 
     private fun firebaseAuthWithGoogle(idToken: String) {
@@ -174,10 +177,30 @@ class RegisterFragment : Fragment() {
             }
     }
 
+    private fun firebaseAuthWithFacebook(token: String) {
+        val credential = FacebookAuthProvider.getCredential(token)
+        FirebaseAuth.getInstance().signInWithCredential(credential)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    bindingSafe?.let {
+                        findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
+                    }
+                } else {
+                    showError("Facebook authentication failed: ${task.exception?.message}")
+                }
+            }
+    }
+
     private fun showError(message: String) {
         if (context != null && view != null && isAdded) {
             Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG).show()
         }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        callbackManager.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onDestroyView() {
