@@ -1,4 +1,4 @@
-# 💧 WaterMonitor — Smart Water Monitoring & Control
+# 💧 HydroSense — Smart Water Monitoring & Control
 
 [![Android CI](https://github.com/Tsuki321/Monitoring-and-Control-App/actions/workflows/android_ci.yml/badge.svg)](https://github.com/Tsuki321/Monitoring-and-Control-App/actions/workflows/android_ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
