@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "974271372625",
+    "project_id": "database-for-hydrosense",
+    "storage_bucket": "database-for-hydrosense.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:974271372625:android:37c595a0ef17f00a4c0770",
+        "android_client_info": {
+          "package_name": "com.watermonitor.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "974271372625-2jvk6ph767orfl6ui99tgeo931nh24m7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.watermonitor.app",
+            "certificate_hash": "3b1b402d75df99a8cccd1c123398f2a2163ad53b"
+          }
+        },
+        {
+          "client_id": "974271372625-06pru7833l76r1bcabao03dblqril1ah.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpgZoOhZsgLjTC6Myfm4ir3bTW-O_8XyU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "974271372625-06pru7833l76r1bcabao03dblqril1ah.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

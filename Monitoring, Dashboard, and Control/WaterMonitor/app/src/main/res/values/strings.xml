@@ -107,4 +107,15 @@
     <string name="auth_register_button">Create Account</string>
     <string name="auth_go_to_register">Don\'t have an account? Register here.</string>
     <string name="auth_go_to_login">Already have an account? Login here.</string>
+
+    <!-- Email Verification -->
+    <string name="auth_verify_email_sent">Verification email sent. Please check your inbox.</string>
+    <string name="auth_email_not_verified">Please verify your email before logging in.</string>
+    <string name="auth_resend_verification">Resend</string>
+
+    <!-- Social Login -->
+    <string name="auth_or_divider">— OR —</string>
+    <string name="auth_google_login">Continue with Google</string>
+    <string name="auth_facebook_login">Continue with Facebook</string>
+
 </resources>

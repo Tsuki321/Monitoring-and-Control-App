@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.util.AttributeSet
+import android.view.Choreographer
 import android.view.View
 import android.view.animation.LinearInterpolator
 import androidx.core.content.ContextCompat
@@ -43,22 +44,46 @@ class OceanWaveView @JvmOverloads constructor(
     private var phase2 = 0f
     private var phase3 = 0f
 
-    private val animator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
-        duration = 4000
-        repeatCount = ValueAnimator.INFINITE
-        repeatMode = ValueAnimator.RESTART
-        interpolator = LinearInterpolator()
-        addUpdateListener { anim ->
-            val v = anim.animatedValue as Float
-            phase1 = v
-            phase2 = v * 1.3f
-            phase3 = v * 0.7f
+    private var startTimeNanos = 0L
+    private var isAnimating = false
+
+    private val frameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!isAnimating) return
+            
+            if (startTimeNanos == 0L) startTimeNanos = frameTimeNanos
+            val elapsed = (frameTimeNanos - startTimeNanos) / 1_000_000_000f // seconds
+            
+            // phase multiplier * speed
+            // Original animator went 0..2*PI in 4000ms (= 1.57 rad/sec roughly)
+            // Original phases: phase1 = v, phase2 = v*1.3, phase3 = v*0.7
+            val baseSpeed = 1.57f
+            phase1 = elapsed * baseSpeed
+            phase2 = elapsed * (baseSpeed * 1.3f)
+            phase3 = elapsed * (baseSpeed * 0.7f)
+            
             invalidate()
+            Choreographer.getInstance().postFrameCallback(this)
         }
     }
 
     init {
-        if (!isInEditMode) animator.start()
+        if (!isInEditMode) {
+            startAnimation()
+        }
+    }
+
+    private fun startAnimation() {
+        if (!isAnimating) {
+            isAnimating = true
+            startTimeNanos = 0L
+            Choreographer.getInstance().postFrameCallback(frameCallback)
+        }
+    }
+
+    private fun stopAnimation() {
+        isAnimating = false
+        Choreographer.getInstance().removeFrameCallback(frameCallback)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -102,11 +127,11 @@ class OceanWaveView @JvmOverloads constructor(
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        animator.cancel()
+        stopAnimation()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (!animator.isRunning) animator.start()
+        if (!isInEditMode) startAnimation()
     }
 }
