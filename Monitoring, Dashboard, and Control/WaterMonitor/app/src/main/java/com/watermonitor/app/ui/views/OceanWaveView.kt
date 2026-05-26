@@ -45,22 +45,25 @@ class OceanWaveView @JvmOverloads constructor(
     private var phase3 = 0f
 
     private var isAnimating = false
+    private var lastFrameTimeNanos = 0L
 
     private val frameCallback = object : Choreographer.FrameCallback {
         override fun doFrame(frameTimeNanos: Long) {
             if (!isAnimating) return
-            
-            // Use global time to keep animation continuous across fragment transitions
-            val elapsed = System.currentTimeMillis() / 1000.0 // seconds
-            
-            // phase multiplier * speed
-            // Original animator went 0..2*PI in 4000ms (= 1.57 rad/sec roughly)
-            // Original phases: phase1 = v, phase2 = v*1.3, phase3 = v*0.7
+
+            if (lastFrameTimeNanos == 0L) {
+                lastFrameTimeNanos = frameTimeNanos
+            }
+
+            val deltaSeconds = (frameTimeNanos - lastFrameTimeNanos) / 1_000_000_000.0
+            lastFrameTimeNanos = frameTimeNanos
+
             val baseSpeed = 1.57
-            phase1 = (elapsed * baseSpeed).toFloat()
-            phase2 = (elapsed * (baseSpeed * 1.3)).toFloat()
-            phase3 = (elapsed * (baseSpeed * 0.7)).toFloat()
-            
+            val twoPi = (2 * Math.PI).toFloat()
+            phase1 = (phase1 + (deltaSeconds * baseSpeed).toFloat()) % twoPi
+            phase2 = (phase2 + (deltaSeconds * baseSpeed * 1.3).toFloat()) % twoPi
+            phase3 = (phase3 + (deltaSeconds * baseSpeed * 0.7).toFloat()) % twoPi
+
             invalidate()
             Choreographer.getInstance().postFrameCallback(this)
         }
@@ -81,6 +84,7 @@ class OceanWaveView @JvmOverloads constructor(
 
     private fun stopAnimation() {
         isAnimating = false
+        lastFrameTimeNanos = 0L
         Choreographer.getInstance().removeFrameCallback(frameCallback)
     }
 
