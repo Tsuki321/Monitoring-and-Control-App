@@ -20,6 +20,7 @@
     <color name="text_medium">#1E4A6E</color>
     <color name="text_light">#FFFFFF</color>
     <color name="text_on_glass">#0D2B4E</color>
+    <color name="text_secondary">#607D8B</color>
 
     <!-- Status colors -->
     <color name="status_green">#2ECC71</color>
