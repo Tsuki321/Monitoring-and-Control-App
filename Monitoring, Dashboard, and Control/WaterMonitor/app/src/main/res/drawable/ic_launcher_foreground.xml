@@ -5,31 +5,54 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Water drop shape -->
+    <!-- Main water droplet - gradient from light blue to darker blue -->
     <path
-        android:fillColor="#5AC8FA"
-        android:pathData="M54,20
-            C54,20 30,50 30,65
-            C30,79 41,88 54,88
-            C67,88 78,79 78,65
-            C78,50 54,20 54,20 Z" />
+        android:fillColor="#1E9FE8"
+        android:pathData="M54,24
+            C54,24 32,52 32,68
+            C32,82 41.6,92 54,92
+            C66.4,92 76,82 76,68
+            C76,52 54,24 54,24 Z" />
 
-    <!-- Shine highlight on the drop -->
+    <!-- Inner gradient layer for depth -->
     <path
-        android:fillColor="#AADEFC"
-        android:pathData="M44,48
-            C44,48 38,58 38,65
-            C38,66 39,67 40,66.5
-            C41,66 46,56 46,49
-            C46,47 44,47 44,48 Z" />
+        android:fillColor="#2BB0FF"
+        android:fillAlpha="0.8"
+        android:pathData="M54,28
+            C54,28 36,52 36,66
+            C36,78 43.6,88 54,88
+            C64.4,88 72,78 72,66
+            C72,52 54,28 54,28 Z" />
 
-    <!-- Wave inside drop (bottom fill) -->
+    <!-- Highlight on top-left -->
     <path
-        android:fillColor="#1A6BAF"
-        android:pathData="M30,68
-            C34,62 38,74 43,68
-            C48,62 52,74 57,68
-            C62,62 66,74 71,68
-            L78,68 L78,88 L30,88 Z" />
+        android:fillColor="#B3E5FC"
+        android:fillAlpha="0.9"
+        android:pathData="M46,42
+            C46,42 40,52 40,60
+            C40,64 41.5,67 44,67
+            C45,67 45.5,66 45.5,65
+            C45.5,62 48,48 48,44
+            C48,41 46,40.5 46,42 Z" />
 
-</vector>
+    <!-- Small highlight dot on top -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.6"
+        android:pathData="M49,38
+            C49,38 47,42 47,45
+            C47,47 48,48 49,48
+            C50,48 51,47 51,45
+            C51,42 49,38 49,38 Z" />
+
+    <!-- Bottom reflection/shine -->
+    <path
+        android:fillColor="#E0F7FF"
+        android:fillAlpha="0.5"
+        android:pathData="M54,78
+            C54,78 50,80 46,83
+            C44,84 43,86 44,87
+            C45,88 48,87 52,85
+            C56,83 58,81 58,80
+            C58,79 56,78 54,78 Z" />
+
