@@ -5,9 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentSettingsBinding
 import com.watermonitor.app.utils.LocaleHelper
@@ -34,6 +36,7 @@ class SettingsFragment : Fragment() {
         setupDarkModeToggle()
         setupLanguageSpinner()
         setupAboutButton()
+        setupLogoutButton()
     }
 
     private fun setupDarkModeToggle() {
@@ -88,6 +91,20 @@ class SettingsFragment : Fragment() {
     private fun setupAboutButton() {
         binding.cardAbout.setOnClickListener {
             findNavController().navigate(R.id.action_settingsFragment_to_aboutFragment)
+        }
+    }
+
+    private fun setupLogoutButton() {
+        binding.cardLogout.setOnClickListener {
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.settings_logout)
+                .setMessage(R.string.settings_logout_confirm)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    FirebaseAuth.getInstance().signOut()
+                    findNavController().navigate(R.id.action_settingsFragment_to_loginFragment)
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
         }
     }
 

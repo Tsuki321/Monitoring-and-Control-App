@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
+import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -29,6 +31,9 @@ class MainActivity : AppCompatActivity() {
             clockHandler.postDelayed(this, 30_000)
         }
     }
+
+    private var backPressedOnce = false
+    private val backPressHandler = Handler(Looper.getMainLooper())
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
@@ -67,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupNavigation()
+        setupBackPressHandler()
         updateClock()
         clockHandler.postDelayed(clockRunnable, 30_000)
     }
@@ -126,6 +132,44 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupBackPressHandler() {
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.navHostFragment) as NavHostFragment
+        val navController = navHostFragment.navController
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val currentDestination = navController.currentDestination?.id
+
+                // If on main screens (Dashboard, Monitoring, Control), handle double-tap to exit
+                if (currentDestination == R.id.dashboardFragment ||
+                    currentDestination == R.id.monitoringFragment ||
+                    currentDestination == R.id.controlFragment) {
+
+                    if (backPressedOnce) {
+                        // Second press - exit app
+                        finish()
+                        return
+                    }
+
+                    // First press - show toast
+                    backPressedOnce = true
+                    Toast.makeText(this@MainActivity, "Press back again to exit", Toast.LENGTH_SHORT).show()
+
+                    // Reset after 2 seconds
+                    backPressHandler.postDelayed({
+                        backPressedOnce = false
+                    }, 2000)
+                } else {
+                    // For other screens, use default navigation behavior
+                    if (!navController.navigateUp()) {
+                        finish()
+                    }
+                }
+            }
+        })
+    }
+
     private fun updateClock() {
         val formatter = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
         binding.tvDateTime.text = formatter.format(Date())
@@ -134,6 +178,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         clockHandler.removeCallbacks(clockRunnable)
+        backPressHandler.removeCallbacksAndMessages(null)
     }
 }
 
