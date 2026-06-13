@@ -179,13 +179,39 @@ class LoginFragment : Fragment() {
     }
 
     private fun fastSignIn(uid: String) {
+        val savedAccount = AccountManager.getSavedAccounts(requireContext()).firstOrNull { it.uid == uid }
+
+        if (savedAccount == null) {
+            showError("Account not found")
+            return
+        }
+
         // Check if this account is still logged in to Firebase
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser?.uid == uid) {
             // Already logged in
             findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
-        } else {
-            showError("Please re-authenticate with this account")
+            return
+        }
+
+        // Need to re-authenticate based on provider
+        when (savedAccount.provider) {
+            AuthProvider.GOOGLE -> {
+                showError("Please sign in with Google to continue")
+                // Trigger Google sign-in automatically
+                signInWithGoogle()
+            }
+            AuthProvider.FACEBOOK -> {
+                showError("Please sign in with Facebook to continue")
+                // Trigger Facebook sign-in automatically
+                signInWithFacebook()
+            }
+            AuthProvider.EMAIL -> {
+                // For email, pre-fill the email field
+                binding?.etEmail?.setText(savedAccount.email)
+                binding?.etPassword?.requestFocus()
+                showError("Please enter your password")
+            }
         }
     }
 
