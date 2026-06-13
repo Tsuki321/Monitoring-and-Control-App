@@ -11,6 +11,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.watermonitor.app.databinding.ActivityMainBinding
 import com.watermonitor.app.utils.LocaleHelper
 import com.watermonitor.app.utils.ThemeHelper
@@ -74,6 +75,14 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
+
+        // Check if user is already logged in
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            // User is logged in, navigate to dashboard
+            navController.navigate(R.id.dashboardFragment)
+        }
+
         binding.bottomNav.setupWithNavController(navController)
 
         // Update title, bottom nav visibility, and top-bar button based on destination
@@ -94,9 +103,9 @@ class MainActivity : AppCompatActivity() {
                     destination.id == R.id.aboutFragment
             val isAuthPage = destination.id == R.id.loginFragment ||
                     destination.id == R.id.registerFragment
-                    
+
             binding.bottomNav.visibility = if (isSecondaryPage || isAuthPage) View.GONE else View.VISIBLE
-            
+
             // Hide top bar on Auth pages
             binding.topBar.visibility = if (isAuthPage) View.GONE else View.VISIBLE
 

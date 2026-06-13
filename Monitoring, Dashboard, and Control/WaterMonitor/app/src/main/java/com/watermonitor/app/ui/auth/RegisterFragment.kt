@@ -26,7 +26,9 @@ import com.facebook.login.LoginManager
 import com.facebook.login.LoginResult
 import android.content.Intent
 import com.watermonitor.app.R
+import com.watermonitor.app.data.model.AuthProvider
 import com.watermonitor.app.databinding.FragmentRegisterBinding
+import com.watermonitor.app.utils.AccountManager
 import kotlinx.coroutines.launch
 
 class RegisterFragment : Fragment() {
@@ -92,7 +94,7 @@ class RegisterFragment : Fragment() {
                             .addOnCompleteListener { profileTask ->
                                 val currentBinding = bindingSafe ?: return@addOnCompleteListener
                                 currentBinding.btnRegister.isEnabled = true
-                                
+
                                 if (profileTask.isSuccessful) {
                                     firebaseUser.sendEmailVerification()
                                     FirebaseAuth.getInstance().signOut()
@@ -169,6 +171,10 @@ class RegisterFragment : Fragment() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     bindingSafe?.let {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user != null) {
+                            AccountManager.saveAccount(requireContext(), user, AuthProvider.GOOGLE)
+                        }
                         findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
                     }
                 } else {
@@ -183,6 +189,10 @@ class RegisterFragment : Fragment() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     bindingSafe?.let {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user != null) {
+                            AccountManager.saveAccount(requireContext(), user, AuthProvider.FACEBOOK)
+                        }
                         findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
                     }
                 } else {

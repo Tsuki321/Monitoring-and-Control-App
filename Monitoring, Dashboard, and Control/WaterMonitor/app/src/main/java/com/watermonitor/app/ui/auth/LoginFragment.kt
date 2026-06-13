@@ -5,12 +5,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.material.snackbar.Snackbar
@@ -24,8 +29,11 @@ import com.facebook.FacebookException
 import com.facebook.login.LoginManager
 import com.facebook.login.LoginResult
 import android.content.Intent
+import com.google.android.material.card.MaterialCardView
 import com.watermonitor.app.R
+import com.watermonitor.app.data.model.AuthProvider
 import com.watermonitor.app.databinding.FragmentLoginBinding
+import com.watermonitor.app.utils.AccountManager
 import kotlinx.coroutines.launch
 
 class LoginFragment : Fragment() {
@@ -52,6 +60,9 @@ class LoginFragment : Fragment() {
         if (drawable is Animatable) {
             drawable.start()
         }
+
+        // Load saved accounts
+        loadSavedAccounts()
 
         // Register CallbackManager for Facebook Login
         LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
@@ -81,7 +92,7 @@ class LoginFragment : Fragment() {
                 .addOnSuccessListener {
                     val currentBinding = bindingSafe ?: return@addOnSuccessListener
                     currentBinding.btnLogin.isEnabled = true
-                    
+
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null && !user.isEmailVerified) {
                         FirebaseAuth.getInstance().signOut()
@@ -89,7 +100,8 @@ class LoginFragment : Fragment() {
                             .setAction(R.string.auth_resend_verification) {
                                 user.sendEmailVerification()
                             }.show()
-                    } else {
+                    } else if (user != null) {
+                        AccountManager.saveAccount(requireContext(), user, AuthProvider.EMAIL)
                         findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
                     }
                 }
@@ -112,6 +124,68 @@ class LoginFragment : Fragment() {
         // Facebook Sign In using Firebase OAuthProvider
         binding.btnFacebookLogin.setOnClickListener {
             signInWithFacebook()
+        }
+    }
+
+    private fun loadSavedAccounts() {
+        val binding = bindingSafe ?: return
+        val savedAccounts = AccountManager.getSavedAccounts(requireContext())
+
+        if (savedAccounts.isEmpty()) {
+            binding.layoutSavedAccounts.visibility = View.GONE
+            return
+        }
+
+        binding.layoutSavedAccounts.visibility = View.VISIBLE
+        binding.containerSavedAccounts.removeAllViews()
+
+        savedAccounts.forEach { account ->
+            val accountView = layoutInflater.inflate(R.layout.item_saved_account, binding.containerSavedAccounts, false)
+
+            val cardAccount = accountView.findViewById<MaterialCardView>(R.id.cardAccount)
+            val ivProfilePic = accountView.findViewById<ImageView>(R.id.ivProfilePic)
+            val tvAccountName = accountView.findViewById<TextView>(R.id.tvAccountName)
+            val tvAccountEmail = accountView.findViewById<TextView>(R.id.tvAccountEmail)
+            val btnDeleteAccount = accountView.findViewById<ImageButton>(R.id.btnDeleteAccount)
+
+            // Set account info
+            tvAccountName.text = account.displayName ?: account.email.substringBefore('@')
+            tvAccountEmail.text = account.email
+
+            // Load profile picture
+            if (account.photoUrl != null) {
+                Glide.with(this)
+                    .load(account.photoUrl)
+                    .placeholder(R.drawable.ic_person)
+                    .error(R.drawable.ic_person)
+                    .into(ivProfilePic)
+            } else {
+                ivProfilePic.setImageResource(R.drawable.ic_person)
+            }
+
+            // Click to fast sign-in
+            cardAccount.setOnClickListener {
+                fastSignIn(account.uid)
+            }
+
+            // Delete account
+            btnDeleteAccount.setOnClickListener {
+                AccountManager.removeAccount(requireContext(), account.uid)
+                loadSavedAccounts()
+            }
+
+            binding.containerSavedAccounts.addView(accountView)
+        }
+    }
+
+    private fun fastSignIn(uid: String) {
+        // Check if this account is still logged in to Firebase
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser?.uid == uid) {
+            // Already logged in
+            findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+        } else {
+            showError("Please re-authenticate with this account")
         }
     }
 
@@ -153,6 +227,10 @@ class LoginFragment : Fragment() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     bindingSafe?.let {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user != null) {
+                            AccountManager.saveAccount(requireContext(), user, AuthProvider.GOOGLE)
+                        }
                         findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
                     }
                 } else {
@@ -167,6 +245,10 @@ class LoginFragment : Fragment() {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     bindingSafe?.let {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user != null) {
+                            AccountManager.saveAccount(requireContext(), user, AuthProvider.FACEBOOK)
+                        }
                         findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
                     }
                 } else {

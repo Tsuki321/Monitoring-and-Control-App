@@ -88,4 +88,10 @@
         <item name="android:windowIsTranslucent">false</item>
     </style>
 
+    <!-- Circular image view for profile pictures -->
+    <style name="CircularImageView">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
 </resources>

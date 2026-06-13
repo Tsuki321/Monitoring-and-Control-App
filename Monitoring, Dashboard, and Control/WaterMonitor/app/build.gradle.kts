@@ -83,5 +83,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.glide)
+    implementation(libs.gson)
     implementation("com.facebook.android:facebook-login:18.2.3")
 }
