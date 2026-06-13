@@ -43,7 +43,6 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="@dimen/control_card_height"
                     android:padding="@dimen/card_padding">
 
                     <ImageView
@@ -52,8 +51,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_pump"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <LinearLayout
                         android:id="@+id/layoutPumpALabel"
@@ -64,7 +62,6 @@
                         android:layout_marginEnd="16dp"
                         app:layout_constraintStart_toEndOf="@id/imgPumpAIcon"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/switchPumpA">
 
                         <TextView
@@ -80,7 +77,8 @@
                             android:text="OFF"
                             android:textSize="13sp"
                             android:textColor="@color/status_grey"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="sans-serif-medium"
+                            android:layout_marginTop="2dp" />
 
                         <TextView
                             android:id="@+id/tvPumpASpeed"
@@ -90,7 +88,7 @@
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
                             android:fontFamily="sans-serif"
-                            android:layout_marginTop="2dp" />
+                            android:layout_marginTop="6dp" />
 
                         <TextView
                             android:id="@+id/tvPumpAVoltage"
@@ -99,7 +97,8 @@
                             android:text="Voltage: 0.0V"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
-                            android:fontFamily="sans-serif" />
+                            android:fontFamily="sans-serif"
+                            android:layout_marginTop="2dp" />
 
                     </LinearLayout>
 
@@ -108,8 +107,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -130,7 +128,6 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="@dimen/control_card_height"
                     android:padding="@dimen/card_padding">
 
                     <ImageView
@@ -139,8 +136,7 @@
                         android:layout_height="36dp"
                         android:src="@drawable/ic_pump"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <LinearLayout
                         android:id="@+id/layoutPumpBLabel"
@@ -151,7 +147,6 @@
                         android:layout_marginEnd="16dp"
                         app:layout_constraintStart_toEndOf="@id/imgPumpBIcon"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/switchPumpB">
 
                         <TextView
@@ -167,7 +162,8 @@
                             android:text="OFF"
                             android:textSize="13sp"
                             android:textColor="@color/status_grey"
-                            android:fontFamily="sans-serif-medium" />
+                            android:fontFamily="sans-serif-medium"
+                            android:layout_marginTop="2dp" />
 
                         <TextView
                             android:id="@+id/tvPumpBSpeed"
@@ -177,7 +173,7 @@
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
                             android:fontFamily="sans-serif"
-                            android:layout_marginTop="2dp" />
+                            android:layout_marginTop="6dp" />
 
                         <TextView
                             android:id="@+id/tvPumpBVoltage"
@@ -186,7 +182,8 @@
                             android:text="Voltage: 0.0V"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
-                            android:fontFamily="sans-serif" />
+                            android:fontFamily="sans-serif"
+                            android:layout_marginTop="2dp" />
 
                     </LinearLayout>
 
@@ -195,8 +192,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
