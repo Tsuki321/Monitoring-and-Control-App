@@ -36,6 +36,7 @@ class SettingsFragment : Fragment() {
         setupDarkModeToggle()
         setupLanguageSpinner()
         setupAboutButton()
+        setupSwitchAccountButton()
         setupLogoutButton()
     }
 
@@ -91,6 +92,15 @@ class SettingsFragment : Fragment() {
     private fun setupAboutButton() {
         binding.cardAbout.setOnClickListener {
             findNavController().navigate(R.id.action_settingsFragment_to_aboutFragment)
+        }
+    }
+
+    private fun setupSwitchAccountButton() {
+        binding.cardSwitchAccount.setOnClickListener {
+            // Sign out current session and return to login, where saved accounts are shown.
+            // Accounts remain saved so the user can quickly pick another one.
+            FirebaseAuth.getInstance().signOut()
+            findNavController().navigate(R.id.action_settingsFragment_to_loginFragment)
         }
     }
 

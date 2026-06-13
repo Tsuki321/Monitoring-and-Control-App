@@ -79,6 +79,7 @@
     <string name="settings_language">Language</string>
     <string name="settings_select_language">Select Language</string>
     <string name="settings_about">About HydroSense</string>
+    <string name="settings_switch_account">Switch Account</string>
     <string name="settings_logout">Logout</string>
     <string name="settings_logout_confirm">Are you sure you want to logout?</string>
     <string name="ok">OK</string>
