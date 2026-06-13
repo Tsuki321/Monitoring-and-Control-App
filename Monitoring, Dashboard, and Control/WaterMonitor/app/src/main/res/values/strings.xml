@@ -61,6 +61,8 @@
     <string name="state_on">ON</string>
     <string name="state_off">OFF</string>
     <string name="system_label">System:</string>
+    <string name="pump_speed_format">Speed: %d RPM</string>
+    <string name="pump_voltage_format">Voltage: %.1fV</string>
 
     <!-- Dashboard -->
     <string name="pump_status_title">Pump Status</string>

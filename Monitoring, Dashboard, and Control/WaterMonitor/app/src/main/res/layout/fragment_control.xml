@@ -82,6 +82,25 @@
                             android:textColor="@color/status_grey"
                             android:fontFamily="sans-serif-medium" />
 
+                        <TextView
+                            android:id="@+id/tvPumpASpeed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Speed: 0 RPM"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:fontFamily="sans-serif"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvPumpAVoltage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Voltage: 0.0V"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:fontFamily="sans-serif" />
+
                     </LinearLayout>
 
                     <com.google.android.material.materialswitch.MaterialSwitch
@@ -149,6 +168,25 @@
                             android:textSize="13sp"
                             android:textColor="@color/status_grey"
                             android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:id="@+id/tvPumpBSpeed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Speed: 0 RPM"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:fontFamily="sans-serif"
+                            android:layout_marginTop="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvPumpBVoltage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Voltage: 0.0V"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:fontFamily="sans-serif" />
 
                     </LinearLayout>
 

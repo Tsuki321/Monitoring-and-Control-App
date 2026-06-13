@@ -95,6 +95,14 @@ class ControlFragment : Fragment() {
                 updateStateLabel(binding.tvValveMainState, state.valveMain)
                 updateStateLabel(binding.tvValveBypassState, state.valveBypass)
 
+                // Update pump A monitoring data
+                binding.tvPumpASpeed.text = getString(R.string.pump_speed_format, state.pumpASpeed)
+                binding.tvPumpAVoltage.text = getString(R.string.pump_voltage_format, state.pumpAVoltage)
+
+                // Update pump B monitoring data
+                binding.tvPumpBSpeed.text = getString(R.string.pump_speed_format, state.pumpBSpeed)
+                binding.tvPumpBVoltage.text = getString(R.string.pump_voltage_format, state.pumpBVoltage)
+
                 // System overall status
                 val anyActive = state.pumpA || state.pumpB || state.valveMain || state.valveBypass
                 binding.tvSystemStatus.apply {

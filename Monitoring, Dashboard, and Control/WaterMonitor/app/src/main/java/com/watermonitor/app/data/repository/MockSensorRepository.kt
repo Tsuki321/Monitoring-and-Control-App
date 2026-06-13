@@ -42,6 +42,41 @@ object MockSensorRepository {
                 )
             }
         }
+
+        // Pump monitoring simulation — updates speed and voltage every 500ms when pumps are on
+        scope.launch {
+            while (true) {
+                delay(500)
+                val currentState = _pumpState.value
+
+                // Pump A monitoring
+                val pumpASpeed = if (currentState.pumpA) {
+                    // Oscillate around 2400 RPM ± 150 RPM when on
+                    (2400 + Random.nextInt(-150, 150)).coerceIn(1500, 3000)
+                } else 0
+
+                val pumpAVoltage = if (currentState.pumpA) {
+                    // Oscillate around 230V ± 5V when on
+                    230f + Random.nextFloat() * 10f - 5f
+                } else 0f
+
+                // Pump B monitoring
+                val pumpBSpeed = if (currentState.pumpB) {
+                    (2400 + Random.nextInt(-150, 150)).coerceIn(1500, 3000)
+                } else 0
+
+                val pumpBVoltage = if (currentState.pumpB) {
+                    230f + Random.nextFloat() * 10f - 5f
+                } else 0f
+
+                _pumpState.value = _pumpState.value.copy(
+                    pumpASpeed = pumpASpeed,
+                    pumpAVoltage = pumpAVoltage,
+                    pumpBSpeed = pumpBSpeed,
+                    pumpBVoltage = pumpBVoltage
+                )
+            }
+        }
     }
 
     /** Emits simulated sensor data every 3 seconds, oscillating naturally */
