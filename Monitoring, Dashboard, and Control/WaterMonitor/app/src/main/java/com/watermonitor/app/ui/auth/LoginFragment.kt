@@ -208,8 +208,9 @@ class LoginFragment : Fragment() {
             }
             AuthProvider.EMAIL -> {
                 // For email, pre-fill the email field
-                binding?.etEmail?.setText(savedAccount.email)
-                binding?.etPassword?.requestFocus()
+                val binding = bindingSafe ?: return
+                binding.etEmail.setText(savedAccount.email)
+                binding.etPassword.requestFocus()
                 showError("Please enter your password")
             }
         }
