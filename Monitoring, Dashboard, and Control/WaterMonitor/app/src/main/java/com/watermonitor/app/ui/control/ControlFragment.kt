@@ -52,18 +52,6 @@ class ControlFragment : Fragment() {
                 AnimationUtils.pulseView(binding.cardPumpB)
             }
         }
-        binding.switchValveMain.setOnCheckedChangeListener { _, _ ->
-            if (!isUpdatingUi) {
-                viewModel.toggleValveMain()
-                AnimationUtils.pulseView(binding.cardValveMain)
-            }
-        }
-        binding.switchValveBypass.setOnCheckedChangeListener { _, _ ->
-            if (!isUpdatingUi) {
-                viewModel.toggleValveBypass()
-                AnimationUtils.pulseView(binding.cardValveBypass)
-            }
-        }
     }
 
     private fun observeState() {
@@ -75,8 +63,6 @@ class ControlFragment : Fragment() {
                         listOf(
                             binding.cardPumpA,
                             binding.cardPumpB,
-                            binding.cardValveMain,
-                            binding.cardValveBypass,
                             binding.cardSystemStatus
                         ),
                         delayMs = 80
@@ -87,13 +73,9 @@ class ControlFragment : Fragment() {
 
                 binding.switchPumpA.isChecked = state.pumpA
                 binding.switchPumpB.isChecked = state.pumpB
-                binding.switchValveMain.isChecked = state.valveMain
-                binding.switchValveBypass.isChecked = state.valveBypass
 
                 updateStateLabel(binding.tvPumpAState, state.pumpA)
                 updateStateLabel(binding.tvPumpBState, state.pumpB)
-                updateStateLabel(binding.tvValveMainState, state.valveMain)
-                updateStateLabel(binding.tvValveBypassState, state.valveBypass)
 
                 // Update pump A monitoring data
                 binding.tvPumpASpeed.text = getString(R.string.pump_speed_format, state.pumpASpeed)
@@ -104,7 +86,7 @@ class ControlFragment : Fragment() {
                 binding.tvPumpBVoltage.text = getString(R.string.pump_voltage_format, state.pumpBVoltage)
 
                 // System overall status
-                val anyActive = state.pumpA || state.pumpB || state.valveMain || state.valveBypass
+                val anyActive = state.pumpA || state.pumpB
                 binding.tvSystemStatus.apply {
                     text = if (anyActive) getString(R.string.system_active) else getString(R.string.system_standby)
                     setTextColor(
