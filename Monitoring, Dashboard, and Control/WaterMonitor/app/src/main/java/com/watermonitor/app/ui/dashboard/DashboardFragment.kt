@@ -1,5 +1,6 @@
 package com.watermonitor.app.ui.dashboard
 
+import android.animation.Animator
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -21,6 +22,11 @@ class DashboardFragment : Fragment() {
 
     private val viewModel: DashboardViewModel by viewModels()
     private var hasAnimatedEntrance = false
+
+    // Breathing-pulse animators for the online sensor dots (null when offline)
+    private var phDotPulse: Animator? = null
+    private var tdsDotPulse: Animator? = null
+    private var turbidityDotPulse: Animator? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -86,10 +92,28 @@ class DashboardFragment : Fragment() {
                 binding.dotTds.setColorFilter(if (state.sensorStatus.tdsOnline) greenColor else greyColor)
                 binding.dotTurbidity.setColorFilter(if (state.sensorStatus.turbidityOnline) greenColor else greyColor)
 
+                // Breathing pulse on dots that are online; halt and reset when offline
+                phDotPulse = updateDotPulse(state.sensorStatus.phOnline, binding.dotPh, phDotPulse)
+                tdsDotPulse = updateDotPulse(state.sensorStatus.tdsOnline, binding.dotTds, tdsDotPulse)
+                turbidityDotPulse = updateDotPulse(state.sensorStatus.turbidityOnline, binding.dotTurbidity, turbidityDotPulse)
+
                 binding.tvPhOnline.text = sensorOnlineLabel(R.string.sensor_ph_short, state.sensorStatus.phOnline)
                 binding.tvTdsOnline.text = sensorOnlineLabel(R.string.sensor_tds_short, state.sensorStatus.tdsOnline)
                 binding.tvTurbidityOnline.text = sensorOnlineLabel(R.string.sensor_turbidity_short, state.sensorStatus.turbidityOnline)
             }
+        }
+    }
+
+    /**
+     * Keeps a sensor dot's breathing pulse in sync with its online state.
+     * Returns the active animator (or null) so the caller can track it.
+     */
+    private fun updateDotPulse(isOnline: Boolean, dot: View, current: Animator?): Animator? {
+        return if (isOnline) {
+            current ?: AnimationUtils.startBreathingPulse(dot)
+        } else {
+            AnimationUtils.stopBreathingPulse(current, dot)
+            null
         }
     }
 
@@ -100,6 +124,12 @@ class DashboardFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        phDotPulse?.cancel()
+        tdsDotPulse?.cancel()
+        turbidityDotPulse?.cancel()
+        phDotPulse = null
+        tdsDotPulse = null
+        turbidityDotPulse = null
         _binding = null
         hasAnimatedEntrance = false
     }

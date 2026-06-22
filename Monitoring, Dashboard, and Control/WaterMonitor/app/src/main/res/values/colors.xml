@@ -67,6 +67,9 @@
     <color name="shadow_blue">#180D7A8A</color>
     <color name="shadow_dark">#12000000</color>
 
+    <!-- Ocean-tinted ripple for touch feedback -->
+    <color name="ripple_teal">#330D7A8A</color>
+
     <!-- Social Brand Colors -->
     <color name="google_red">#DB4437</color>
     <color name="facebook_blue">#1877F2</color>

@@ -45,29 +45,36 @@ class MonitoringViewModel : ViewModel() {
 
     private fun phCardState(ph: Double): SensorCardUiState {
         val (labelRes, color) = when {
-            ph < 6.5 -> Pair(R.string.status_acidic, android.graphics.Color.parseColor("#E74C3C"))
-            ph > 7.5 -> Pair(R.string.status_alkaline, android.graphics.Color.parseColor("#F39C12"))
-            else -> Pair(R.string.status_neutral, android.graphics.Color.parseColor("#2ECC71"))
+            ph < 6.5 -> Pair(R.string.status_acidic, STATUS_RED)
+            ph > 7.5 -> Pair(R.string.status_alkaline, STATUS_YELLOW)
+            else -> Pair(R.string.status_neutral, STATUS_GREEN)
         }
         return SensorCardUiState(value = ph, statusLabelRes = labelRes, statusColorRes = color)
     }
 
     private fun tdsCardState(tds: Int): SensorCardUiState {
         val (labelRes, color) = when {
-            tds < 50 -> Pair(R.string.status_very_low, android.graphics.Color.parseColor("#F39C12"))
-            tds > 500 -> Pair(R.string.status_poor, android.graphics.Color.parseColor("#E74C3C"))
-            tds > 300 -> Pair(R.string.status_good, android.graphics.Color.parseColor("#F39C12"))
-            else -> Pair(R.string.status_excellent, android.graphics.Color.parseColor("#2ECC71"))
+            tds < 50 -> Pair(R.string.status_very_low, STATUS_YELLOW)
+            tds > 500 -> Pair(R.string.status_poor, STATUS_RED)
+            tds > 300 -> Pair(R.string.status_good, STATUS_YELLOW)
+            else -> Pair(R.string.status_excellent, STATUS_GREEN)
         }
         return SensorCardUiState(value = tds.toDouble(), statusLabelRes = labelRes, statusColorRes = color)
     }
 
     private fun turbidityCardState(turbidity: Double): SensorCardUiState {
         val (labelRes, color) = when {
-            turbidity > 4.0 -> Pair(R.string.status_turbid, android.graphics.Color.parseColor("#E74C3C"))
-            turbidity > 1.5 -> Pair(R.string.status_slightly_turbid, android.graphics.Color.parseColor("#F39C12"))
-            else -> Pair(R.string.status_clear, android.graphics.Color.parseColor("#2ECC71"))
+            turbidity > 4.0 -> Pair(R.string.status_turbid, STATUS_RED)
+            turbidity > 1.5 -> Pair(R.string.status_slightly_turbid, STATUS_YELLOW)
+            else -> Pair(R.string.status_clear, STATUS_GREEN)
         }
         return SensorCardUiState(value = turbidity, statusLabelRes = labelRes, statusColorRes = color)
+    }
+
+    private companion object {
+        // Mirror the refined palette in colors.xml so status text matches the rest of the UI
+        val STATUS_GREEN = android.graphics.Color.parseColor("#10B981")
+        val STATUS_YELLOW = android.graphics.Color.parseColor("#F59E0B")
+        val STATUS_RED = android.graphics.Color.parseColor("#EF4444")
     }
 }

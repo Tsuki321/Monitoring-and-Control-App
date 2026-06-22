@@ -1,8 +1,12 @@
 package com.watermonitor.app.utils
 
+import android.animation.ArgbEvaluator
+import android.animation.Animator
+import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.TextView
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
@@ -136,6 +140,74 @@ object AnimationUtils {
                 view.scaleX = scale
                 view.scaleY = scale
                 view.alpha = 1f - ((scale - 1f) * 1.5f)
+            }
+        }.start()
+    }
+
+    /**
+     * Continuous slow rotation, e.g. for an active pump icon.
+     * Returns the [Animator] so the caller can cancel it when the pump turns off.
+     */
+    fun startRotation(view: View, durationMs: Long = 2400): Animator {
+        return ObjectAnimator.ofFloat(view, View.ROTATION, 0f, 360f).apply {
+            duration = durationMs
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.RESTART
+            interpolator = LinearInterpolator()
+            start()
+        }
+    }
+
+    /**
+     * Stops a running rotation animator (if any) and eases the view back to 0°.
+     */
+    fun stopRotation(animator: Animator?, view: View) {
+        animator?.cancel()
+        view.animate()
+            .rotation(0f)
+            .setDuration(300)
+            .setInterpolator(DecelerateInterpolator())
+            .start()
+    }
+
+    /**
+     * Gentle breathing pulse for an "online" status dot.
+     * Returns the [Animator] so the caller can cancel it when the dot goes offline.
+     */
+    fun startBreathingPulse(view: View): Animator {
+        return ValueAnimator.ofFloat(1f, 1.18f, 1f).apply {
+            duration = 1600
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.RESTART
+            interpolator = FastOutSlowInInterpolator()
+            addUpdateListener { anim ->
+                val scale = anim.animatedValue as Float
+                view.scaleX = scale
+                view.scaleY = scale
+            }
+            start()
+        }
+    }
+
+    /**
+     * Stops a running breathing pulse and resets the view to its resting scale.
+     */
+    fun stopBreathingPulse(animator: Animator?, view: View) {
+        animator?.cancel()
+        view.scaleX = 1f
+        view.scaleY = 1f
+    }
+
+    /**
+     * Tweens a TextView's color from [fromColor] to [toColor] over a short interval.
+     * Used when a reading crosses into a new status band so the change is felt, not just shown.
+     */
+    fun transitionTextColor(textView: TextView, fromColor: Int, toColor: Int) {
+        ValueAnimator.ofObject(ArgbEvaluator(), fromColor, toColor).apply {
+            duration = 600
+            interpolator = FastOutSlowInInterpolator()
+            addUpdateListener { anim ->
+                textView.setTextColor(anim.animatedValue as Int)
             }
         }.start()
     }

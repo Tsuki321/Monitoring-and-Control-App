@@ -58,6 +58,17 @@ class WaterTankView @JvmOverloads constructor(
         color = ContextCompat.getColor(context, R.color.tank_water_shimmer)
         alpha = 180
     }
+    private val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.5f
+        color = ContextCompat.getColor(context, R.color.tank_border)
+        alpha = 40
+    }
+    private val bubblePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = ContextCompat.getColor(context, R.color.tank_water_shimmer)
+        alpha = 90
+    }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.accent_blue)
         textAlign = Paint.Align.CENTER
@@ -67,6 +78,14 @@ class WaterTankView @JvmOverloads constructor(
         color = ContextCompat.getColor(context, R.color.text_secondary)
         textAlign = Paint.Align.CENTER
     }
+
+    // Level markers drawn on the tank side (as fractions of fill height)
+    private val levelMarkers = floatArrayOf(0.10f, 0.25f, 0.50f, 0.75f, 0.90f)
+
+    // Ambient bubbles rising through the water — purely decorative
+    private data class Bubble(var x: Float, var y: Float, var radius: Float, var speed: Float)
+    private val bubbles = mutableListOf<Bubble>()
+    private var bubblesSeeded = false
 
     // Computed once in onSizeChanged; uses the same 20 dp value as card_corner_radius
     private var cornerRadius = 0f
@@ -79,6 +98,7 @@ class WaterTankView @JvmOverloads constructor(
         interpolator = LinearInterpolator()
         addUpdateListener { anim ->
             wavePhase = anim.animatedValue as Float
+            updateBubbles()
             invalidate()
         }
     }
@@ -126,6 +146,43 @@ class WaterTankView @JvmOverloads constructor(
             floatArrayOf(0f, 0.5f, 1f),
             Shader.TileMode.CLAMP
         )
+
+        seedBubbles(w.toFloat(), h.toFloat())
+    }
+
+    /** Lays out a small set of bubbles at varied positions across the tank width. */
+    private fun seedBubbles(w: Float, h: Float) {
+        bubbles.clear()
+        val count = 6
+        for (i in 0 until count) {
+            // Deterministic spread so bubbles don't clump; no RNG needed for a calm effect
+            val fraction = (i + 0.5f) / count
+            bubbles.add(
+                Bubble(
+                    x = tankRect.left + tankRect.width() * fraction,
+                    y = h * (0.3f + 0.6f * fraction),
+                    radius = 2.5f + (i % 3),
+                    speed = 0.4f + 0.25f * (i % 3)
+                )
+            )
+        }
+        bubblesSeeded = true
+    }
+
+    /** Advances bubbles upward; recycles them to the bottom once they reach the surface. */
+    private fun updateBubbles() {
+        if (!bubblesSeeded) return
+        val tankInnerTop = tankRect.top + cornerRadius
+        val tankInnerBottom = tankRect.bottom - cornerRadius
+        val tankInnerHeight = tankInnerBottom - tankInnerTop
+        val waterTop = tankInnerBottom - (tankInnerHeight * displayFill / 100f)
+        for (b in bubbles) {
+            b.y -= b.speed
+            // Recycle bubble to the bottom once it rises past the water surface
+            if (b.y < waterTop) {
+                b.y = tankRect.bottom - cornerRadius
+            }
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -153,12 +210,27 @@ class WaterTankView @JvmOverloads constructor(
         waterRect.set(tankRect.left, waterTop, tankRect.right, tankRect.bottom)
         canvas.drawRect(waterRect, waterPaint)
 
+        // Draw rising bubbles within the submerged region for a subtle living effect
+        for (b in bubbles) {
+            if (b.y > waterTop) {
+                canvas.drawCircle(b.x, b.y, b.radius, bubblePaint)
+            }
+        }
+
         // Draw wave on top of water
         drawSurfaceWave(canvas, waterTop, w)
 
         // Draw shimmer line at water surface for refined look
         if (displayFill > 5f) {
             canvas.drawLine(tankRect.left + 10f, waterTop, tankRect.right - 10f, waterTop, shimmerPaint)
+        }
+
+        // Subtle level markers on the right edge for a precision-instrument feel
+        val tickRight = tankRect.right - 8f
+        val tickLeft = tickRight - w * 0.08f
+        for (marker in levelMarkers) {
+            val markerY = tankInnerBottom - (tankInnerHeight * marker)
+            canvas.drawLine(tickLeft, markerY, tickRight, markerY, markerPaint)
         }
 
         // Percentage text centered in the view (inside clip so it respects rounded corners)
