@@ -5,53 +5,67 @@
     <color name="teal_mid">#4DB8C8</color>
     <color name="teal_light">#A8E6EF</color>
 
-    <!-- Background gradient colors -->
-    <color name="bg_gradient_start">#7ED5E0</color>
-    <color name="bg_gradient_end">#B8EBF5</color>
+    <!-- Background gradient colors - refined with more depth -->
+    <color name="bg_gradient_start">#E8F4F6</color>
+    <color name="bg_gradient_end">#F5FAFB</color>
 
-    <!-- Glassmorphism card -->
-    <color name="glass_white">#B3FFFFFF</color>
-    <color name="glass_white_border">#66A8E6EF</color>
-    <color name="card_border">#80A8E6EF</color>
+    <!-- Glassmorphism card - enhanced with subtle gradients -->
+    <color name="glass_white">#E6FFFFFF</color>
+    <color name="glass_white_dark">#D9FFFFFF</color>
+    <color name="glass_white_border">#80FFFFFF</color>
+    <color name="glass_border_highlight">#CCFFFFFF</color>
+    <color name="card_border">#66D0E8EF</color>
 
-    <!-- Text colors -->
-    <color name="accent_blue">#1A237E</color>
+    <!-- Text colors - refined hierarchy -->
+    <color name="accent_blue">#0A1F3D</color>
     <color name="text_dark">#0D2B4E</color>
-    <color name="text_medium">#1E4A6E</color>
+    <color name="text_medium">#2A4A6E</color>
     <color name="text_light">#FFFFFF</color>
     <color name="text_on_glass">#0D2B4E</color>
-    <color name="text_secondary">#607D8B</color>
+    <color name="text_secondary">#5A7A95</color>
+    <color name="text_tertiary">#8A9FB5</color>
 
-    <!-- Status colors -->
-    <color name="status_green">#2ECC71</color>
-    <color name="status_yellow">#F39C12</color>
-    <color name="status_red">#E74C3C</color>
-    <color name="status_grey">#90A4AE</color>
+    <!-- Status colors - refined with better contrast -->
+    <color name="status_green">#10B981</color>
+    <color name="status_green_bg">#1810B981</color>
+    <color name="status_yellow">#F59E0B</color>
+    <color name="status_yellow_bg">#18F59E0B</color>
+    <color name="status_red">#EF4444</color>
+    <color name="status_red_bg">#18EF4444</color>
+    <color name="status_grey">#94A3B8</color>
+    <color name="status_grey_bg">#1894A3B8</color>
 
-    <!-- Bottom nav -->
-    <color name="bottom_nav_bg">#B0C8E8F5</color>
-    <color name="bottom_nav_selected">#1A237E</color>
-    <color name="bottom_nav_unselected">#4D6B8E</color>
+    <!-- Bottom nav - enhanced glassmorphism -->
+    <color name="bottom_nav_bg">#E6FFFFFF</color>
+    <color name="bottom_nav_selected">#0A1F3D</color>
+    <color name="bottom_nav_unselected">#5A7A95</color>
+    <color name="bottom_nav_indicator">#200D7A8A</color>
 
-    <!-- Top bar -->
-    <color name="top_bar_bg">#CC7ED5E0</color>
+    <!-- Top bar - refined blur backdrop -->
+    <color name="top_bar_bg">#F2FFFFFF</color>
 
-    <!-- Wave animation layers -->
-    <color name="wave_layer_1">#504DB8C8</color>
-    <color name="wave_layer_2">#400D7A8A</color>
-    <color name="wave_layer_3">#300D2B4E</color>
+    <!-- Wave animation layers - more subtle and refined -->
+    <color name="wave_layer_1">#284DB8C8</color>
+    <color name="wave_layer_2">#1A0D7A8A</color>
+    <color name="wave_layer_3">#120D2B4E</color>
 
-    <!-- Switch colors -->
-    <color name="switch_thumb_on">#2ECC71</color>
-    <color name="switch_thumb_off">#90A4AE</color>
-    <color name="switch_track_on">#802ECC71</color>
-    <color name="switch_track_off">#4090A4AE</color>
+    <!-- Switch colors - elegant with gradients -->
+    <color name="switch_thumb_on">#10B981</color>
+    <color name="switch_thumb_off">#CBD5E1</color>
+    <color name="switch_track_on">#6010B981</color>
+    <color name="switch_track_off">#40CBD5E1</color>
 
-    <!-- Tank colors -->
-    <color name="tank_water_deep">#4DB8C8</color>
+    <!-- Tank colors - refined with depth -->
+    <color name="tank_water_deep">#0D7A8A</color>
+    <color name="tank_water_mid">#4DB8C8</color>
     <color name="tank_water_light">#A8E6EF</color>
-    <color name="tank_border">#1A237E</color>
-    <color name="tank_bg">#20FFFFFF</color>
+    <color name="tank_water_shimmer">#E0F7FA</color>
+    <color name="tank_border">#0A1F3D</color>
+    <color name="tank_bg">#18FFFFFF</color>
+
+    <!-- Shadow colors - tinted for depth -->
+    <color name="shadow_blue">#180D7A8A</color>
+    <color name="shadow_dark">#12000000</color>
 
     <!-- Social Brand Colors -->
     <color name="google_red">#DB4437</color>

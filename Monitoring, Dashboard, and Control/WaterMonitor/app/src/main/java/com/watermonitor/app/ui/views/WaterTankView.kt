@@ -3,9 +3,11 @@ package com.watermonitor.app.ui.views
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.DecelerateInterpolator
@@ -35,7 +37,7 @@ class WaterTankView @JvmOverloads constructor(
 
     private val tankBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = 4f
+        strokeWidth = 3f
         color = ContextCompat.getColor(context, R.color.tank_border)
     }
     private val tankBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -44,19 +46,25 @@ class WaterTankView @JvmOverloads constructor(
     }
     private val waterPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
-        color = ContextCompat.getColor(context, R.color.tank_water_deep)
+        // Gradient will be set in onSizeChanged
     }
     private val wavePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = ContextCompat.getColor(context, R.color.tank_water_light)
     }
+    private val shimmerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+        color = ContextCompat.getColor(context, R.color.tank_water_shimmer)
+        alpha = 180
+    }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.accent_blue)
         textAlign = Paint.Align.CENTER
-        isFakeBoldText = true
+        isFakeBoldText = false
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = ContextCompat.getColor(context, R.color.text_medium)
+        color = ContextCompat.getColor(context, R.color.text_secondary)
         textAlign = Paint.Align.CENTER
     }
 
@@ -100,10 +108,24 @@ class WaterTankView @JvmOverloads constructor(
         super.onSizeChanged(w, h, oldw, oldh)
         val pad = 8f
         tankRect.set(pad, pad, w - pad, h - pad)
-        textPaint.textSize = w * 0.22f
-        labelPaint.textSize = w * 0.10f
-        // Derive corner radius from the shared dimension (card_corner_radius = 20 dp)
+        textPaint.textSize = w * 0.20f
+        labelPaint.textSize = w * 0.09f
+        // Derive corner radius from the shared dimension (card_corner_radius = 28 dp)
         cornerRadius = resources.getDimension(R.dimen.card_corner_radius)
+
+        // Create gradient for water - darker at bottom, lighter at top
+        val waterTop = tankRect.top + cornerRadius
+        val waterBottom = tankRect.bottom - cornerRadius
+        waterPaint.shader = LinearGradient(
+            0f, waterBottom, 0f, waterTop,
+            intArrayOf(
+                ContextCompat.getColor(context, R.color.tank_water_deep),
+                ContextCompat.getColor(context, R.color.tank_water_mid),
+                ContextCompat.getColor(context, R.color.tank_water_light)
+            ),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -127,12 +149,17 @@ class WaterTankView @JvmOverloads constructor(
         }
         canvas.clipPath(clipPath)
 
-        // Draw water body
+        // Draw water body with gradient
         waterRect.set(tankRect.left, waterTop, tankRect.right, tankRect.bottom)
         canvas.drawRect(waterRect, waterPaint)
 
         // Draw wave on top of water
         drawSurfaceWave(canvas, waterTop, w)
+
+        // Draw shimmer line at water surface for refined look
+        if (displayFill > 5f) {
+            canvas.drawLine(tankRect.left + 10f, waterTop, tankRect.right - 10f, waterTop, shimmerPaint)
+        }
 
         // Percentage text centered in the view (inside clip so it respects rounded corners)
         val cx = w / 2f

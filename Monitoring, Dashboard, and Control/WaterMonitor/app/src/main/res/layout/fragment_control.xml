@@ -25,20 +25,16 @@
             android:clipToPadding="false"
             android:paddingHorizontal="24dp"
             android:paddingTop="24dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="48dp">
 
             <!-- Pump A Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPumpA"
+                style="@style/Style.WaterMonitor.GlassCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
-                android:alpha="0"
-                app:cardBackgroundColor="@color/glass_white"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_white_border"
-                app:strokeWidth="1dp">
+                android:layout_marginBottom="@dimen/card_margin_small"
+                android:alpha="0">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -115,15 +111,11 @@
             <!-- Pump B Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPumpB"
+                style="@style/Style.WaterMonitor.GlassCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
-                android:alpha="0"
-                app:cardBackgroundColor="@color/glass_white"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_white_border"
-                app:strokeWidth="1dp">
+                android:layout_marginBottom="@dimen/card_margin"
+                android:alpha="0">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -200,14 +192,10 @@
             <!-- System Status Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardSystemStatus"
+                style="@style/Style.WaterMonitor.GlassCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:alpha="0"
-                app:cardBackgroundColor="@color/glass_white"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_white_border"
-                app:strokeWidth="1dp">
+                android:alpha="0">
 
                 <LinearLayout
                     android:layout_width="match_parent"

@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Status indicator dot -->
+<!-- Refined status indicator dot with subtle glow -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="12dp"
     android:height="12dp"
     android:viewportWidth="12"
     android:viewportHeight="12">
+    <!-- Outer glow ring -->
     <path
-        android:pathData="M1,6 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"
-        android:fillColor="#2ECC71" />
+        android:pathData="M0,6 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0"
+        android:fillColor="#1810B981" />
+    <!-- Main dot -->
+    <path
+        android:pathData="M1.5,6 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0"
+        android:fillColor="#10B981" />
+    <!-- Inner highlight -->
+    <path
+        android:pathData="M3,5 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
+        android:fillColor="#6010B981" />
 </vector>

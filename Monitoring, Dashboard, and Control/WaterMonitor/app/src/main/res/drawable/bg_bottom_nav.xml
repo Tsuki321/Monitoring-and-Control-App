@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#C0C8E8F5" />
-</shape>
+<!-- Refined frosted glass bottom nav with top shadow -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Subtle shadow at top -->
+    <item android:top="-4dp" android:bottom="0dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/shadow_blue" />
+        </shape>
+    </item>
+    <!-- Frosted glass surface -->
+    <item android:top="4dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/bottom_nav_bg" />
+        </shape>
+    </item>
+</layer-list>

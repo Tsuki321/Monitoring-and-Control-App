@@ -58,11 +58,12 @@ class OceanWaveView @JvmOverloads constructor(
             val deltaSeconds = (frameTimeNanos - lastFrameTimeNanos) / 1_000_000_000.0
             lastFrameTimeNanos = frameTimeNanos
 
-            val baseSpeed = 1.57
+            // Slower, more refined wave movement
+            val baseSpeed = 1.0
             val twoPi = (2 * Math.PI).toFloat()
-            phase1 = (phase1 + (deltaSeconds * baseSpeed).toFloat()) % twoPi
-            phase2 = (phase2 + (deltaSeconds * baseSpeed * 1.3).toFloat()) % twoPi
-            phase3 = (phase3 + (deltaSeconds * baseSpeed * 0.7).toFloat()) % twoPi
+            phase1 = (phase1 + (deltaSeconds * baseSpeed * 0.8).toFloat()) % twoPi
+            phase2 = (phase2 + (deltaSeconds * baseSpeed * 1.1).toFloat()) % twoPi
+            phase3 = (phase3 + (deltaSeconds * baseSpeed * 0.6).toFloat()) % twoPi
 
             invalidate()
             Choreographer.getInstance().postFrameCallback(this)
@@ -93,9 +94,10 @@ class OceanWaveView @JvmOverloads constructor(
         val w = width.toFloat()
         val h = height.toFloat()
 
-        drawWave(canvas, wavePath1, paint1, w, h, amplitude = h * 0.06f, yOffset = h * 0.65f, phase = phase1, frequency = 1.2f)
-        drawWave(canvas, wavePath2, paint2, w, h, amplitude = h * 0.08f, yOffset = h * 0.72f, phase = phase2, frequency = 0.9f)
-        drawWave(canvas, wavePath3, paint3, w, h, amplitude = h * 0.05f, yOffset = h * 0.80f, phase = phase3, frequency = 1.5f)
+        // More refined wave positioning - pushed lower for subtlety
+        drawWave(canvas, wavePath1, paint1, w, h, amplitude = h * 0.04f, yOffset = h * 0.70f, phase = phase1, frequency = 1.5f)
+        drawWave(canvas, wavePath2, paint2, w, h, amplitude = h * 0.05f, yOffset = h * 0.78f, phase = phase2, frequency = 1.1f)
+        drawWave(canvas, wavePath3, paint3, w, h, amplitude = h * 0.03f, yOffset = h * 0.86f, phase = phase3, frequency = 1.8f)
     }
 
     private fun drawWave(

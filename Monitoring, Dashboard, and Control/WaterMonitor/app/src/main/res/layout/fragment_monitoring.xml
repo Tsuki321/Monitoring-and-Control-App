@@ -26,7 +26,7 @@
             android:clipToPadding="false"
             android:paddingHorizontal="24dp"
             android:paddingTop="24dp"
-            android:paddingBottom="32dp">
+            android:paddingBottom="48dp">
 
             <!-- pH Sensor Card -->
             <com.google.android.material.card.MaterialCardView
@@ -35,12 +35,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:alpha="0"
-                app:cardBackgroundColor="@color/glass_white"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_white_border"
-                app:strokeWidth="1dp">
+                android:alpha="0">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -56,7 +51,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/imgPhIcon"
-                        android:layout_marginEnd="8dp" />
+                        android:layout_marginEnd="12dp" />
 
                     <ImageView
                         android:id="@+id/imgPhIcon"
@@ -115,12 +110,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:alpha="0"
-                app:cardBackgroundColor="@color/glass_white"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_white_border"
-                app:strokeWidth="1dp">
+                android:alpha="0">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -195,12 +185,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:alpha="0"
-                app:cardBackgroundColor="@color/glass_white"
-                app:cardCornerRadius="@dimen/card_corner_radius"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/glass_white_border"
-                app:strokeWidth="1dp">
+                android:alpha="0">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"

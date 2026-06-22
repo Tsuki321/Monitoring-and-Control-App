@@ -16,69 +16,71 @@
     <!-- Base style required by all Style.WaterMonitor.* dot-notation child styles -->
     <style name="Style.WaterMonitor" parent="" />
 
-    <!-- Glass card style -->
+    <!-- Glass card style - enhanced with better shadows -->
     <style name="Style.WaterMonitor.GlassCard" parent="Widget.Material3.CardView.Elevated">
         <item name="cardBackgroundColor">@color/glass_white</item>
         <item name="cardCornerRadius">@dimen/card_corner_radius</item>
-        <item name="cardElevation">2dp</item>
-        <item name="strokeColor">@color/glass_white_border</item>
-        <item name="strokeWidth">1.5dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="strokeColor">@color/glass_border_highlight</item>
+        <item name="strokeWidth">1dp</item>
     </style>
 
-    <!-- Sensor value text -->
+    <!-- Sensor value text - lighter weight, larger -->
     <style name="Style.WaterMonitor.SensorValue">
         <item name="android:textSize">@dimen/sensor_value_text_size</item>
         <item name="android:textColor">@color/accent_blue</item>
-        <item name="android:fontFamily">sans-serif-black</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+        <item name="android:letterSpacing">-0.02</item>
     </style>
 
-    <!-- Sensor title text -->
+    <!-- Sensor title text - refined with letter spacing -->
     <style name="Style.WaterMonitor.SensorTitle">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">17sp</item>
         <item name="android:textColor">@color/text_dark</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
-    <!-- Sensor unit text -->
+    <!-- Sensor unit text - lighter, more subtle -->
     <style name="Style.WaterMonitor.SensorUnit">
-        <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/text_medium</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:letterSpacing">0.03</item>
     </style>
 
-    <!-- Status text -->
+    <!-- Status text - refined hierarchy -->
     <style name="Style.WaterMonitor.StatusText">
-        <item name="android:textSize">14sp</item>
-        <item name="android:textColor">@color/text_medium</item>
-        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.04</item>
     </style>
 
-    <!-- Top bar title -->
+    <!-- Top bar title - more refined -->
     <style name="Style.WaterMonitor.TopBarTitle">
-        <item name="android:textSize">26sp</item>
+        <item name="android:textSize">22sp</item>
         <item name="android:textColor">@color/accent_blue</item>
-        <item name="android:fontFamily">sans-serif-black</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.05</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:letterSpacing">0.08</item>
     </style>
 
     <!-- Navigation button style -->
     <style name="Style.WaterMonitor.NavButton" parent="Widget.Material3.Button.OutlinedButton">
         <item name="android:textColor">@color/accent_blue</item>
-        <item name="strokeColor">@color/teal_mid</item>
-        <item name="strokeWidth">2dp</item>
+        <item name="strokeColor">@color/card_border</item>
+        <item name="strokeWidth">1.5dp</item>
         <item name="android:backgroundTint">@color/glass_white</item>
-        <item name="cornerRadius">@dimen/card_corner_radius</item>
+        <item name="cornerRadius">@dimen/card_corner_radius_small</item>
+        <item name="android:letterSpacing">0.05</item>
     </style>
 
-    <!-- Control card label -->
+    <!-- Control card label - refined -->
     <style name="Style.WaterMonitor.ControlLabel">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/text_dark</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
     <!-- Splash screen theme: same base as the app but with the ocean-gradient
