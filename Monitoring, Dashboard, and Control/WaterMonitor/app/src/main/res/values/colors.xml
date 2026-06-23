@@ -14,6 +14,8 @@
     <color name="glass_white_dark">#D9FFFFFF</color>
     <color name="glass_white_border">#80FFFFFF</color>
     <color name="glass_border_highlight">#CCFFFFFF</color>
+    <color name="glass_outline">#804DB8C8</color>
+    <color name="glass_fill">#334DB8C8</color>
     <color name="card_border">#66D0E8EF</color>
 
     <!-- Text colors - refined hierarchy -->
