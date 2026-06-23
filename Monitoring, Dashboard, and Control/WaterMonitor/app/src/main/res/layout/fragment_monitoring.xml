@@ -51,7 +51,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/imgPhIcon"
-                        android:layout_marginEnd="12dp" />
+                        android:layout_marginEnd="8dp" />
 
                     <ImageView
                         android:id="@+id/imgPhIcon"
@@ -72,7 +72,7 @@
                         android:gravity="center"
                         android:text="7.00"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tvPhTitle"
+                        app:layout_constraintTop_toBottomOf="@id/imgPhIcon"
                         app:layout_constraintEnd_toEndOf="parent" />
 
                     <TextView
@@ -147,7 +147,7 @@
                         android:gravity="center"
                         android:text="150"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tvTdsTitle"
+                        app:layout_constraintTop_toBottomOf="@id/imgTdsIcon"
                         app:layout_constraintEnd_toEndOf="parent" />
 
                     <TextView
@@ -222,7 +222,7 @@
                         android:gravity="center"
                         android:text="1.5"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tvTurbidityTitle"
+                        app:layout_constraintTop_toBottomOf="@id/imgTurbidityIcon"
                         app:layout_constraintEnd_toEndOf="parent" />
 
                     <TextView
