@@ -18,13 +18,13 @@
     <!-- Base style required by all Style.WaterMonitor.* dot-notation child styles -->
     <style name="Style.WaterMonitor" parent="" />
 
-    <!-- Glass card style - enhanced with better shadows -->
+    <!-- Glass card style - teal-tinted glass fill (white stripped) + teal outline, light & dark -->
     <style name="Style.WaterMonitor.GlassCard" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardBackgroundColor">@color/glass_white</item>
+        <item name="cardBackgroundColor">@color/glass_fill</item>
         <item name="cardCornerRadius">@dimen/card_corner_radius</item>
-        <item name="cardElevation">4dp</item>
-        <item name="strokeColor">@color/glass_border_highlight</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/glass_outline</item>
+        <item name="strokeWidth">1.5dp</item>
     </style>
 
     <!-- Sensor value text - lighter weight, larger -->
