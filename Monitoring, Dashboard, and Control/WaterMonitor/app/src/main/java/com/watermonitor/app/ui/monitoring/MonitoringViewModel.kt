@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watermonitor.app.R
 import com.watermonitor.app.data.model.SensorData
-import com.watermonitor.app.data.repository.MockSensorRepository
+import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -26,7 +26,7 @@ data class MonitoringUiState(
 class MonitoringViewModel : ViewModel() {
 
     val uiState: StateFlow<MonitoringUiState> =
-        MockSensorRepository.sensorDataFlow
+        FirebaseRealtimeSensorRepository.sensorDataFlow
             .map { data -> buildUiState(data) }
             .stateIn(
                 scope = viewModelScope,
