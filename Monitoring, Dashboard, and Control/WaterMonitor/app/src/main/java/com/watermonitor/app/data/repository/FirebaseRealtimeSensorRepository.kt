@@ -1,5 +1,7 @@
 package com.watermonitor.app.data.repository
 
+import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -8,33 +10,112 @@ import com.watermonitor.app.data.model.SensorData
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 
 object FirebaseRealtimeSensorRepository {
 
-    private val sensorsRef = FirebaseDatabase.getInstance().getReference("sensors")
+    private const val TAG = "HydroSenseRTDB"
 
-    val sensorDataFlow: Flow<SensorData> = callbackFlow {
+    /**
+     * Must match Firebase Console → Realtime Database → URL (include region suffix if shown).
+     * Example: https://database-for-hydrosense-default-rtdb.firebaseio.com
+     * or: https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app
+     */
+    private const val DATABASE_URL =
+        "https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app"
+
+    private val database: FirebaseDatabase by lazy {
+        FirebaseDatabase.getInstance(DATABASE_URL).apply {
+            setLogLevel(com.google.firebase.database.Logger.Level.DEBUG)
+        }
+    }
+
+    private val sensorsRef by lazy { database.getReference("sensors") }
+
+    val sensorDataFlow: Flow<SensorData> = authStateFlow().flatMapLatest { signedIn ->
+        if (!signedIn) {
+            Log.w(TAG, "No Firebase user; RTDB read skipped (rules require auth != null)")
+            flowOf(SensorData())
+        } else {
+            sensorsSnapshotFlow()
+        }
+    }
+
+    private fun authStateFlow(): Flow<Boolean> = callbackFlow {
+        val auth = FirebaseAuth.getInstance()
+        val listener = FirebaseAuth.AuthStateListener {
+            val ok = auth.currentUser != null
+            Log.d(TAG, "Auth state: signedIn=$ok uid=${auth.currentUser?.uid}")
+            trySend(ok)
+        }
+        auth.addAuthStateListener(listener)
+        listener.onAuthStateChanged(auth)
+        awaitClose { auth.removeAuthStateListener(listener) }
+    }
+
+    private fun sensorsSnapshotFlow(): Flow<SensorData> = callbackFlow {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                trySend(snapshot.toSensorData())
+                val data = snapshot.toSensorData()
+                Log.d(TAG, "onDataChange exists=${snapshot.exists()} ph=${data.ph} tds=${data.tds} turbidity=${data.turbidity}")
+                trySend(data)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                close(error.toException())
+                Log.e(TAG, "onCancelled code=${error.code} message=${error.message}")
+                trySend(SensorData())
             }
         }
+        Log.d(TAG, "Attaching listener to $DATABASE_URL/sensors")
         sensorsRef.addValueEventListener(listener)
-        awaitClose { sensorsRef.removeEventListener(listener) }
+        awaitClose {
+            Log.d(TAG, "Removing RTDB listener")
+            sensorsRef.removeEventListener(listener)
+        }
     }
 
     private fun DataSnapshot.toSensorData(): SensorData {
-        if (!exists()) return SensorData()
+        if (!exists()) {
+            Log.w(TAG, "Snapshot at /sensors does not exist")
+            return SensorData()
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val map = getValue() as? Map<String, Any?>
+        if (map != null) {
+            return SensorData(
+                ph = map.parseDouble("ph", 7.0),
+                tds = map.parseInt("tds", 150),
+                turbidity = map.parseDouble("turbidity", 1.5),
+                timestamp = System.currentTimeMillis()
+            )
+        }
+
         return SensorData(
             ph = child("ph").asDouble(7.0),
             tds = child("tds").asInt(150),
             turbidity = child("turbidity").asDouble(1.5),
             timestamp = System.currentTimeMillis()
         )
+    }
+
+    private fun Map<String, Any?>.parseDouble(key: String, default: Double): Double {
+        return when (val value = this[key]) {
+            null -> default
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull() ?: default
+            else -> default
+        }
+    }
+
+    private fun Map<String, Any?>.parseInt(key: String, default: Int): Int {
+        return when (val value = this[key]) {
+            null -> default
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull() ?: default
+            else -> default
+        }
     }
 
     private fun DataSnapshot.asDouble(default: Double): Double {

@@ -76,7 +76,7 @@ Fragment/Activity (UI)
 ViewModel (business logic)
     │ collects Flow
     ▼
-Repository (MockSensorRepository)
+Repository (FirebaseRealtimeSensorRepository | MockSensorRepository)
     │ emits data via Kotlin Flow
     ▼
 Data Models (SensorData, TankStatus, PumpState, etc.)
@@ -84,7 +84,9 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 **Key architectural components:**
 
-1. **MockSensorRepository** (`data/repository/`) — Singleton object providing simulated sensor data via Kotlin `Flow`. Emits pH, TDS, Turbidity every 3 seconds using sine-wave oscillation with random jitter. Tank fill level updates independently. Pump/valve state is managed via `MutableStateFlow`.
+1. **FirebaseRealtimeSensorRepository** (`data/repository/`) — Listens to Firebase Realtime Database at `/sensors` via `ValueEventListener` wrapped in `callbackFlow`. Maps `ph`, `tds`, and `turbidity` into `SensorData`. Used by **Monitoring** only. Requires Firebase Auth (`auth != null` per RTDB rules).
+
+2. **MockSensorRepository** (`data/repository/`) — Singleton object providing simulated data for **Dashboard** and **Control**. Emits pH/TDS/turbidity on a timer only if wired to Monitoring (currently not). Tank fill level updates independently. Pump/valve state is managed via `MutableStateFlow`.
 
 2. **Custom Views** (`ui/views/`)
    - `WaterTankView` — Animated water tank with fill level, surface wave animation (2.5s loop), and smooth fill transitions
@@ -95,22 +97,58 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 ### Data Flow
 
-- **Sensor readings:** `MockSensorRepository.sensorDataFlow` → `ViewModel` collects in `viewModelScope` → emits to `StateFlow` → Fragment observes → updates UI with animated count-ups
-- **Tank status:** `MockSensorRepository.tankStatus` → ViewModel observes → `WaterTankView.setFillPercent()`
-- **Pump control:** Fragment → ViewModel → `MockSensorRepository.togglePumpA()` → updates `_pumpState` StateFlow → UI reflects change
+- **Sensor readings (Monitoring):** `FirebaseRealtimeSensorRepository.sensorDataFlow` → `MonitoringViewModel` → `StateFlow` → `MonitoringFragment` (animated count-ups)
+- **Tank status:** `MockSensorRepository.tankStatus` → `DashboardViewModel` → `WaterTankView.setFillPercent()`
+- **Pump control:** Fragment → `ControlViewModel` → `MockSensorRepository.togglePumpA()` / valves → `_pumpState` → UI
 
-### Swapping to Real Backend
+### Realtime Database schema (current)
 
-To connect real sensors/hardware:
+Project: `database-for-hydrosense` (see `app/google-services.json`).
 
-1. Create a new repository class implementing the same Flow-based interface as `MockSensorRepository`
-2. Replace the repository instance in ViewModels (or use dependency injection)
-3. Keep the ViewModel and UI layers unchanged — they only depend on the Flow interface
+```json
+{
+  "sensors": {
+    "ph": 7.2,
+    "tds": 450,
+    "turbidity": 12.5
+  }
+}
+```
 
-Example integration points:
-- **REST API:** Use Retrofit + coroutines, emit responses to Flow
-- **MQTT:** Use Paho client, convert messages to `SensorData` and emit
-- **Bluetooth LE:** Use Android BLE APIs, parse characteristics into data models
+**Security rules (current):** `/sensors` read and write only when `auth != null`. The Android app reads after user sign-in. ESP32 cannot use the same rule without an authenticated client (see roadmap below).
+
+### Roadmap: ESP32 writes → Android reads
+
+**Done (phase 1 — Android read path):**
+- `firebase-database` dependency on Firebase BOM
+- `FirebaseRealtimeSensorRepository` listening on `getReference("sensors")`
+- `MonitoringViewModel` switched from mock to RTDB
+- Manual verification: edit values in Firebase Console; Monitoring UI updates live
+
+**Next (phase 2 — ESP32 publish):**
+1. **Hardware/firmware** — ESP32 reads pH, TDS, turbidity (ADC/I2C/etc.), Wi-Fi connect, periodic publish interval (e.g. every 5–30 s).
+2. **Firebase write auth** — Pick one approach:
+   - **Custom token / service account** (server or Cloud Function mints short-lived tokens for the device — more secure, more setup)
+   - **Dedicated Firebase Auth user on device** (email/password or anonymous + restricted rules — simpler for prototypes; store credentials only on device, not in repo)
+   - **Rules change for device path** — e.g. allow write to `/sensors` only when `auth != null` for app and a separate locked path for devices (avoid wide open `.write: true`)
+3. **Payload contract** — ESP32 writes the same three fields under `/sensors` (optionally add `updatedAt` server timestamp or millis for staleness UI later).
+4. **Arduino stack** — `Firebase ESP Client` or REST PATCH to RTDB with ID token; use `databaseURL` `https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app` (no trailing slash).
+5. **End-to-end test** — ESP32 publishing → Monitoring screen matches hardware readings without Console edits.
+
+**Later (phase 3 — app parity):**
+- Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold
+- Move tank/pump/valve to RTDB (or separate paths) and replace remaining `MockSensorRepository` usage
+- Optional `SensorRepository` interface + DI for mock vs production builds
+
+### Swapping other backends
+
+Monitoring already uses RTDB. For additional sources:
+
+1. Add a repository exposing `Flow<SensorData>` (or domain-specific flows)
+2. Point the relevant ViewModel at the new repository
+3. Keep Fragment/UI unchanged where possible
+
+Other integration options: REST (Retrofit), MQTT (Paho), BLE characteristics parsed into `SensorData`.
 
 ## Animation System
 
@@ -145,13 +183,12 @@ All use `DecelerateInterpolator` or `OvershootInterpolator` for natural motion.
 
 ## Firebase Integration
 
-The app includes Firebase Authentication and Firestore:
+- **Auth:** `LoginFragment`, `RegisterFragment` — email/password, Google, Facebook. Required for RTDB reads under current rules.
+- **Realtime Database:** Live sensor path `/sensors` → `FirebaseRealtimeSensorRepository` → Monitoring UI. Listener removed on flow cancel via `awaitClose`.
+- **Firestore:** On classpath; not used in sensor flow yet.
+- **google-services.json:** Required in `app/`; must match package `com.watermonitor.app` and project `database-for-hydrosense`.
 
-- **Auth:** `LoginFragment`, `RegisterFragment` handle email/password and Google Sign-In
-- **Firestore:** Configured but not actively used in the current sensor flow (mock data is local-only)
-- **google-services.json:** Required for Firebase features; must be placed in `app/` directory (not committed to repo)
-
-If Firebase features fail, ensure `google-services.json` is present and matches the package name `com.watermonitor.app`.
+If Monitoring shows defaults forever: confirm user is signed in, rules allow `/sensors` for `auth != null`, and data exists under `sensors` (not only at DB root).
 
 ## Testing
 
@@ -195,9 +232,9 @@ Managed via `gradle/libs.versions.toml` (version catalog):
 - **Navigation:** 2.8.5
 - **Lifecycle/ViewModel:** 2.8.7
 - **Coroutines:** 1.9.0
-- **Firebase BOM:** 34.0.0
+- **Firebase BOM:** 34.0.0 (includes `firebase-auth`, `firebase-database`, `firebase-firestore`)
 
-To update dependencies, edit `libs.versions.toml` and sync Gradle.
+To update dependencies, edit `libs.versions.toml` and push for CI validation (no local Gradle sync required for agents).
 
 ## Common Issues
 
@@ -218,3 +255,8 @@ To update dependencies, edit `libs.versions.toml` and sync Gradle.
 ### "Could not find or load main class org.gradle.wrapper.GradleWrapperMain"
 - Run `gradle wrapper` to regenerate wrapper files
 - Ensure `gradlew` has execute permissions: `chmod +x gradlew`
+
+### Monitoring stuck on default sensor values
+- User must be authenticated before RTDB listener succeeds
+- Verify Firebase Console → Realtime Database → `sensors` has `ph`, `tds`, `turbidity`
+- Check Logcat for `DatabaseError` / permission denied on `FirebaseRealtimeSensorRepository`

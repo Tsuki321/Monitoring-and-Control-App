@@ -7,6 +7,7 @@ import com.watermonitor.app.data.model.SensorData
 import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -28,6 +29,7 @@ class MonitoringViewModel : ViewModel() {
     val uiState: StateFlow<MonitoringUiState> =
         FirebaseRealtimeSensorRepository.sensorDataFlow
             .map { data -> buildUiState(data) }
+            .catch { emit(buildUiState(SensorData())) }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
