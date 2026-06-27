@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Instead:** Commit and push changes to trigger the GitHub Actions workflow
 - **Rationale:** Ensures consistent build environment, proper signing, and validates changes in the same environment as production builds
 - **Exception:** Code inspection, refactoring, and file editing can be done locally without building
+- **Secrets:** Never commit credentials. `.gitignore` excludes `UID.txt` (ESP32 Firebase Auth credentials), `*.apk`/`*.aab` (build outputs), and `*.keystore`/`*.jks` (signing keys).
 
 ## Build & Testing Commands
 
@@ -126,11 +127,15 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 - `MonitoringViewModel` switched from mock to RTDB
 - Manual verification: edit values in Firebase Console; Monitoring UI updates live
 
-**Next (phase 2 — ESP32 publish):**
+**Done (phase 2a — ESP32 auth setup):**
+- Chosen approach: **Dedicated Firebase Auth user on device** (email/password)
+- Device user created in Firebase Auth; credentials (email + UID) stored locally in `UID.txt` (gitignored — never commit)
+- Existing `/sensors` rules (`auth != null`) already permit this user to write
+
+**Next (phase 2b — ESP32 publish):**
 1. **Hardware/firmware** — ESP32 reads pH, TDS, turbidity (ADC/I2C/etc.), Wi-Fi connect, periodic publish interval (e.g. every 5–30 s).
-2. **Firebase write auth** — Pick one approach:
+2. **Firebase write auth** — Approach chosen (dedicated device user, see phase 2a). Alternatives considered but rejected for now:
    - **Custom token / service account** (server or Cloud Function mints short-lived tokens for the device — more secure, more setup)
-   - **Dedicated Firebase Auth user on device** (email/password or anonymous + restricted rules — simpler for prototypes; store credentials only on device, not in repo)
    - **Rules change for device path** — e.g. allow write to `/sensors` only when `auth != null` for app and a separate locked path for devices (avoid wide open `.write: true`)
 3. **Payload contract** — ESP32 writes the same three fields under `/sensors` (optionally add `updatedAt` server timestamp or millis for staleness UI later).
 4. **Arduino stack** — `Firebase ESP Client` or REST PATCH to RTDB with ID token; use `databaseURL` `https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app` (no trailing slash).
