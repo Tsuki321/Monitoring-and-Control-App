@@ -1,5 +1,9 @@
 # Secrets / credentials
 UID.txt
+arduino_secrets.h
+
+# ESP32 firmware (contains Wi-Fi & Firebase credentials)
+Sketch Arduino/
 
 # Android / Gradle
 *.apk
