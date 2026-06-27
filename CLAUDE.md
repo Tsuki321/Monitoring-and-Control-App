@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Instead:** Commit and push changes to trigger the GitHub Actions workflow
 - **Rationale:** Ensures consistent build environment, proper signing, and validates changes in the same environment as production builds
 - **Exception:** Code inspection, refactoring, and file editing can be done locally without building
-- **Secrets:** Never commit credentials. `.gitignore` excludes `UID.txt` (ESP32 Firebase Auth credentials), `*.apk`/`*.aab` (build outputs), and `*.keystore`/`*.jks` (signing keys).
+- **Secrets:** Never commit credentials. `.gitignore` excludes `UID.txt` (ESP32 Firebase Auth credentials), `arduino_secrets.h`, `Sketch Arduino/` (ESP32 firmware with Wi-Fi & Firebase credentials), `*.apk`/`*.aab` (build outputs), and `*.keystore`/`*.jks` (signing keys).
 
 ## Build & Testing Commands
 
@@ -132,14 +132,18 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 - Device user created in Firebase Auth; credentials (email + UID) stored locally in `UID.txt` (gitignored — never commit)
 - Existing `/sensors` rules (`auth != null`) already permit this user to write
 
-**Next (phase 2b — ESP32 publish):**
-1. **Hardware/firmware** — ESP32 reads pH, TDS, turbidity (ADC/I2C/etc.), Wi-Fi connect, periodic publish interval (e.g. every 5–30 s).
-2. **Firebase write auth** — Approach chosen (dedicated device user, see phase 2a). Alternatives considered but rejected for now:
-   - **Custom token / service account** (server or Cloud Function mints short-lived tokens for the device — more secure, more setup)
-   - **Rules change for device path** — e.g. allow write to `/sensors` only when `auth != null` for app and a separate locked path for devices (avoid wide open `.write: true`)
-3. **Payload contract** — ESP32 writes the same three fields under `/sensors` (optionally add `updatedAt` server timestamp or millis for staleness UI later).
-4. **Arduino stack** — `Firebase ESP Client` or REST PATCH to RTDB with ID token; use `databaseURL` `https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app` (no trailing slash).
-5. **End-to-end test** — ESP32 publishing → Monitoring screen matches hardware readings without Console edits.
+**Done (phase 2b — ESP32 publish):**
+- **Firmware** — `Sketch Arduino/UPDATED_COMBINE_V2.ino` reads pH, TDS, turbidity on 1s intervals and publishes every 5s. Uses non-blocking `millis()` timing (no `delay()` in loop).
+- **Firebase write auth** — Dedicated device user via `UserAuth` (email/password, see phase 2a). Alternatives considered but rejected:
+  - **Custom token / service account** (server or Cloud Function mints short-lived tokens for the device — more secure, more setup)
+  - **Rules change for device path** — e.g. allow write to `/sensors` only when `auth != null` for app and a separate locked path for devices (avoid wide open `.write: true`)
+- **Payload contract** — Single atomic `update<object_t>()` PATCH to `/sensors` with JSON `{"ph":X.XX,"tds":XXX,"turbidity":X.X}`. One network round-trip per cycle (was 3 blocking `set()` calls).
+- **Arduino stack** — `FirebaseClient` library by mobizt (NOT the deprecated `Firebase-ESP-Client`). Install via Arduino Library Manager (search "FirebaseClient"). Auth token auto-refreshes (60-min lifetime handled by `app.loop()`).
+- **Wi-Fi** — `WiFi.setAutoReconnect(true)` + `WiFi.persistent(true)` for drop recovery. TLS via `WiFiClientSecure::setInsecure()` (prototype; use `setCACert()` for production).
+- **Serial diagnostics** — 115200 baud. Prints Wi-Fi IP/RSSI, auth progress (`[FB]`), `[OK] Firebase auth complete`, each publish payload + target URL, `[OK] Publish successful` or `[FAIL]` with error code.
+
+**Pending (end-to-end test on hardware):**
+- ESP32 publishing → Monitoring screen matches hardware readings without Console edits. Verify via Serial Monitor (`[OK] Publish successful`) + app logcat (`HydroSenseRTDB` tag, `onDataChange`).
 
 **Later (phase 3 — app parity):**
 - Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold
