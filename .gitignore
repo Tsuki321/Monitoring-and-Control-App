@@ -1,0 +1,8 @@
+# Secrets / credentials
+UID.txt
+
+# Android / Gradle
+*.apk
+*.aab
+*.keystore
+*.jks

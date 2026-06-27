@@ -241,28 +241,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Navigation Buttons -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGoMonitoring"
-                style="@style/Style.WaterMonitor.NavButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginBottom="12dp"
-                android:alpha="0"
-                android:text="@string/btn_go_monitoring"
-                app:icon="@drawable/ic_wave"
-                app:iconGravity="textStart" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGoControl"
-                style="@style/Style.WaterMonitor.NavButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:alpha="0"
-                android:text="@string/btn_go_control"
-                app:icon="@drawable/ic_pump"
-                app:iconGravity="textStart" />
-
         </LinearLayout>
     </ScrollView>
 
