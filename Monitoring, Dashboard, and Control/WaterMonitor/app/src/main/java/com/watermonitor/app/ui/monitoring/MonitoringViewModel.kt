@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.stateIn
 data class SensorCardUiState(
     val value: Double = 0.0,
     val statusLabelRes: Int = R.string.status_neutral,
-    val statusColorRes: Int = 0
+    val statusColorRes: Int = 0,
+    val cloudinessPercent: Int = 0
 )
 
 data class MonitoringUiState(
@@ -46,9 +47,10 @@ class MonitoringViewModel : ViewModel() {
     }
 
     private fun phCardState(ph: Double): SensorCardUiState {
+        // EPA/WHO drinking water acceptable range is 6.5–8.5.
         val (labelRes, color) = when {
             ph < 6.5 -> Pair(R.string.status_acidic, STATUS_RED)
-            ph > 7.5 -> Pair(R.string.status_alkaline, STATUS_YELLOW)
+            ph > 8.5 -> Pair(R.string.status_alkaline, STATUS_YELLOW)
             else -> Pair(R.string.status_neutral, STATUS_GREEN)
         }
         return SensorCardUiState(value = ph, statusLabelRes = labelRes, statusColorRes = color)
@@ -70,7 +72,15 @@ class MonitoringViewModel : ViewModel() {
             turbidity > 1.5 -> Pair(R.string.status_slightly_turbid, STATUS_YELLOW)
             else -> Pair(R.string.status_clear, STATUS_GREEN)
         }
-        return SensorCardUiState(value = turbidity, statusLabelRes = labelRes, statusColorRes = color)
+        val cloudiness = (turbidity / TURBIDITY_FULL_SCALE_NTU * 100)
+            .toInt()
+            .coerceIn(0, 100)
+        return SensorCardUiState(
+            value = turbidity,
+            statusLabelRes = labelRes,
+            statusColorRes = color,
+            cloudinessPercent = cloudiness
+        )
     }
 
     private companion object {
@@ -78,5 +88,6 @@ class MonitoringViewModel : ViewModel() {
         val STATUS_GREEN = android.graphics.Color.parseColor("#10B981")
         val STATUS_YELLOW = android.graphics.Color.parseColor("#F59E0B")
         val STATUS_RED = android.graphics.Color.parseColor("#EF4444")
+        const val TURBIDITY_FULL_SCALE_NTU = 5.0
     }
 }

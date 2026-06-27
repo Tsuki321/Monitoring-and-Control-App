@@ -225,16 +225,31 @@
                         app:layout_constraintTop_toBottomOf="@id/imgTurbidityIcon"
                         app:layout_constraintEnd_toEndOf="parent" />
 
-                    <TextView
-                        android:id="@+id/tvTurbidityUnit"
-                        style="@style/Style.WaterMonitor.SensorUnit"
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        android:id="@+id/turbidityUnitRow"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:orientation="horizontal"
                         android:gravity="center"
-                        android:text="@string/unit_ntu"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tvTurbidityValue" />
+                        app:layout_constraintTop_toBottomOf="@id/tvTurbidityValue">
+
+                        <TextView
+                            android:id="@+id/tvTurbidityUnit"
+                            style="@style/Style.WaterMonitor.SensorUnit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/unit_ntu" />
+
+                        <TextView
+                            android:id="@+id/tvTurbidityCloudiness"
+                            style="@style/Style.WaterMonitor.SensorUnit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="· 0% Cloudy" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvTurbidityStatus"
@@ -246,7 +261,7 @@
                         android:textColor="@color/status_green"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/tvTurbidityUnit"
+                        app:layout_constraintTop_toBottomOf="@id/turbidityUnitRow"
                         android:layout_marginTop="4dp"
                         android:layout_marginBottom="4dp" />
 

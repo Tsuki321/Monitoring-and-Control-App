@@ -116,6 +116,10 @@ class MonitoringFragment : Fragment() {
                 )
                 prevTurbidityStatusRes = state.turbidityStatus.statusLabelRes
                 prevTurbidity = state.sensorData.turbidity
+
+                binding.tvTurbidityCloudiness.text =
+                    getString(R.string.cloudiness_format, state.turbidityStatus.cloudinessPercent)
+                binding.tvTurbidityCloudiness.setTextColor(state.turbidityStatus.statusColorRes)
             }
         }
     }
