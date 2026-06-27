@@ -84,16 +84,16 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 **Key architectural components:**
 
-1. **FirebaseRealtimeSensorRepository** (`data/repository/`) — Listens to Firebase Realtime Database at `/sensors` via `ValueEventListener` wrapped in `callbackFlow`. Maps `ph`, `tds`, and `turbidity` into `SensorData`. Used by **Monitoring** only. Requires Firebase Auth (`auth != null` per RTDB rules).
+1. **FirebaseRealtimeSensorRepository** (`data/repository/`) — Listens to Firebase Realtime Database at `/sensors` via `ValueEventListener` wrapped in `callbackFlow`. Maps `ph`, `tds`, and `turbidity` into `SensorData`. Used by **Monitoring** only. Requires Firebase Auth (`auth != null` per RTDB rules). Connects to the regional database URL (`asia-southeast1.firebasedatabase.app`) and waits for a signed-in user before attaching the listener; logs under tag `HydroSenseRTDB`.
 
 2. **MockSensorRepository** (`data/repository/`) — Singleton object providing simulated data for **Dashboard** and **Control**. Emits pH/TDS/turbidity on a timer only if wired to Monitoring (currently not). Tank fill level updates independently. Pump/valve state is managed via `MutableStateFlow`.
 
-2. **Custom Views** (`ui/views/`)
+3. **Custom Views** (`ui/views/`)
    - `WaterTankView` — Animated water tank with fill level, surface wave animation (2.5s loop), and smooth fill transitions
    - `OceanWaveView` — Multi-layer parallax wave background using `Choreographer` for frame-perfect animation
    - Both use delta-time calculations to avoid Float precision loss (see "Animation System" below)
 
-3. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Auth pages. Top bar dynamically switches between settings gear and back arrow.
+4. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Auth pages. Top bar dynamically switches between settings gear and back arrow.
 
 ### Data Flow
 
@@ -104,6 +104,7 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 ### Realtime Database schema (current)
 
 Project: `database-for-hydrosense` (see `app/google-services.json`).
+Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app`
 
 ```json
 {
@@ -184,11 +185,11 @@ All use `DecelerateInterpolator` or `OvershootInterpolator` for natural motion.
 ## Firebase Integration
 
 - **Auth:** `LoginFragment`, `RegisterFragment` — email/password, Google, Facebook. Required for RTDB reads under current rules.
-- **Realtime Database:** Live sensor path `/sensors` → `FirebaseRealtimeSensorRepository` → Monitoring UI. Listener removed on flow cancel via `awaitClose`.
+- **Realtime Database:** Live sensor path `/sensors` → `FirebaseRealtimeSensorRepository` → Monitoring UI. Listener removed on flow cancel via `awaitClose`. Database URL is regional (`asia-southeast1`) and set explicitly in the repository (it is not present in `google-services.json`). Listener only attaches after a Firebase user is signed in; logcat tag `HydroSenseRTDB`.
 - **Firestore:** On classpath; not used in sensor flow yet.
 - **google-services.json:** Required in `app/`; must match package `com.watermonitor.app` and project `database-for-hydrosense`.
 
-If Monitoring shows defaults forever: confirm user is signed in, rules allow `/sensors` for `auth != null`, and data exists under `sensors` (not only at DB root).
+If Monitoring shows defaults forever: confirm user is signed in, rules allow `/sensors` for `auth != null`, data exists under `sensors` (not only at DB root), and the regional database URL in `FirebaseRealtimeSensorRepository.DATABASE_URL` matches Firebase Console.
 
 ## Testing
 
@@ -259,4 +260,5 @@ To update dependencies, edit `libs.versions.toml` and push for CI validation (no
 ### Monitoring stuck on default sensor values
 - User must be authenticated before RTDB listener succeeds
 - Verify Firebase Console → Realtime Database → `sensors` has `ph`, `tds`, `turbidity`
-- Check Logcat for `DatabaseError` / permission denied on `FirebaseRealtimeSensorRepository`
+- Confirm the database URL in `FirebaseRealtimeSensorRepository.DATABASE_URL` matches Firebase Console (regional `asia-southeast1.firebasedatabase.app`)
+- Filter Logcat for `HydroSenseRTDB` to see auth state, listener attach, `onDataChange`, or `onCancelled` (permission denied)
