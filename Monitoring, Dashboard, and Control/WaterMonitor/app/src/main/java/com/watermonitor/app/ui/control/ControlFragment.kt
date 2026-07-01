@@ -45,6 +45,12 @@ class ControlFragment : Fragment() {
     }
 
     private fun setupSwitchListeners() {
+        binding.switchMode.setOnCheckedChangeListener { _, _ ->
+            if (!isUpdatingUi) {
+                viewModel.toggleAutoMode()
+                AnimationUtils.pulseView(binding.cardMode)
+            }
+        }
         binding.switchPumpA.setOnCheckedChangeListener { _, _ ->
             if (!isUpdatingUi) {
                 viewModel.togglePumpA()
@@ -61,41 +67,30 @@ class ControlFragment : Fragment() {
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.pumpState.collect { state ->
-                if (!hasAnimatedEntrance) {
-                    hasAnimatedEntrance = true
-                    AnimationUtils.animateCardEntrance(
-                        listOf(
-                            binding.cardPumpA,
-                            binding.cardPumpB,
-                            binding.cardSystemStatus
-                        ),
-                        delayMs = 80
-                    )
-                }
-
+            viewModel.pumpControlState.collect { control ->
                 isUpdatingUi = true
 
-                binding.switchPumpA.isChecked = state.pumpA
-                binding.switchPumpB.isChecked = state.pumpB
+                // Mode switch reflects autoMode from RTDB
+                binding.switchMode.isChecked = control.autoMode
+                updateModeLabel(control.autoMode)
 
-                updateStateLabel(binding.tvPumpAState, state.pumpA)
-                updateStateLabel(binding.tvPumpBState, state.pumpB)
+                // Pump switches reflect actual relay states from RTDB /status
+                binding.switchPumpA.isChecked = control.actualPumpA
+                binding.switchPumpB.isChecked = control.actualPumpB
+
+                // Disable pump switches in AUTO mode (ESP32 controls them)
+                binding.switchPumpA.isEnabled = !control.autoMode
+                binding.switchPumpB.isEnabled = !control.autoMode
+
+                updateStateLabel(binding.tvPumpAState, control.actualPumpA)
+                updateStateLabel(binding.tvPumpBState, control.actualPumpB)
 
                 // Rotate pump icons while running; ease back to rest when stopped
-                updatePumpRotation(state.pumpA, binding.imgPumpAIcon, isPumpA = true)
-                updatePumpRotation(state.pumpB, binding.imgPumpBIcon, isPumpA = false)
-
-                // Update pump A monitoring data
-                binding.tvPumpASpeed.text = getString(R.string.pump_speed_format, state.pumpASpeed)
-                binding.tvPumpAVoltage.text = getString(R.string.pump_voltage_format, state.pumpAVoltage)
-
-                // Update pump B monitoring data
-                binding.tvPumpBSpeed.text = getString(R.string.pump_speed_format, state.pumpBSpeed)
-                binding.tvPumpBVoltage.text = getString(R.string.pump_voltage_format, state.pumpBVoltage)
+                updatePumpRotation(control.actualPumpA, binding.imgPumpAIcon, isPumpA = true)
+                updatePumpRotation(control.actualPumpB, binding.imgPumpBIcon, isPumpA = false)
 
                 // System overall status
-                val anyActive = state.pumpA || state.pumpB
+                val anyActive = control.actualPumpA || control.actualPumpB
                 binding.tvSystemStatus.apply {
                     text = if (anyActive) getString(R.string.system_active) else getString(R.string.system_standby)
                     setTextColor(
@@ -107,6 +102,38 @@ class ControlFragment : Fragment() {
                 isUpdatingUi = false
             }
         }
+
+        // Speed / voltage from the mock simulation (synced to actual states)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.pumpState.collect { state ->
+                if (!hasAnimatedEntrance) {
+                    hasAnimatedEntrance = true
+                    AnimationUtils.animateCardEntrance(
+                        listOf(
+                            binding.cardMode,
+                            binding.cardPumpA,
+                            binding.cardPumpB,
+                            binding.cardSystemStatus
+                        ),
+                        delayMs = 80
+                    )
+                }
+
+                binding.tvPumpASpeed.text = getString(R.string.pump_speed_format, state.pumpASpeed)
+                binding.tvPumpAVoltage.text = getString(R.string.pump_voltage_format, state.pumpAVoltage)
+                binding.tvPumpBSpeed.text = getString(R.string.pump_speed_format, state.pumpBSpeed)
+                binding.tvPumpBVoltage.text = getString(R.string.pump_voltage_format, state.pumpBVoltage)
+            }
+        }
+    }
+
+    private fun updateModeLabel(isAuto: Boolean) {
+        binding.tvModeState.text = if (isAuto) getString(R.string.mode_auto) else getString(R.string.mode_manual)
+        binding.tvModeState.setTextColor(
+            if (isAuto) ContextCompat.getColor(requireContext(), R.color.status_green)
+            else ContextCompat.getColor(requireContext(), R.color.status_grey)
+        )
+        binding.tvModeHint.text = if (isAuto) getString(R.string.pump_auto_hint) else getString(R.string.pump_manual_hint)
     }
 
     private fun updateStateLabel(textView: android.widget.TextView, isOn: Boolean) {

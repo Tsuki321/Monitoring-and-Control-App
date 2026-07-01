@@ -85,9 +85,9 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 **Key architectural components:**
 
-1. **FirebaseRealtimeSensorRepository** (`data/repository/`) — Listens to Firebase Realtime Database at `/sensors` via `ValueEventListener` wrapped in `callbackFlow`. Maps `ph`, `tds`, and `turbidity` into `SensorData`. Used by **Monitoring** only. Requires Firebase Auth (`auth != null` per RTDB rules). Connects to the regional database URL (`asia-southeast1.firebasedatabase.app`) and waits for a signed-in user before attaching the listener; logs under tag `HydroSenseRTDB`.
+1. **FirebaseRealtimeSensorRepository** (`data/repository/`) — Listens to Firebase Realtime Database via `ValueEventListener` wrapped in `callbackFlow`. Exposes `sensorDataFlow` (reads `/sensors` → `SensorData`) and `pumpControlFlow` (reads `/status` + `/control/auto` → `PumpControlState`). Writers: `setPumpA()`, `setPumpB()`, `setAutoMode()` push commands to `/control`. Requires Firebase Auth (`auth != null` per RTDB rules). Connects to the regional database URL (`asia-southeast1.firebasedatabase.app`) and waits for a signed-in user before attaching listeners; logs under tag `HydroSenseRTDB`.
 
-2. **MockSensorRepository** (`data/repository/`) — Singleton object providing simulated data for **Dashboard** and **Control**. Emits pH/TDS/turbidity on a timer only if wired to Monitoring (currently not). Tank fill level updates independently. Pump/valve state is managed via `MutableStateFlow`.
+2. **MockSensorRepository** (`data/repository/`) — Singleton object providing simulated data for **Dashboard** and **Control**. Emits pH/TDS/turbidity on a timer only if wired to Monitoring (currently not). Tank fill level updates independently. Pump/valve state is managed via `MutableStateFlow`. `setPumpA()` / `setPumpB()` sync actual relay states from RTDB into the mock so the speed/voltage simulation reflects hardware reality.
 
 3. **Custom Views** (`ui/views/`)
    - `WaterTankView` — Animated water tank with fill level, surface wave animation (2.5s loop), and smooth fill transitions
@@ -100,7 +100,12 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 - **Sensor readings (Monitoring):** `FirebaseRealtimeSensorRepository.sensorDataFlow` → `MonitoringViewModel` → `StateFlow` → `MonitoringFragment` (animated count-ups)
 - **Tank status:** `MockSensorRepository.tankStatus` → `DashboardViewModel` → `WaterTankView.setFillPercent()`
-- **Pump control:** Fragment → `ControlViewModel` → `MockSensorRepository.togglePumpA()` / valves → `_pumpState` → UI
+- **Pump control (bidirectional):**
+  - App reads actual relay states: `FirebaseRealtimeSensorRepository.pumpControlFlow` (listens to `/status`) → `ControlViewModel.pumpControlState` → `ControlFragment` (switches reflect actual pump on/off)
+  - App sends commands: `ControlFragment` → `ControlViewModel.togglePumpA/B()` → `FirebaseRealtimeSensorRepository.setPumpA/B()` (writes to `/control/pumpA` or `/control/pumpB`)
+  - Mode toggle: `ControlFragment` → `ControlViewModel.toggleAutoMode()` → `FirebaseRealtimeSensorRepository.setAutoMode()` (writes to `/control/auto`)
+  - ESP32 reads `/control` every 2s, drives relays, writes actual states back to `/status` — creating a live feedback loop
+  - Speed/voltage simulation: `MockSensorRepository.setPumpA/B()` syncs actual states → mock → `pumpState` flow → UI speed/voltage labels
 
 ### Realtime Database schema (current)
 
@@ -113,11 +118,30 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
     "ph": 7.2,
     "tds": 450,
     "turbidity": 12.5
+  },
+  "status": {
+    "pumpA": 0,
+    "pumpB": 0
+  },
+  "control": {
+    "pumpA": 0,
+    "pumpB": 0,
+    "auto": 1
   }
 }
 ```
 
-**Security rules (current):** `/sensors` read and write only when `auth != null`. The Android app reads after user sign-in. ESP32 cannot use the same rule without an authenticated client (see roadmap below).
+**Path ownership (prevents write conflicts):**
+
+| Path | Writer | Reader | Purpose |
+|------|--------|--------|---------|
+| `/sensors` | ESP32 | App | pH, TDS, turbidity readings |
+| `/status` | ESP32 | App | Actual relay states (`pumpA`, `pumpB` as 0/1) |
+| `/control` | App | ESP32 | Commands + mode (`pumpA`, `pumpB` as 0/1; `auto` as 0/1) |
+
+`/control/auto`: `1` = AUTO mode (ESP32 water-level automation drives both pumps + safety failsafes); `0` = MANUAL mode (each pump independently follows `/control/pumpA` and `/control/pumpB`). Defaults to `1` (AUTO) when missing/null.
+
+**Security rules (current):** `/sensors`, `/status`, and `/control` read and write only when `auth != null`. The Android app reads/writes after user sign-in. ESP32 uses a dedicated auth user (see phase 2a).
 
 ### Roadmap: ESP32 writes → Android reads
 
@@ -133,7 +157,7 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 - Existing `/sensors` rules (`auth != null`) already permit this user to write
 
 **Done (phase 2b — ESP32 publish):**
-- **Firmware** — `Sketch Arduino/UPDATED_COMBINE_V2.ino` reads pH, TDS, turbidity on 1s intervals and publishes every 5s. Uses non-blocking `millis()` timing (no `delay()` in loop).
+- **Firmware** — `Sketch Arduino/UPDATED_CODE_V5.ino` reads pH, TDS, turbidity on 1s intervals and publishes every 5s. Uses non-blocking `millis()` timing (no `delay()` in loop).
 - **Firebase write auth** — Dedicated device user via `UserAuth` (email/password, see phase 2a). Alternatives considered but rejected:
   - **Custom token / service account** (server or Cloud Function mints short-lived tokens for the device — more secure, more setup)
   - **Rules change for device path** — e.g. allow write to `/sensors` only when `auth != null` for app and a separate locked path for devices (avoid wide open `.write: true`)
@@ -142,12 +166,18 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 - **Wi-Fi** — `WiFi.setAutoReconnect(true)` + `WiFi.persistent(true)` for drop recovery. TLS via `WiFiClientSecure::setInsecure()` (prototype; use `setCACert()` for production).
 - **Serial diagnostics** — 115200 baud. Prints Wi-Fi IP/RSSI, auth progress (`[FB]`), `[OK] Firebase auth complete`, each publish payload + target URL, `[OK] Publish successful` or `[FAIL]` with error code.
 
+**Done (phase 2c — bidirectional pump control):**
+- **Firmware** — ESP32 polls `/control` every 2s for `pumpA`, `pumpB`, and `auto` commands. In AUTO mode (`auto=1`, default), both pumps follow the water-level sensor with freeze detection + 30s safety timeout. In MANUAL mode (`auto=0`), each pump independently follows its `/control/pumpA` or `/control/pumpB` command. Actual relay states are written to `/status` as `{"pumpA":0|1,"pumpB":0|1}` whenever either changes. MANUAL→AUTO transition resets the safety timer to prevent immediate halt.
+- **App** — `FirebaseRealtimeSensorRepository.pumpControlFlow` combines `/status` (actual states) + `/control/auto` (mode) into `PumpControlState`. `ControlViewModel` exposes this as a `StateFlow`; `ControlFragment` switches reflect actual relay states. Toggling a switch writes a command to `/control/pumpA` or `/control/pumpB`. An Auto/Manual mode switch writes to `/control/auto`; pump switches are disabled in AUTO mode. `MockSensorRepository.setPumpA/B()` syncs real states → mock so speed/voltage simulation reflects hardware. Dashboard also syncs via `DashboardViewModel` init.
+- **Feedback loop** — App writes command → ESP32 reads (≤2s) → ESP32 drives relay → ESP32 writes `/status` → App listener updates UI. Total round-trip: 2–4 seconds.
+
 **Pending (end-to-end test on hardware):**
 - ESP32 publishing → Monitoring screen matches hardware readings without Console edits. Verify via Serial Monitor (`[OK] Publish successful`) + app logcat (`HydroSenseRTDB` tag, `onDataChange`).
+- Pump control round-trip: Toggle a pump in the app → Serial Monitor shows `[CTRL]` + `Manual command` → `/status` updates → app switch reflects actual state. Toggle Auto/Manual and verify pump switches enable/disable.
 
 **Later (phase 3 — app parity):**
 - Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold
-- Move tank/pump/valve to RTDB (or separate paths) and replace remaining `MockSensorRepository` usage
+- Move tank/valve to RTDB (or separate paths) and replace remaining `MockSensorRepository` usage
 - Optional `SensorRepository` interface + DI for mock vs production builds
 
 ### Swapping other backends
@@ -271,3 +301,12 @@ To update dependencies, edit `libs.versions.toml` and push for CI validation (no
 - Verify Firebase Console → Realtime Database → `sensors` has `ph`, `tds`, `turbidity`
 - Confirm the database URL in `FirebaseRealtimeSensorRepository.DATABASE_URL` matches Firebase Console (regional `asia-southeast1.firebasedatabase.app`)
 - Filter Logcat for `HydroSenseRTDB` to see auth state, listener attach, `onDataChange`, or `onCancelled` (permission denied)
+
+### Pump switches not responding
+- User must be authenticated (same as sensor reads — RTDB rules require `auth != null`)
+- Switch to MANUAL mode (toggle the Mode switch OFF) — pump switches are disabled in AUTO mode
+- Check Serial Monitor for `[CTRL]` lines confirming the ESP32 is reading `/control` every 2s
+- Check Firebase Console → `control` has `pumpA`, `pumpB`, and `auto` fields
+- Check Firebase Console → `status` has `pumpA` and `pumpB` fields (written by ESP32)
+- Filter Logcat for `HydroSenseRTDB` to see `/status` and `/control/auto` listener events
+- Round-trip delay is 2–4 seconds (app writes → ESP32 reads → ESP32 writes status → app updates)

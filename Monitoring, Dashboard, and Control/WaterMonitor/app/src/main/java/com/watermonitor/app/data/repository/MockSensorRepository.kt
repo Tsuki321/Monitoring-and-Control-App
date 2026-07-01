@@ -113,8 +113,24 @@ object MockSensorRepository {
         _pumpState.value = _pumpState.value.copy(pumpA = !_pumpState.value.pumpA)
     }
 
+    /**
+     * Sets Pump A's on/off state without toggling. Used to sync the mock monitoring
+     * simulation (speed/voltage) to the real pump state coming from RTDB.
+     */
+    fun setPumpA(value: Boolean) {
+        if (_pumpState.value.pumpA != value) {
+            _pumpState.value = _pumpState.value.copy(pumpA = value)
+        }
+    }
+
     fun togglePumpB() {
         _pumpState.value = _pumpState.value.copy(pumpB = !_pumpState.value.pumpB)
+    }
+
+    fun setPumpB(value: Boolean) {
+        if (_pumpState.value.pumpB != value) {
+            _pumpState.value = _pumpState.value.copy(pumpB = value)
+        }
     }
 
     fun toggleValveMain() {

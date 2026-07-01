@@ -10,3 +10,17 @@ data class PumpState(
     val pumpBSpeed: Int = 0,        // RPM
     val pumpBVoltage: Float = 0f    // Volts
 )
+
+/**
+ * Live pump control state backed by Firebase RTDB.
+ *
+ * - [actualPumpA] / [actualPumpB] mirror `/status/pumpA` and `/status/pumpB` (0/1) —
+ *   the ESP32's actual relay states.
+ * - [autoMode] mirrors `/control/auto` (0/1) — 1 = ESP32 water-level automation,
+ *   0 = the app manually commands each pump via `/control/pumpA` and `/control/pumpB`.
+ */
+data class PumpControlState(
+    val actualPumpA: Boolean = false,
+    val actualPumpB: Boolean = false,
+    val autoMode: Boolean = true
+)

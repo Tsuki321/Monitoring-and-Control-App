@@ -6,10 +6,12 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.watermonitor.app.data.model.PumpControlState
 import com.watermonitor.app.data.model.SensorData
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 
@@ -32,6 +34,10 @@ object FirebaseRealtimeSensorRepository {
     }
 
     private val sensorsRef by lazy { database.getReference("sensors") }
+    private val statusRef by lazy { database.getReference("status") }
+    private val controlPumpARef by lazy { database.getReference("control/pumpA") }
+    private val controlPumpBRef by lazy { database.getReference("control/pumpB") }
+    private val controlAutoRef by lazy { database.getReference("control/auto") }
 
     val sensorDataFlow: Flow<SensorData> = authStateFlow().flatMapLatest { signedIn ->
         if (!signedIn) {
@@ -39,6 +45,49 @@ object FirebaseRealtimeSensorRepository {
             flowOf(SensorData())
         } else {
             sensorsSnapshotFlow()
+        }
+    }
+
+    /**
+     * Live pump control state: combines actual relay states from `/status`
+     * (written by the ESP32) with the mode flag from `/control/auto` (written
+     * by the app). Both are gated behind Firebase auth.
+     */
+    val pumpControlFlow: Flow<PumpControlState> = authStateFlow().flatMapLatest { signedIn ->
+        if (!signedIn) {
+            Log.w(TAG, "No Firebase user; pump control flow skipped")
+            flowOf(PumpControlState())
+        } else {
+            combine(pumpStatusSnapshotFlow(), autoModeSnapshotFlow()) { pumpStatus, auto ->
+                PumpControlState(
+                    actualPumpA = pumpStatus.first,
+                    actualPumpB = pumpStatus.second,
+                    autoMode = auto
+                )
+            }
+        }
+    }
+
+    // ── Writers: app → ESP32 via /control ──────────────────────────────────
+
+    fun setPumpA(command: Boolean) {
+        controlPumpARef.setValue(if (command) 1 else 0) { error, _ ->
+            if (error != null) Log.e(TAG, "setPumpA failed: ${error.message}")
+            else Log.d(TAG, "Wrote /control/pumpA = ${if (command) 1 else 0}")
+        }
+    }
+
+    fun setPumpB(command: Boolean) {
+        controlPumpBRef.setValue(if (command) 1 else 0) { error, _ ->
+            if (error != null) Log.e(TAG, "setPumpB failed: ${error.message}")
+            else Log.d(TAG, "Wrote /control/pumpB = ${if (command) 1 else 0}")
+        }
+    }
+
+    fun setAutoMode(enabled: Boolean) {
+        controlAutoRef.setValue(if (enabled) 1 else 0) { error, _ ->
+            if (error != null) Log.e(TAG, "setAutoMode failed: ${error.message}")
+            else Log.d(TAG, "Wrote /control/auto = ${if (enabled) 1 else 0}")
         }
     }
 
@@ -72,6 +121,49 @@ object FirebaseRealtimeSensorRepository {
         awaitClose {
             Log.d(TAG, "Removing RTDB listener")
             sensorsRef.removeEventListener(listener)
+        }
+    }
+
+    private fun pumpStatusSnapshotFlow(): Flow<Pair<Boolean, Boolean>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val pumpA = snapshot.child("pumpA").asBool(false)
+                val pumpB = snapshot.child("pumpB").asBool(false)
+                Log.d(TAG, "onDataChange /status pumpA=$pumpA pumpB=$pumpB")
+                trySend(Pair(pumpA, pumpB))
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "/status cancelled code=${error.code} message=${error.message}")
+                trySend(Pair(false, false))
+            }
+        }
+        Log.d(TAG, "Attaching listener to $DATABASE_URL/status")
+        statusRef.addValueEventListener(listener)
+        awaitClose {
+            Log.d(TAG, "Removing /status listener")
+            statusRef.removeEventListener(listener)
+        }
+    }
+
+    private fun autoModeSnapshotFlow(): Flow<Boolean> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val auto = snapshot.asBool(true)
+                Log.d(TAG, "onDataChange /control/auto=$auto")
+                trySend(auto)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "/control/auto cancelled code=${error.code} message=${error.message}")
+                trySend(true)
+            }
+        }
+        Log.d(TAG, "Attaching listener to $DATABASE_URL/control/auto")
+        controlAutoRef.addValueEventListener(listener)
+        awaitClose {
+            Log.d(TAG, "Removing /control/auto listener")
+            controlAutoRef.removeEventListener(listener)
         }
     }
 
@@ -132,6 +224,16 @@ object FirebaseRealtimeSensorRepository {
         return when (value) {
             is Number -> value.toInt()
             is String -> value.toIntOrNull() ?: default
+            else -> default
+        }
+    }
+
+    private fun DataSnapshot.asBool(default: Boolean): Boolean {
+        val value = getValue() ?: return default
+        return when (value) {
+            is Boolean -> value
+            is Number -> value.toInt() != 0
+            is String -> value == "1" || value.equals("true", ignoreCase = true)
             else -> default
         }
     }

@@ -59,6 +59,11 @@
     <string name="control_pump_b">Pump B</string>
     <string name="control_valve_main">Main Valve</string>
     <string name="control_valve_bypass">Bypass Valve</string>
+    <string name="control_mode">Mode</string>
+    <string name="mode_auto">Auto</string>
+    <string name="mode_manual">Manual</string>
+    <string name="pump_auto_hint">Automated by water level</string>
+    <string name="pump_manual_hint">Manual pump control</string>
     <string name="state_on">ON</string>
     <string name="state_off">OFF</string>
     <string name="system_label">System:</string>
