@@ -24,6 +24,7 @@ class MonitoringFragment : Fragment() {
     private var prevPh = 7.0
     private var prevTds = 150.0
     private var prevTurbidity = 1.5
+    private var prevCloudiness = 0.0
     private var hasAnimatedEntrance = false
 
     // Track previous status label so we can flash only when the status actually changes.
@@ -99,13 +100,20 @@ class MonitoringFragment : Fragment() {
                 prevTdsStatusRes = state.tdsStatus.statusLabelRes
                 prevTds = state.sensorData.tds.toDouble()
 
-                // Turbidity card
+                // Turbidity card — big value is cloudiness %, NTU reading moves to unit row
                 AnimationUtils.animateTextCount(
                     binding.tvTurbidityValue,
-                    from = prevTurbidity,
-                    to = state.sensorData.turbidity,
-                    decimals = 1
+                    from = prevCloudiness,
+                    to = state.turbidityStatus.cloudinessPercent.toDouble(),
+                    suffix = "%",
+                    decimals = 0
                 )
+                binding.tvTurbidityUnit.text =
+                    getString(R.string.ntu_value_format, state.sensorData.turbidity)
+                val isCloudy = state.turbidityStatus.cloudinessPercent > CLOUDY_THRESHOLD_PERCENT
+                binding.tvTurbidityCloudiness.text =
+                    getString(if (isCloudy) R.string.status_cloudy else R.string.status_not_cloudy)
+                binding.tvTurbidityCloudiness.setTextColor(state.turbidityStatus.statusColorRes)
                 if (state.sensorData.turbidity != prevTurbidity) AnimationUtils.pulseView(binding.imgTurbidityIcon)
                 prevTurbidityColor = applyStatus(
                     binding.tvTurbidityStatus,
@@ -116,10 +124,7 @@ class MonitoringFragment : Fragment() {
                 )
                 prevTurbidityStatusRes = state.turbidityStatus.statusLabelRes
                 prevTurbidity = state.sensorData.turbidity
-
-                binding.tvTurbidityCloudiness.text =
-                    getString(R.string.cloudiness_format, state.turbidityStatus.cloudinessPercent)
-                binding.tvTurbidityCloudiness.setTextColor(state.turbidityStatus.statusColorRes)
+                prevCloudiness = state.turbidityStatus.cloudinessPercent.toDouble()
             }
         }
     }
@@ -155,11 +160,16 @@ class MonitoringFragment : Fragment() {
         prevPh = 7.0
         prevTds = 150.0
         prevTurbidity = 1.5
+        prevCloudiness = 0.0
         prevPhStatusRes = 0
         prevTdsStatusRes = 0
         prevTurbidityStatusRes = 0
         prevPhColor = 0
         prevTdsColor = 0
         prevTurbidityColor = 0
+    }
+
+    private companion object {
+        const val CLOUDY_THRESHOLD_PERCENT = 30
     }
 }

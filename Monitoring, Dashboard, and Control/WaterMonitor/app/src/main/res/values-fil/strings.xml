@@ -22,7 +22,9 @@
     <string name="unit_ph">pH</string>
     <string name="unit_ppm">ppm</string>
     <string name="unit_ntu">NTU</string>
-    <string name="cloudiness_format">· %1$d%% Malabo</string>
+    <string name="ntu_value_format">%1$.1f NTU</string>
+    <string name="status_cloudy">· Malabo</string>
+    <string name="status_not_cloudy">· Hindi Malabo</string>
 
     <!-- Status labels -->
     <string name="status_prefix">Katayuan:</string>
