@@ -8,13 +8,17 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.watermonitor.app.data.model.PumpControlState
 import com.watermonitor.app.data.model.SensorData
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.shareIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 object FirebaseRealtimeSensorRepository {
 
     private const val TAG = "HydroSenseRTDB"
@@ -27,9 +31,20 @@ object FirebaseRealtimeSensorRepository {
     private const val DATABASE_URL =
         "https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app"
 
+    /**
+     * Single long-lived scope so that SharedFlow collectors share the same
+     * underlying RTDB listener instead of each re-attaching their own.
+     */
+    private val repoScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
+    )
+
     private val database: FirebaseDatabase by lazy {
         FirebaseDatabase.getInstance(DATABASE_URL).apply {
-            setLogLevel(com.google.firebase.database.Logger.Level.DEBUG)
+            // Only enable verbose Firebase logging in debug builds
+            if (com.watermonitor.app.BuildConfig.DEBUG) {
+                setLogLevel(com.google.firebase.database.Logger.Level.DEBUG)
+            }
         }
     }
 
@@ -39,6 +54,11 @@ object FirebaseRealtimeSensorRepository {
     private val controlPumpBRef by lazy { database.getReference("control/pumpB") }
     private val controlAutoRef by lazy { database.getReference("control/auto") }
 
+    /**
+     * SharedFlow so multiple ViewModels (Dashboard, Control, Monitoring) share a
+     * single underlying RTDB listener instead of each re-attaching their own.
+     * WhileSubscribed(5_000) keeps the listener alive briefly across config changes.
+     */
     val sensorDataFlow: Flow<SensorData> = authStateFlow().flatMapLatest { signedIn ->
         if (!signedIn) {
             Log.w(TAG, "No Firebase user; RTDB read skipped (rules require auth != null)")
@@ -46,12 +66,14 @@ object FirebaseRealtimeSensorRepository {
         } else {
             sensorsSnapshotFlow()
         }
-    }
+    }.shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     /**
      * Live pump control state: combines actual relay states from `/status`
      * (written by the ESP32) with the mode flag from `/control/auto` (written
      * by the app). Both are gated behind Firebase auth.
+     *
+     * SharedFlow so Dashboard + Control ViewModels share a single RTDB listener.
      */
     val pumpControlFlow: Flow<PumpControlState> = authStateFlow().flatMapLatest { signedIn ->
         if (!signedIn) {
@@ -66,7 +88,7 @@ object FirebaseRealtimeSensorRepository {
                 )
             }
         }
-    }
+    }.shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     // ── Writers: app → ESP32 via /control ──────────────────────────────────
 
@@ -113,7 +135,7 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "onCancelled code=${error.code} message=${error.message}")
-                trySend(SensorData())
+                close(error.toException())
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/sensors")
@@ -135,7 +157,7 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "/status cancelled code=${error.code} message=${error.message}")
-                trySend(Pair(false, false))
+                close(error.toException())
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/status")
@@ -156,7 +178,7 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "/control/auto cancelled code=${error.code} message=${error.message}")
-                trySend(true)
+                close(error.toException())
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/control/auto")

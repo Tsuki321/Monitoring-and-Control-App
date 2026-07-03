@@ -7,16 +7,19 @@ import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
-import android.view.animation.OvershootInterpolator
 import android.widget.TextView
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import kotlin.math.roundToInt
 
 object AnimationUtils {
 
+    private val TAG_TEXT_COUNT = View.generateViewId()
+    private val TAG_TEXT_COLOR = View.generateViewId()
+
     /**
      * Animates a TextView's numeric content from [from] to [to],
      * appending [suffix] after the number. Shows one decimal place for doubles.
+     * Cancels any prior count-up animator on the same view before starting.
      */
     fun animateTextCount(
         textView: TextView,
@@ -26,7 +29,10 @@ object AnimationUtils {
         decimals: Int = 0,
         durationMs: Long = 600
     ) {
+        // Cancel any prior animator on this TextView to prevent overlapping
+        (textView.getTag(TAG_TEXT_COUNT) as? ValueAnimator)?.cancel()
         ValueAnimator.ofFloat(from.toFloat(), to.toFloat()).apply {
+            textView.setTag(TAG_TEXT_COUNT, this)
             duration = durationMs
             interpolator = FastOutSlowInInterpolator()
             addUpdateListener { anim ->
@@ -38,6 +44,16 @@ object AnimationUtils {
                     else -> "${"%.${decimals}f".format(value)}$suffix"
                 }
             }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (textView.getTag(TAG_TEXT_COUNT) === this@apply) {
+                        textView.setTag(TAG_TEXT_COUNT, null)
+                    }
+                }
+                override fun onAnimationCancel(animation: Animator) {}
+                override fun onAnimationStart(animation: Animator) {}
+                override fun onAnimationRepeat(animation: Animator) {}
+            })
         }.start()
     }
 
@@ -83,65 +99,6 @@ object AnimationUtils {
                     .start()
             }
             .start()
-    }
-
-    /**
-     * Card press-down effect: scale slightly down on press, restore on release.
-     * Use with setOnTouchListener.
-     */
-    fun animatePressDown(view: View) {
-        view.animate()
-            .scaleX(0.97f)
-            .scaleY(0.97f)
-            .setDuration(80)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
-    }
-
-    fun animatePressUp(view: View) {
-        view.animate()
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(150)
-            .setInterpolator(OvershootInterpolator(1.5f))
-            .start()
-    }
-
-    /**
-     * Fades in a view from invisible to fully visible.
-     * Enhanced with slight scale for refined entrance.
-     */
-    fun fadeIn(view: View, durationMs: Long = 350) {
-        view.alpha = 0f
-        view.scaleX = 0.96f
-        view.scaleY = 0.96f
-        view.visibility = View.VISIBLE
-        view.animate()
-            .alpha(1f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(durationMs)
-            .setInterpolator(DecelerateInterpolator())
-            .start()
-    }
-
-    /**
-     * Ripple-like scale pulse for status indicators.
-     * Creates an expanding wave effect.
-     */
-    fun ripplePulse(view: View) {
-        ValueAnimator.ofFloat(1f, 1.3f, 1f).apply {
-            duration = 1200
-            repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.RESTART
-            interpolator = FastOutSlowInInterpolator()
-            addUpdateListener { anim ->
-                val scale = anim.animatedValue as Float
-                view.scaleX = scale
-                view.scaleY = scale
-                view.alpha = 1f - ((scale - 1f) * 1.5f)
-            }
-        }.start()
     }
 
     /**
@@ -201,14 +158,27 @@ object AnimationUtils {
     /**
      * Tweens a TextView's color from [fromColor] to [toColor] over a short interval.
      * Used when a reading crosses into a new status band so the change is felt, not just shown.
+     * Cancels any prior color animator on the same view before starting.
      */
     fun transitionTextColor(textView: TextView, fromColor: Int, toColor: Int) {
+        (textView.getTag(TAG_TEXT_COLOR) as? ValueAnimator)?.cancel()
         ValueAnimator.ofObject(ArgbEvaluator(), fromColor, toColor).apply {
+            textView.setTag(TAG_TEXT_COLOR, this)
             duration = 600
             interpolator = FastOutSlowInInterpolator()
             addUpdateListener { anim ->
                 textView.setTextColor(anim.animatedValue as Int)
             }
+            addListener(object : Animator.AnimatorListener {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (textView.getTag(TAG_TEXT_COLOR) === this@apply) {
+                        textView.setTag(TAG_TEXT_COLOR, null)
+                    }
+                }
+                override fun onAnimationCancel(animation: Animator) {}
+                override fun onAnimationStart(animation: Animator) {}
+                override fun onAnimationRepeat(animation: Animator) {}
+            })
         }.start()
     }
 }

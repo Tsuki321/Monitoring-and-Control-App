@@ -85,8 +85,8 @@ class MainActivity : AppCompatActivity() {
         // Check if user is already logged in
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
-            // User is logged in, navigate to dashboard
-            navController.navigate(R.id.dashboardFragment)
+            // User is logged in, navigate to dashboard and pop login off the back stack
+            navController.navigate(R.id.action_loginFragment_to_dashboardFragment)
         }
 
         binding.bottomNav.setupWithNavController(navController)

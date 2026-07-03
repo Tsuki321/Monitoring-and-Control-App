@@ -150,5 +150,16 @@ class MonitoringFragment : Fragment() {
         super.onDestroyView()
         _binding = null
         hasAnimatedEntrance = false
+        // Reset prev* fields so count-up animations start from the current value
+        // on view recreation instead of a stale baseline.
+        prevPh = 7.0
+        prevTds = 150.0
+        prevTurbidity = 1.5
+        prevPhStatusRes = 0
+        prevTdsStatusRes = 0
+        prevTurbidityStatusRes = 0
+        prevPhColor = 0
+        prevTdsColor = 0
+        prevTurbidityColor = 0
     }
 }

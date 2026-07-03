@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 import kotlin.random.Random
@@ -35,11 +36,10 @@ object MockSensorRepository {
         scope.launch {
             while (true) {
                 delay(3_000)
-                val current = _tankStatus.value.fillPercent
-                val delta = Random.nextFloat() * 0.6f - 0.3f
-                _tankStatus.value = _tankStatus.value.copy(
-                    fillPercent = (current + delta).coerceIn(10f, 100f)
-                )
+                _tankStatus.update { current ->
+                    val delta = Random.nextFloat() * 0.6f - 0.3f
+                    current.copy(fillPercent = (current.fillPercent + delta).coerceIn(10f, 100f))
+                }
             }
         }
 
@@ -47,34 +47,34 @@ object MockSensorRepository {
         scope.launch {
             while (true) {
                 delay(500)
-                val currentState = _pumpState.value
+                _pumpState.update { currentState ->
+                    // Pump A monitoring
+                    val pumpASpeed = if (currentState.pumpA) {
+                        // Oscillate around 2400 RPM ± 150 RPM when on
+                        (2400 + Random.nextInt(-150, 150)).coerceIn(1500, 3000)
+                    } else 0
 
-                // Pump A monitoring
-                val pumpASpeed = if (currentState.pumpA) {
-                    // Oscillate around 2400 RPM ± 150 RPM when on
-                    (2400 + Random.nextInt(-150, 150)).coerceIn(1500, 3000)
-                } else 0
+                    val pumpAVoltage = if (currentState.pumpA) {
+                        // Oscillate around 230V ± 5V when on
+                        230f + Random.nextFloat() * 10f - 5f
+                    } else 0f
 
-                val pumpAVoltage = if (currentState.pumpA) {
-                    // Oscillate around 230V ± 5V when on
-                    230f + Random.nextFloat() * 10f - 5f
-                } else 0f
+                    // Pump B monitoring
+                    val pumpBSpeed = if (currentState.pumpB) {
+                        (2400 + Random.nextInt(-150, 150)).coerceIn(1500, 3000)
+                    } else 0
 
-                // Pump B monitoring
-                val pumpBSpeed = if (currentState.pumpB) {
-                    (2400 + Random.nextInt(-150, 150)).coerceIn(1500, 3000)
-                } else 0
+                    val pumpBVoltage = if (currentState.pumpB) {
+                        230f + Random.nextFloat() * 10f - 5f
+                    } else 0f
 
-                val pumpBVoltage = if (currentState.pumpB) {
-                    230f + Random.nextFloat() * 10f - 5f
-                } else 0f
-
-                _pumpState.value = _pumpState.value.copy(
-                    pumpASpeed = pumpASpeed,
-                    pumpAVoltage = pumpAVoltage,
-                    pumpBSpeed = pumpBSpeed,
-                    pumpBVoltage = pumpBVoltage
-                )
+                    currentState.copy(
+                        pumpASpeed = pumpASpeed,
+                        pumpAVoltage = pumpAVoltage,
+                        pumpBSpeed = pumpBSpeed,
+                        pumpBVoltage = pumpBVoltage
+                    )
+                }
             }
         }
     }
@@ -110,7 +110,7 @@ object MockSensorRepository {
     }
 
     fun togglePumpA() {
-        _pumpState.value = _pumpState.value.copy(pumpA = !_pumpState.value.pumpA)
+        _pumpState.update { it.copy(pumpA = !it.pumpA) }
     }
 
     /**
@@ -118,26 +118,22 @@ object MockSensorRepository {
      * simulation (speed/voltage) to the real pump state coming from RTDB.
      */
     fun setPumpA(value: Boolean) {
-        if (_pumpState.value.pumpA != value) {
-            _pumpState.value = _pumpState.value.copy(pumpA = value)
-        }
+        _pumpState.update { if (it.pumpA != value) it.copy(pumpA = value) else it }
     }
 
     fun togglePumpB() {
-        _pumpState.value = _pumpState.value.copy(pumpB = !_pumpState.value.pumpB)
+        _pumpState.update { it.copy(pumpB = !it.pumpB) }
     }
 
     fun setPumpB(value: Boolean) {
-        if (_pumpState.value.pumpB != value) {
-            _pumpState.value = _pumpState.value.copy(pumpB = value)
-        }
+        _pumpState.update { if (it.pumpB != value) it.copy(pumpB = value) else it }
     }
 
     fun toggleValveMain() {
-        _pumpState.value = _pumpState.value.copy(valveMain = !_pumpState.value.valveMain)
+        _pumpState.update { it.copy(valveMain = !it.valveMain) }
     }
 
     fun toggleValveBypass() {
-        _pumpState.value = _pumpState.value.copy(valveBypass = !_pumpState.value.valveBypass)
+        _pumpState.update { it.copy(valveBypass = !it.valveBypass) }
     }
 }

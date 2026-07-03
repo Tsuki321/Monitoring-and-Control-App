@@ -62,6 +62,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
@@ -86,5 +87,5 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.glide)
     implementation(libs.gson)
-    implementation("com.facebook.android:facebook-login:18.2.3")
+    implementation(libs.facebook.login)
 }

@@ -22,9 +22,6 @@ class ControlFragment : Fragment() {
     private val viewModel: ControlViewModel by viewModels()
     private var hasAnimatedEntrance = false
 
-    // Prevent switch listener from triggering during state update
-    private var isUpdatingUi = false
-
     // Active-pump icon rotation animators (null when the pump is off)
     private var pumpARotation: Animator? = null
     private var pumpBRotation: Animator? = null
@@ -45,30 +42,28 @@ class ControlFragment : Fragment() {
     }
 
     private fun setupSwitchListeners() {
-        binding.switchMode.setOnCheckedChangeListener { _, _ ->
-            if (!isUpdatingUi) {
-                viewModel.toggleAutoMode()
-                AnimationUtils.pulseView(binding.cardMode)
-            }
+        binding.switchMode.setOnCheckedChangeListener { _, isChecked ->
+            viewModel.toggleAutoMode()
+            AnimationUtils.pulseView(binding.cardMode)
         }
-        binding.switchPumpA.setOnCheckedChangeListener { _, _ ->
-            if (!isUpdatingUi) {
-                viewModel.togglePumpA()
-                AnimationUtils.pulseView(binding.cardPumpA)
-            }
+        binding.switchPumpA.setOnCheckedChangeListener { _, isChecked ->
+            viewModel.togglePumpA()
+            AnimationUtils.pulseView(binding.cardPumpA)
         }
-        binding.switchPumpB.setOnCheckedChangeListener { _, _ ->
-            if (!isUpdatingUi) {
-                viewModel.togglePumpB()
-                AnimationUtils.pulseView(binding.cardPumpB)
-            }
+        binding.switchPumpB.setOnCheckedChangeListener { _, isChecked ->
+            viewModel.togglePumpB()
+            AnimationUtils.pulseView(binding.cardPumpB)
         }
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.pumpControlState.collect { control ->
-                isUpdatingUi = true
+                // Remove listeners before programmatic isChecked updates to avoid
+                // triggering toggle commands, then re-attach after.
+                binding.switchMode.setOnCheckedChangeListener(null)
+                binding.switchPumpA.setOnCheckedChangeListener(null)
+                binding.switchPumpB.setOnCheckedChangeListener(null)
 
                 // Mode switch reflects autoMode from RTDB
                 binding.switchMode.isChecked = control.autoMode
@@ -81,6 +76,20 @@ class ControlFragment : Fragment() {
                 // Disable pump switches in AUTO mode (ESP32 controls them)
                 binding.switchPumpA.isEnabled = !control.autoMode
                 binding.switchPumpB.isEnabled = !control.autoMode
+
+                // Re-attach listeners
+                binding.switchMode.setOnCheckedChangeListener { _, _ ->
+                    viewModel.toggleAutoMode()
+                    AnimationUtils.pulseView(binding.cardMode)
+                }
+                binding.switchPumpA.setOnCheckedChangeListener { _, _ ->
+                    viewModel.togglePumpA()
+                    AnimationUtils.pulseView(binding.cardPumpA)
+                }
+                binding.switchPumpB.setOnCheckedChangeListener { _, _ ->
+                    viewModel.togglePumpB()
+                    AnimationUtils.pulseView(binding.cardPumpB)
+                }
 
                 updateStateLabel(binding.tvPumpAState, control.actualPumpA)
                 updateStateLabel(binding.tvPumpBState, control.actualPumpB)
@@ -98,8 +107,6 @@ class ControlFragment : Fragment() {
                         else ContextCompat.getColor(requireContext(), R.color.status_grey)
                     )
                 }
-
-                isUpdatingUi = false
             }
         }
 

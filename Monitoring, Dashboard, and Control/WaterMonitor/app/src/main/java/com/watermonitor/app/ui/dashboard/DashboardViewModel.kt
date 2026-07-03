@@ -35,7 +35,8 @@ class DashboardViewModel : ViewModel() {
 
     init {
         // Sync actual pump states from RTDB → mock so the dashboard reflects
-        // what the hardware is really doing, even without visiting Control first.
+        // what the hardware is really doing. pumpControlFlow is a SharedFlow,
+        // so this shares the same underlying RTDB listener as ControlViewModel.
         viewModelScope.launch {
             FirebaseRealtimeSensorRepository.pumpControlFlow.collect { state ->
                 MockSensorRepository.setPumpA(state.actualPumpA)

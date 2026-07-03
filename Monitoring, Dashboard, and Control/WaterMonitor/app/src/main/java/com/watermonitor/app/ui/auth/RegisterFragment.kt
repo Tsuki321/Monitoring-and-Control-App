@@ -16,7 +16,6 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.FacebookAuthProvider
 import com.facebook.CallbackManager
@@ -29,6 +28,7 @@ import com.watermonitor.app.R
 import com.watermonitor.app.data.model.AuthProvider
 import com.watermonitor.app.databinding.FragmentRegisterBinding
 import com.watermonitor.app.utils.AccountManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class RegisterFragment : Fragment() {
@@ -45,18 +45,10 @@ class RegisterFragment : Fragment() {
         return _binding!!.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        val binding = bindingSafe ?: return
-
-        // Start SVG animation
-        val drawable = binding.ivRegisterAnim.drawable
-        if (drawable is Animatable) {
-            drawable.start()
-        }
-
-        // Register CallbackManager for Facebook Login
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Register Facebook callback once per fragment instance (not per view
+        // recreation) to avoid duplicate registrations in CallbackManagerImpl.
         LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
             override fun onSuccess(result: LoginResult) {
                 firebaseAuthWithFacebook(result.accessToken.token)
@@ -68,6 +60,18 @@ class RegisterFragment : Fragment() {
                 showError("Facebook login error: ${error.message}")
             }
         })
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val binding = bindingSafe ?: return
+
+        // Start SVG animation
+        val drawable = binding.ivRegisterAnim.drawable
+        if (drawable is Animatable) {
+            drawable.start()
+        }
 
         binding.btnRegister.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
@@ -155,6 +159,8 @@ class RegisterFragment : Fragment() {
                 } else {
                     showError("Unexpected credential type format")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 showError("Google Sign-In failed: ${e.message}")
             }
@@ -170,13 +176,11 @@ class RegisterFragment : Fragment() {
         FirebaseAuth.getInstance().signInWithCredential(authCredential)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    bindingSafe?.let {
-                        val user = FirebaseAuth.getInstance().currentUser
-                        if (user != null) {
-                            AccountManager.saveAccount(requireContext(), user, AuthProvider.GOOGLE)
-                        }
-                        findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
+                    val user = FirebaseAuth.getInstance().currentUser
+                    if (user != null && isAdded) {
+                        AccountManager.saveAccount(requireContext(), user, AuthProvider.GOOGLE)
                     }
+                    navigateToDashboard()
                 } else {
                     showError("Google authentication failed: ${task.exception?.message}")
                 }
@@ -188,17 +192,21 @@ class RegisterFragment : Fragment() {
         FirebaseAuth.getInstance().signInWithCredential(credential)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    bindingSafe?.let {
-                        val user = FirebaseAuth.getInstance().currentUser
-                        if (user != null) {
-                            AccountManager.saveAccount(requireContext(), user, AuthProvider.FACEBOOK)
-                        }
-                        findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
+                    val user = FirebaseAuth.getInstance().currentUser
+                    if (user != null && isAdded) {
+                        AccountManager.saveAccount(requireContext(), user, AuthProvider.FACEBOOK)
                     }
+                    navigateToDashboard()
                 } else {
                     showError("Facebook authentication failed: ${task.exception?.message}")
                 }
             }
+    }
+
+    private fun navigateToDashboard() {
+        if (isAdded && view != null) {
+            findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
+        }
     }
 
     private fun showError(message: String) {
