@@ -9,12 +9,13 @@ import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.widget.TextView
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import com.watermonitor.app.R
 import kotlin.math.roundToInt
 
 object AnimationUtils {
 
-    private val TAG_TEXT_COUNT = View.generateViewId()
-    private val TAG_TEXT_COLOR = View.generateViewId()
+    private val TAG_TEXT_COUNT = R.id.tag_text_count
+    private val TAG_TEXT_COLOR = R.id.tag_text_color
 
     /**
      * Animates a TextView's numeric content from [from] to [to],
