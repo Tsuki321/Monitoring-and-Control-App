@@ -82,10 +82,13 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
         val navController = navHostFragment.navController
 
-        // Check if user is already logged in
+        // Check if user is already logged in. Only auto-navigate on a fresh start
+        // (when the start destination is loginFragment). On activity recreate the
+        // nav state is already restored to wherever the user was, so re-navigating
+        // would crash because the login→dashboard action doesn't exist from other
+        // destinations (e.g. settingsFragment).
         val currentUser = FirebaseAuth.getInstance().currentUser
-        if (currentUser != null) {
-            // User is logged in, navigate to dashboard and pop login off the back stack
+        if (currentUser != null && navController.currentDestination?.id == R.id.loginFragment) {
             navController.navigate(R.id.action_loginFragment_to_dashboardFragment)
         }
 
