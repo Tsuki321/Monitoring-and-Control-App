@@ -253,6 +253,7 @@ object FirebaseRealtimeSensorRepository {
                 turbidity = map.parseDouble("turbidity", 1.5),
                 tankDistanceMm = map.parseIntOrNull("tankDistanceMm"),
                 tankLevel = map.parseDoubleOrNull("tankLevel")?.toFloat(),
+                tankWarning = map.parseIntOrNull("tankWarning"),
                 timestamp = System.currentTimeMillis()
             )
         }
@@ -263,6 +264,7 @@ object FirebaseRealtimeSensorRepository {
             turbidity = child("turbidity").asDouble(1.5),
             tankDistanceMm = child("tankDistanceMm").asIntOrNull(),
             tankLevel = child("tankLevel").asDoubleOrNull()?.toFloat(),
+            tankWarning = child("tankWarning").asIntOrNull(),
             timestamp = System.currentTimeMillis()
         )
     }

@@ -61,6 +61,35 @@ class DashboardFragment : Fragment() {
                 binding.waterTankView.setFillPercent(state.tankStatus.fillPercent)
                 binding.tvTankPercent.text = getString(R.string.tank_percent_format, state.tankStatus.fillPercent.toInt())
 
+                // Tank warning banner (0=normal, 1=warning 80%, 2=critical 90%, 3=full 100%)
+                val warning = state.tankStatus.tankWarning
+                when (warning) {
+                    0 -> {
+                        binding.tvTankWarning.visibility = View.GONE
+                    }
+                    1 -> {
+                        binding.tvTankWarning.apply {
+                            visibility = View.VISIBLE
+                            text = getString(R.string.tank_warning_80)
+                            setTextColor(ContextCompat.getColor(requireContext(), R.color.status_yellow))
+                        }
+                    }
+                    2 -> {
+                        binding.tvTankWarning.apply {
+                            visibility = View.VISIBLE
+                            text = getString(R.string.tank_warning_90)
+                            setTextColor(ContextCompat.getColor(requireContext(), R.color.status_yellow))
+                        }
+                    }
+                    3 -> {
+                        binding.tvTankWarning.apply {
+                            visibility = View.VISIBLE
+                            text = getString(R.string.tank_warning_100)
+                            setTextColor(ContextCompat.getColor(requireContext(), R.color.status_red))
+                        }
+                    }
+                }
+
                 // Pump status
                 val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
                 val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)

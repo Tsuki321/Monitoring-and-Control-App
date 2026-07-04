@@ -54,6 +54,9 @@
     <string name="tank_full">PUNO</string>
     <string name="tank_low">MABABA</string>
     <string name="tank_percent_format">Tangke: %d%%</string>
+    <string name="tank_warning_80">⚠ Lalapit na sa kaya ang tangke (80%%)</string>
+    <string name="tank_warning_90">⚠ KRITIKAL: Tangke sa 90%% kaya</string>
+    <string name="tank_warning_100">⛔ PUNO ANG TANGKE — Nakapatay ang mga pump</string>
     <string name="sensor_status_format">%1$s: %2$s</string>
 
     <!-- Control screen -->

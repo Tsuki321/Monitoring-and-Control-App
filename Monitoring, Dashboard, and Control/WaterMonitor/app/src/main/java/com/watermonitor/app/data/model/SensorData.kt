@@ -6,5 +6,6 @@ data class SensorData(
     val turbidity: Double = 1.5,
     val tankDistanceMm: Int? = null,
     val tankLevel: Float? = null,
+    val tankWarning: Int? = null,
     val timestamp: Long = System.currentTimeMillis()
 )

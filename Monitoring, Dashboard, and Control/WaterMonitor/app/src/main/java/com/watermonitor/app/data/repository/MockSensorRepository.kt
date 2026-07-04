@@ -80,8 +80,13 @@ object MockSensorRepository {
      * Sets the tank fill level from the ToF sensor reading (via RTDB /sensors).
      * The Dashboard relies solely on this real data.
      */
-    fun setTankLevel(fillPercent: Float) {
-        _tankStatus.update { it.copy(fillPercent = fillPercent.coerceIn(0f, 100f)) }
+    fun setTankLevel(fillPercent: Float, warning: Int = 0) {
+        _tankStatus.update {
+            it.copy(
+                fillPercent = fillPercent.coerceIn(0f, 100f),
+                tankWarning = warning.coerceIn(0, 3)
+            )
+        }
     }
 
     fun togglePumpB() {
