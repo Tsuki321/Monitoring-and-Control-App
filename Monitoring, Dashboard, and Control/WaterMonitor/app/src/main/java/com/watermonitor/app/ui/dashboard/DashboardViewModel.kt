@@ -43,5 +43,14 @@ class DashboardViewModel : ViewModel() {
                 MockSensorRepository.setPumpB(state.actualPumpB)
             }
         }
+
+        // Sync real tank fill level from the ToF sensor (RTDB /sensors → tankLevel)
+        // into the mock so WaterTankView reflects hardware reality. Falls back to
+        // the random tank simulation until the ESP32 publishes tankLevel.
+        viewModelScope.launch {
+            FirebaseRealtimeSensorRepository.sensorDataFlow.collect { data ->
+                data.tankLevel?.let { MockSensorRepository.setTankLevel(it) }
+            }
+        }
     }
 }

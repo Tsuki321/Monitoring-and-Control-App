@@ -43,11 +43,11 @@ class ControlViewModel : ViewModel() {
     // ── RTDB-backed pump commands (app → ESP32 via /control) ──
 
     fun togglePumpA() {
-        FirebaseRealtimeSensorRepository.setPumpA(!pumpControlState.value.actualPumpA)
+        FirebaseRealtimeSensorRepository.setPumpA(!pumpControlState.value.commandedPumpA)
     }
 
     fun togglePumpB() {
-        FirebaseRealtimeSensorRepository.setPumpB(!pumpControlState.value.actualPumpB)
+        FirebaseRealtimeSensorRepository.setPumpB(!pumpControlState.value.commandedPumpB)
     }
 
     fun toggleAutoMode() {

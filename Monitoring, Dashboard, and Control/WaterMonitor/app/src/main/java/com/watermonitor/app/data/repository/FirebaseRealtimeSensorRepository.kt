@@ -80,8 +80,15 @@ object FirebaseRealtimeSensorRepository {
             Log.w(TAG, "No Firebase user; pump control flow skipped")
             flowOf(PumpControlState())
         } else {
-            combine(pumpStatusSnapshotFlow(), autoModeSnapshotFlow()) { pumpStatus, auto ->
+            combine(
+                pumpStatusSnapshotFlow(),
+                autoModeSnapshotFlow(),
+                controlPumpASnapshotFlow(),
+                controlPumpBSnapshotFlow()
+            ) { pumpStatus, auto, cmdA, cmdB ->
                 PumpControlState(
+                    commandedPumpA = cmdA,
+                    commandedPumpB = cmdB,
                     actualPumpA = pumpStatus.first,
                     actualPumpB = pumpStatus.second,
                     autoMode = auto
@@ -129,7 +136,7 @@ object FirebaseRealtimeSensorRepository {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val data = snapshot.toSensorData()
-                Log.d(TAG, "onDataChange exists=${snapshot.exists()} ph=${data.ph} tds=${data.tds} turbidity=${data.turbidity}")
+                Log.d(TAG, "onDataChange exists=${snapshot.exists()} ph=${data.ph} tds=${data.tds} turbidity=${data.turbidity} tankDistanceMm=${data.tankDistanceMm} tankLevel=${data.tankLevel}")
                 trySend(data)
             }
 
@@ -189,6 +196,48 @@ object FirebaseRealtimeSensorRepository {
         }
     }
 
+    private fun controlPumpASnapshotFlow(): Flow<Boolean> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val cmd = snapshot.asBool(false)
+                Log.d(TAG, "onDataChange /control/pumpA=$cmd")
+                trySend(cmd)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "/control/pumpA cancelled code=${error.code} message=${error.message}")
+                close(error.toException())
+            }
+        }
+        Log.d(TAG, "Attaching listener to $DATABASE_URL/control/pumpA")
+        controlPumpARef.addValueEventListener(listener)
+        awaitClose {
+            Log.d(TAG, "Removing /control/pumpA listener")
+            controlPumpARef.removeEventListener(listener)
+        }
+    }
+
+    private fun controlPumpBSnapshotFlow(): Flow<Boolean> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val cmd = snapshot.asBool(false)
+                Log.d(TAG, "onDataChange /control/pumpB=$cmd")
+                trySend(cmd)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "/control/pumpB cancelled code=${error.code} message=${error.message}")
+                close(error.toException())
+            }
+        }
+        Log.d(TAG, "Attaching listener to $DATABASE_URL/control/pumpB")
+        controlPumpBRef.addValueEventListener(listener)
+        awaitClose {
+            Log.d(TAG, "Removing /control/pumpB listener")
+            controlPumpBRef.removeEventListener(listener)
+        }
+    }
+
     private fun DataSnapshot.toSensorData(): SensorData {
         if (!exists()) {
             Log.w(TAG, "Snapshot at /sensors does not exist")
@@ -202,6 +251,8 @@ object FirebaseRealtimeSensorRepository {
                 ph = map.parseDouble("ph", 7.0),
                 tds = map.parseInt("tds", 150),
                 turbidity = map.parseDouble("turbidity", 1.5),
+                tankDistanceMm = map.parseIntOrNull("tankDistanceMm"),
+                tankLevel = map.parseDoubleOrNull("tankLevel")?.toFloat(),
                 timestamp = System.currentTimeMillis()
             )
         }
@@ -210,6 +261,8 @@ object FirebaseRealtimeSensorRepository {
             ph = child("ph").asDouble(7.0),
             tds = child("tds").asInt(150),
             turbidity = child("turbidity").asDouble(1.5),
+            tankDistanceMm = child("tankDistanceMm").asIntOrNull(),
+            tankLevel = child("tankLevel").asDoubleOrNull()?.toFloat(),
             timestamp = System.currentTimeMillis()
         )
     }
@@ -232,6 +285,24 @@ object FirebaseRealtimeSensorRepository {
         }
     }
 
+    private fun Map<String, Any?>.parseDoubleOrNull(key: String): Double? {
+        return when (val value = this[key]) {
+            null -> null
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull()
+            else -> null
+        }
+    }
+
+    private fun Map<String, Any?>.parseIntOrNull(key: String): Int? {
+        return when (val value = this[key]) {
+            null -> null
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
+        }
+    }
+
     private fun DataSnapshot.asDouble(default: Double): Double {
         val value = getValue() ?: return default
         return when (value) {
@@ -247,6 +318,24 @@ object FirebaseRealtimeSensorRepository {
             is Number -> value.toInt()
             is String -> value.toIntOrNull() ?: default
             else -> default
+        }
+    }
+
+    private fun DataSnapshot.asDoubleOrNull(): Double? {
+        val value = getValue() ?: return null
+        return when (value) {
+            is Number -> value.toDouble()
+            is String -> value.toDoubleOrNull()
+            else -> null
+        }
+    }
+
+    private fun DataSnapshot.asIntOrNull(): Int? {
+        val value = getValue() ?: return null
+        return when (value) {
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
         }
     }
 

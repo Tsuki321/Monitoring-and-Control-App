@@ -69,9 +69,12 @@ class ControlFragment : Fragment() {
                 binding.switchMode.isChecked = control.autoMode
                 updateModeLabel(control.autoMode)
 
-                // Pump switches reflect actual relay states from RTDB /status
-                binding.switchPumpA.isChecked = control.actualPumpA
-                binding.switchPumpB.isChecked = control.actualPumpB
+                // Pump switches reflect the commanded state from RTDB /control so
+                // they stay in sync with the user's intent even when no ESP32 is
+                // online to acknowledge. Status labels below show the actual relay
+                // state from /status.
+                binding.switchPumpA.isChecked = control.commandedPumpA
+                binding.switchPumpB.isChecked = control.commandedPumpB
 
                 // Disable pump switches in AUTO mode (ESP32 controls them)
                 binding.switchPumpA.isEnabled = !control.autoMode
@@ -98,7 +101,7 @@ class ControlFragment : Fragment() {
                 updatePumpRotation(control.actualPumpA, binding.imgPumpAIcon, isPumpA = true)
                 updatePumpRotation(control.actualPumpB, binding.imgPumpBIcon, isPumpA = false)
 
-                // System overall status
+                // System overall status reflects actual relay states
                 val anyActive = control.actualPumpA || control.actualPumpB
                 binding.tvSystemStatus.apply {
                     text = if (anyActive) getString(R.string.system_active) else getString(R.string.system_standby)

@@ -14,12 +14,17 @@ data class PumpState(
 /**
  * Live pump control state backed by Firebase RTDB.
  *
+ * - [commandedPumpA] / [commandedPumpB] mirror `/control/pumpA` and `/control/pumpB` (0/1) —
+ *   what the app has commanded the ESP32 to do. Switches reflect this so they stay
+ *   in sync with the user's intent even when no ESP32 is online to acknowledge.
  * - [actualPumpA] / [actualPumpB] mirror `/status/pumpA` and `/status/pumpB` (0/1) —
- *   the ESP32's actual relay states.
+ *   the ESP32's actual relay states. Status labels reflect this.
  * - [autoMode] mirrors `/control/auto` (0/1) — 1 = ESP32 water-level automation,
  *   0 = the app manually commands each pump via `/control/pumpA` and `/control/pumpB`.
  */
 data class PumpControlState(
+    val commandedPumpA: Boolean = false,
+    val commandedPumpB: Boolean = false,
     val actualPumpA: Boolean = false,
     val actualPumpB: Boolean = false,
     val autoMode: Boolean = true

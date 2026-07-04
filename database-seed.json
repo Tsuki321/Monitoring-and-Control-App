@@ -1,0 +1,1 @@
+{"sensors": {"ph": 7.0, "tds": 150, "turbidity": 1.5, "tankDistanceMm": 500, "tankLevel": 50}, "status": {"pumpA": 0, "pumpB": 0}, "control": {"pumpA": 0, "pumpB": 0, "auto": 1}}
