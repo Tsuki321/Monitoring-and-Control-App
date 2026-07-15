@@ -59,7 +59,7 @@ class DashboardFragment : Fragment() {
                 }
 
                 renderWaterSafety(state)
-                renderPumpStatus(state)
+                renderSystemStatus(state)
                 renderSensorConnections(state)
             }
         }
@@ -121,9 +121,54 @@ class DashboardFragment : Fragment() {
         previousWaterSafety = safety
     }
 
-    private fun renderPumpStatus(state: DashboardUiState) {
+    private fun renderSystemStatus(state: DashboardUiState) {
         val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
         val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
+        val redColor = ContextCompat.getColor(requireContext(), R.color.status_red)
+        val yellowColor = ContextCompat.getColor(requireContext(), R.color.status_yellow)
+        val textDark = ContextCompat.getColor(requireContext(), R.color.text_dark)
+
+        // Tank fill from RTDB /sensors/tankLevel (+ warning color when elevated)
+        val tankLevel = state.sensorData.tankLevel
+        if (tankLevel == null) {
+            binding.tvTankStatus.setText(R.string.tank_percent_waiting)
+            binding.tvTankStatus.setTextColor(greyColor)
+        } else {
+            val level = tankLevel.coerceIn(0f, 100f).toInt()
+            binding.tvTankStatus.text = getString(R.string.tank_percent_format, level)
+            val warning = state.sensorData.tankWarning ?: when {
+                level >= 100 -> 3
+                level >= 90 -> 2
+                level >= 80 -> 1
+                else -> 0
+            }
+            binding.tvTankStatus.setTextColor(
+                when (warning) {
+                    1, 2 -> yellowColor
+                    3 -> redColor
+                    else -> textDark
+                }
+            )
+        }
+
+        // Leak sensor — RTDB key rainDetected, displayed as leak
+        when (state.sensorData.leakDetected) {
+            true -> {
+                binding.tvLeakStatus.setText(R.string.leak_status_detected)
+                binding.tvLeakStatus.setTextColor(redColor)
+                binding.dotLeak.setColorFilter(redColor)
+            }
+            false -> {
+                binding.tvLeakStatus.setText(R.string.leak_status_dry)
+                binding.tvLeakStatus.setTextColor(greenColor)
+                binding.dotLeak.setColorFilter(greenColor)
+            }
+            null -> {
+                binding.tvLeakStatus.setText(R.string.leak_status_waiting)
+                binding.tvLeakStatus.setTextColor(greyColor)
+                binding.dotLeak.setColorFilter(greyColor)
+            }
+        }
 
         binding.tvPumpAStatus.apply {
             val stateLabel = getString(if (state.pumpState.pumpA) R.string.state_on else R.string.state_off)

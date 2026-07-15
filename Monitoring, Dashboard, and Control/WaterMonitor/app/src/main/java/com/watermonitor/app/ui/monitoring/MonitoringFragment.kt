@@ -73,7 +73,8 @@ class MonitoringFragment : Fragment() {
                 renderTankStatus(
                     state.sensorData.tankLevel,
                     state.sensorData.tankWarning,
-                    state.sensorData.tankDistanceMm
+                    state.sensorData.tankDistanceMm,
+                    state.sensorData.leakDetected
                 )
 
                 // pH card
@@ -144,13 +145,17 @@ class MonitoringFragment : Fragment() {
     private fun renderTankStatus(
         tankLevel: Float?,
         reportedWarning: Int?,
-        tankDistanceMm: Int?
+        tankDistanceMm: Int?,
+        leakDetected: Boolean?
     ) {
-        binding.tvTankDistance.text = if (tankDistanceMm == null) {
-            getString(R.string.tank_distance_waiting)
-        } else {
-            getString(R.string.tank_distance_format, tankDistanceMm)
+        // Firmware sends -1 when the VL53L1X ToF sensor is offline.
+        binding.tvTankDistance.text = when {
+            tankDistanceMm == null -> getString(R.string.tank_distance_waiting)
+            tankDistanceMm < 0 -> getString(R.string.tank_distance_offline)
+            else -> getString(R.string.tank_distance_format, tankDistanceMm)
         }
+
+        renderLeakStatus(leakDetected)
 
         if (tankLevel == null) {
             binding.waterTankView.setFillPercent(0f)
@@ -185,6 +190,18 @@ class MonitoringFragment : Fragment() {
                 setText(messageRes)
                 setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
+        }
+    }
+
+    private fun renderLeakStatus(leakDetected: Boolean?) {
+        val (textRes, colorRes) = when (leakDetected) {
+            true -> R.string.leak_status_detected to R.color.status_red
+            false -> R.string.leak_status_dry to R.color.status_green
+            null -> R.string.leak_status_waiting to R.color.text_secondary
+        }
+        binding.tvLeakStatus.apply {
+            setText(textRes)
+            setTextColor(ContextCompat.getColor(requireContext(), colorRes))
         }
     }
 

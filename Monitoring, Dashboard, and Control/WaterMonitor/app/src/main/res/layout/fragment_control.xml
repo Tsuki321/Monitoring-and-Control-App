@@ -22,6 +22,27 @@
             android:paddingTop="24dp"
             android:paddingBottom="48dp">
 
+            <!-- Leak safety banner (shown when moisture/leak sensor is wet) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardLeakBanner"
+                style="@style/Style.WaterMonitor.GlassCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/card_margin"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvLeakBanner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/card_padding"
+                    android:text="@string/leak_banner_message"
+                    android:textColor="@color/status_red"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Mode (Auto / Manual) Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMode"

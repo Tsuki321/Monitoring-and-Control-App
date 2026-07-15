@@ -57,6 +57,11 @@
     <string name="tank_warning_80" formatted="false">⚠ Tank nearing capacity (80%)</string>
     <string name="tank_warning_90" formatted="false">⚠ CRITICAL: Tank at 90% capacity</string>
     <string name="tank_warning_100">⛔ TANK FULL — Pumps disabled</string>
+    <string name="tank_distance_offline">ToF distance: offline</string>
+    <string name="leak_status_waiting">Leak sensor: --</string>
+    <string name="leak_status_dry">Leak sensor: Dry</string>
+    <string name="leak_status_detected">⚠ LEAK DETECTED — Pumps halted</string>
+    <string name="leak_banner_message">Leak detected. Both pumps are stopped for safety until the sensor is dry.</string>
     <string name="sensor_ph_short">pH</string>
     <string name="sensor_tds_short">TDS</string>
     <string name="sensor_turbidity_short">Turbidity</string>

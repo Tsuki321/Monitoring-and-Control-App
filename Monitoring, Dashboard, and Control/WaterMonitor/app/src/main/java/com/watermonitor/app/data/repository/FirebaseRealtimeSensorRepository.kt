@@ -136,7 +136,13 @@ object FirebaseRealtimeSensorRepository {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val data = snapshot.toSensorData()
-                Log.d(TAG, "onDataChange exists=${snapshot.exists()} ph=${data.ph} tds=${data.tds} turbidity=${data.turbidity} tankDistanceMm=${data.tankDistanceMm} tankLevel=${data.tankLevel}")
+                Log.d(
+                    TAG,
+                    "onDataChange exists=${snapshot.exists()} ph=${data.ph} tds=${data.tds} " +
+                        "turbidity=${data.turbidity} tankDistanceMm=${data.tankDistanceMm} " +
+                        "tankLevel=${data.tankLevel} tankWarning=${data.tankWarning} " +
+                        "leakDetected=${data.leakDetected}"
+                )
                 trySend(data)
             }
 
@@ -254,6 +260,8 @@ object FirebaseRealtimeSensorRepository {
                 tankDistanceMm = map.parseIntOrNull("tankDistanceMm"),
                 tankLevel = map.parseDoubleOrNull("tankLevel")?.toFloat(),
                 tankWarning = map.parseIntOrNull("tankWarning"),
+                // Firmware publishes as rainDetected; app treats it as leak.
+                leakDetected = map.parseBoolOrNull("rainDetected"),
                 timestamp = System.currentTimeMillis()
             )
         }
@@ -265,6 +273,7 @@ object FirebaseRealtimeSensorRepository {
             tankDistanceMm = child("tankDistanceMm").asIntOrNull(),
             tankLevel = child("tankLevel").asDoubleOrNull()?.toFloat(),
             tankWarning = child("tankWarning").asIntOrNull(),
+            leakDetected = child("rainDetected").asBoolOrNull(),
             timestamp = System.currentTimeMillis()
         )
     }
@@ -301,6 +310,20 @@ object FirebaseRealtimeSensorRepository {
             null -> null
             is Number -> value.toInt()
             is String -> value.toIntOrNull()
+            else -> null
+        }
+    }
+
+    private fun Map<String, Any?>.parseBoolOrNull(key: String): Boolean? {
+        return when (val value = this[key]) {
+            null -> null
+            is Boolean -> value
+            is Number -> value.toInt() != 0
+            is String -> when {
+                value == "1" || value.equals("true", ignoreCase = true) -> true
+                value == "0" || value.equals("false", ignoreCase = true) -> false
+                else -> null
+            }
             else -> null
         }
     }
@@ -348,6 +371,20 @@ object FirebaseRealtimeSensorRepository {
             is Number -> value.toInt() != 0
             is String -> value == "1" || value.equals("true", ignoreCase = true)
             else -> default
+        }
+    }
+
+    private fun DataSnapshot.asBoolOrNull(): Boolean? {
+        val value = getValue() ?: return null
+        return when (value) {
+            is Boolean -> value
+            is Number -> value.toInt() != 0
+            is String -> when {
+                value == "1" || value.equals("true", ignoreCase = true) -> true
+                value == "0" || value.equals("false", ignoreCase = true) -> false
+                else -> null
+            }
+            else -> null
         }
     }
 }

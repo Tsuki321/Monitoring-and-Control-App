@@ -8,6 +8,7 @@ import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import com.watermonitor.app.data.repository.MockSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -20,6 +21,19 @@ class ControlViewModel : ViewModel() {
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = PumpControlState()
+            )
+
+    /**
+     * Leak sensor state from `/sensors/rainDetected` (firmware key).
+     * true = moisture/leak detected → ESP32 force-stops both pumps.
+     */
+    val leakDetected: StateFlow<Boolean?> =
+        FirebaseRealtimeSensorRepository.sensorDataFlow
+            .map { it.leakDetected }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = null
             )
 
     /** Mock-derived pump monitoring data (speed, voltage) and valve toggles. */

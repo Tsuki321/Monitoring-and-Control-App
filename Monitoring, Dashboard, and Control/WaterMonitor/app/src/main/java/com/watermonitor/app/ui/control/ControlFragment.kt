@@ -76,9 +76,12 @@ class ControlFragment : Fragment() {
                 binding.switchPumpA.isChecked = control.commandedPumpA
                 binding.switchPumpB.isChecked = control.commandedPumpB
 
-                // Disable pump switches in AUTO mode (ESP32 controls them)
-                binding.switchPumpA.isEnabled = !control.autoMode
-                binding.switchPumpB.isEnabled = !control.autoMode
+                // Disable pump switches in AUTO mode or when a leak is active
+                // (ESP32 force-stops pumps on leak regardless of app commands).
+                val leakActive = viewModel.leakDetected.value == true
+                val pumpsEnabled = !control.autoMode && !leakActive
+                binding.switchPumpA.isEnabled = pumpsEnabled
+                binding.switchPumpB.isEnabled = pumpsEnabled
 
                 // Re-attach listeners
                 binding.switchMode.setOnCheckedChangeListener { _, _ ->
@@ -110,6 +113,20 @@ class ControlFragment : Fragment() {
                         else ContextCompat.getColor(requireContext(), R.color.status_grey)
                     )
                 }
+            }
+        }
+
+        // Leak banner + pump-switch enablement when moisture sensor trips.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.leakDetected.collect { leak ->
+                binding.cardLeakBanner.visibility =
+                    if (leak == true) View.VISIBLE else View.GONE
+
+                // Re-apply pump enable state when leak flips while on Control screen.
+                val auto = viewModel.pumpControlState.value.autoMode
+                val pumpsEnabled = !auto && leak != true
+                binding.switchPumpA.isEnabled = pumpsEnabled
+                binding.switchPumpB.isEnabled = pumpsEnabled
             }
         }
 

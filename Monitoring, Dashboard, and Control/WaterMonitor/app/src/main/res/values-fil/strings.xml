@@ -60,6 +60,11 @@
     <string name="tank_warning_80" formatted="false">⚠ Lalapit na sa kaya ang tangke (80%)</string>
     <string name="tank_warning_90" formatted="false">⚠ KRITIKAL: Tangke sa 90% kaya</string>
     <string name="tank_warning_100">⛔ PUNO ANG TANGKE — Nakapatay ang mga pump</string>
+    <string name="tank_distance_offline">Distansya ng ToF: offline</string>
+    <string name="leak_status_waiting">Sensor ng tagas: --</string>
+    <string name="leak_status_dry">Sensor ng tagas: Tuyo</string>
+    <string name="leak_status_detected">⚠ MAY TAGAS — Nakapatay ang mga pump</string>
+    <string name="leak_banner_message">May natukoy na tagas. Parehong pump ay nakapatay hanggang matuyo ang sensor.</string>
     <string name="sensor_status_format">%1$s: %2$s</string>
     <string name="water_safety_title">Kaligtasan ng Tubig</string>
     <string name="water_safety_checking">SINUSURI</string>

@@ -7,6 +7,12 @@ data class SensorData(
     val tankDistanceMm: Int? = null,
     val tankLevel: Float? = null,
     val tankWarning: Int? = null,
+    /**
+     * Leak detected by the floor/tray moisture sensor on the ESP32.
+     * RTDB key is still `rainDetected` (firmware naming); app domain is leak.
+     * null = not yet received from RTDB.
+     */
+    val leakDetected: Boolean? = null,
     // Zero identifies placeholder/no-data states; RTDB snapshots receive the current time.
     val timestamp: Long = 0L
 )
