@@ -9,9 +9,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.watermonitor.app.R
-import com.watermonitor.app.data.model.TankStatus
+import com.watermonitor.app.data.model.WaterSafetyLevel
 import com.watermonitor.app.databinding.FragmentDashboardBinding
 import com.watermonitor.app.utils.AnimationUtils
 import kotlinx.coroutines.launch
@@ -23,6 +22,7 @@ class DashboardFragment : Fragment() {
 
     private val viewModel: DashboardViewModel by viewModels()
     private var hasAnimatedEntrance = false
+    private var previousWaterSafety: WaterSafetyLevel? = null
 
     // Breathing-pulse animators for the online sensor dots (null when offline)
     private var phDotPulse: Animator? = null
@@ -40,79 +40,8 @@ class DashboardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        setupInfoPopups()
         observeState()
     }
-
-    private fun setupInfoPopups() {
-        binding.cardTank.setOnClickListener {
-            val state = viewModel.uiState.value.tankStatus
-            val percent = state.fillPercent.toInt().coerceIn(0, 100)
-            showInfoPopup(
-                titleRes = R.string.tank_info_title,
-                message = getString(
-                    R.string.tank_info_message,
-                    percent,
-                    getString(tankStateLabel(state)),
-                    onlineLabel(state.isOnline)
-                )
-            )
-        }
-
-        binding.cardSystemStatus.setOnClickListener {
-            val state = viewModel.uiState.value.pumpState
-            showInfoPopup(
-                titleRes = R.string.pump_info_title,
-                message = getString(
-                    R.string.pump_info_message,
-                    onOffLabel(state.pumpA),
-                    onOffLabel(state.pumpB)
-                )
-            )
-        }
-
-        binding.cardSensorStatus.setOnClickListener {
-            val state = viewModel.uiState.value.sensorStatus
-            showInfoPopup(
-                titleRes = R.string.sensor_info_title,
-                message = getString(
-                    R.string.sensor_info_message,
-                    onlineLabel(state.phOnline),
-                    onlineLabel(state.tdsOnline),
-                    onlineLabel(state.turbidityOnline)
-                )
-            )
-        }
-    }
-
-    private fun showInfoPopup(titleRes: Int, message: String) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setIcon(R.drawable.ic_info)
-            .setTitle(titleRes)
-            .setMessage(message)
-            .setPositiveButton(R.string.ok, null)
-            .show()
-    }
-
-    private fun tankStateLabel(tankStatus: TankStatus): Int {
-        val percent = tankStatus.fillPercent.coerceIn(0f, 100f)
-        return when {
-            tankStatus.tankWarning >= 3 || percent >= 100f -> R.string.tank_state_full
-            tankStatus.tankWarning == 2 || percent >= 90f -> R.string.tank_state_critical
-            tankStatus.tankWarning == 1 || percent >= 80f -> R.string.tank_state_near_capacity
-            percent < 25f -> R.string.tank_state_low
-            else -> R.string.tank_state_normal
-        }
-    }
-
-    private fun onlineLabel(isOnline: Boolean): String = getString(
-        if (isOnline) R.string.status_online else R.string.status_offline
-    )
-
-    private fun onOffLabel(isOn: Boolean): String = getString(
-        if (isOn) R.string.state_on else R.string.state_off
-    )
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -121,7 +50,7 @@ class DashboardFragment : Fragment() {
                     hasAnimatedEntrance = true
                     AnimationUtils.animateCardEntrance(
                         listOf(
-                            binding.cardTank,
+                            binding.cardWaterSafety,
                             binding.cardSystemStatus,
                             binding.cardSensorStatus
                         ),
@@ -129,75 +58,109 @@ class DashboardFragment : Fragment() {
                     )
                 }
 
-                // Tank
-                binding.waterTankView.setFillPercent(state.tankStatus.fillPercent)
-                binding.tvTankPercent.text = getString(R.string.tank_percent_format, state.tankStatus.fillPercent.toInt())
-
-                // Tank warning banner (0=normal, 1=warning 80%, 2=critical 90%, 3=full 100%)
-                val warning = state.tankStatus.tankWarning
-                when (warning) {
-                    0 -> {
-                        binding.tvTankWarning.visibility = View.GONE
-                    }
-                    1 -> {
-                        binding.tvTankWarning.apply {
-                            visibility = View.VISIBLE
-                            text = getString(R.string.tank_warning_80)
-                            setTextColor(ContextCompat.getColor(requireContext(), R.color.status_yellow))
-                        }
-                    }
-                    2 -> {
-                        binding.tvTankWarning.apply {
-                            visibility = View.VISIBLE
-                            text = getString(R.string.tank_warning_90)
-                            setTextColor(ContextCompat.getColor(requireContext(), R.color.status_yellow))
-                        }
-                    }
-                    3 -> {
-                        binding.tvTankWarning.apply {
-                            visibility = View.VISIBLE
-                            text = getString(R.string.tank_warning_100)
-                            setTextColor(ContextCompat.getColor(requireContext(), R.color.status_red))
-                        }
-                    }
-                }
-
-                // Pump status
-                val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
-                val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
-
-                binding.tvPumpAStatus.apply {
-                    val stateLabel = getString(if (state.pumpState.pumpA) R.string.state_on else R.string.state_off)
-                    text = getString(R.string.sensor_status_format, getString(R.string.pump_a_label), stateLabel)
-                    setTextColor(if (state.pumpState.pumpA) greenColor else greyColor)
-                }
-                binding.tvPumpBStatus.apply {
-                    val stateLabel = getString(if (state.pumpState.pumpB) R.string.state_on else R.string.state_off)
-                    text = getString(R.string.sensor_status_format, getString(R.string.pump_b_label), stateLabel)
-                    setTextColor(if (state.pumpState.pumpB) greenColor else greyColor)
-                }
-
-                // Sensor online dots
-                binding.dotPh.setColorFilter(if (state.sensorStatus.phOnline) greenColor else greyColor)
-                binding.dotTds.setColorFilter(if (state.sensorStatus.tdsOnline) greenColor else greyColor)
-                binding.dotTurbidity.setColorFilter(if (state.sensorStatus.turbidityOnline) greenColor else greyColor)
-
-                // Breathing pulse on dots that are online; halt and reset when offline
-                phDotPulse = updateDotPulse(state.sensorStatus.phOnline, binding.dotPh, phDotPulse)
-                tdsDotPulse = updateDotPulse(state.sensorStatus.tdsOnline, binding.dotTds, tdsDotPulse)
-                turbidityDotPulse = updateDotPulse(state.sensorStatus.turbidityOnline, binding.dotTurbidity, turbidityDotPulse)
-
-                binding.tvPhOnline.text = sensorOnlineLabel(R.string.sensor_ph_short, state.sensorStatus.phOnline)
-                binding.tvTdsOnline.text = sensorOnlineLabel(R.string.sensor_tds_short, state.sensorStatus.tdsOnline)
-                binding.tvTurbidityOnline.text = sensorOnlineLabel(R.string.sensor_turbidity_short, state.sensorStatus.turbidityOnline)
+                renderWaterSafety(state)
+                renderPumpStatus(state)
+                renderSensorConnections(state)
             }
         }
     }
 
-    /**
-     * Keeps a sensor dot's breathing pulse in sync with its online state.
-     * Returns the active animator (or null) so the caller can track it.
-     */
+    private fun renderWaterSafety(state: DashboardUiState) {
+        val safety = if (state.hasSensorReading) {
+            state.waterQuality.overallSafety
+        } else {
+            WaterSafetyLevel.UNKNOWN
+        }
+        val (statusRes, summaryRes, colorRes) = when (safety) {
+            WaterSafetyLevel.UNKNOWN -> Triple(
+                R.string.water_safety_checking,
+                R.string.water_safety_checking_summary,
+                R.color.status_grey
+            )
+            WaterSafetyLevel.SAFE -> Triple(
+                R.string.water_safety_safe,
+                R.string.water_safety_safe_summary,
+                R.color.status_green
+            )
+            WaterSafetyLevel.CAUTION -> Triple(
+                R.string.water_safety_caution,
+                R.string.water_safety_caution_summary,
+                R.color.status_yellow
+            )
+            WaterSafetyLevel.UNSAFE -> Triple(
+                R.string.water_safety_unsafe,
+                R.string.water_safety_unsafe_summary,
+                R.color.status_red
+            )
+        }
+        val statusColor = ContextCompat.getColor(requireContext(), colorRes)
+
+        binding.tvWaterSafetyStatus.apply {
+            setText(statusRes)
+            setTextColor(statusColor)
+        }
+        binding.tvWaterSafetySummary.setText(summaryRes)
+        binding.imgWaterSafetyStatus.setColorFilter(statusColor)
+        if (state.hasSensorReading) {
+            binding.tvSafetyPh.text = getString(R.string.water_safety_ph_format, state.sensorData.ph)
+            binding.tvSafetyTds.text = getString(R.string.water_safety_tds_format, state.sensorData.tds)
+            binding.tvSafetyTurbidity.text = getString(
+                R.string.water_safety_turbidity_format,
+                state.sensorData.turbidity
+            )
+        } else {
+            binding.tvSafetyPh.setText(R.string.water_safety_ph_pending)
+            binding.tvSafetyTds.setText(R.string.water_safety_tds_pending)
+            binding.tvSafetyTurbidity.setText(R.string.water_safety_turbidity_pending)
+        }
+
+        if (previousWaterSafety != null && previousWaterSafety != safety) {
+            AnimationUtils.pulseView(binding.tvWaterSafetyStatus, scalePeak = 1.06f)
+            AnimationUtils.pulseView(binding.imgWaterSafetyStatus, scalePeak = 1.15f)
+        }
+        previousWaterSafety = safety
+    }
+
+    private fun renderPumpStatus(state: DashboardUiState) {
+        val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
+        val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
+
+        binding.tvPumpAStatus.apply {
+            val stateLabel = getString(if (state.pumpState.pumpA) R.string.state_on else R.string.state_off)
+            text = getString(R.string.sensor_status_format, getString(R.string.pump_a_label), stateLabel)
+            setTextColor(if (state.pumpState.pumpA) greenColor else greyColor)
+        }
+        binding.tvPumpBStatus.apply {
+            val stateLabel = getString(if (state.pumpState.pumpB) R.string.state_on else R.string.state_off)
+            text = getString(R.string.sensor_status_format, getString(R.string.pump_b_label), stateLabel)
+            setTextColor(if (state.pumpState.pumpB) greenColor else greyColor)
+        }
+    }
+
+    private fun renderSensorConnections(state: DashboardUiState) {
+        val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
+        val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
+
+        binding.dotPh.setColorFilter(if (state.sensorStatus.phOnline) greenColor else greyColor)
+        binding.dotTds.setColorFilter(if (state.sensorStatus.tdsOnline) greenColor else greyColor)
+        binding.dotTurbidity.setColorFilter(if (state.sensorStatus.turbidityOnline) greenColor else greyColor)
+
+        phDotPulse = updateDotPulse(state.sensorStatus.phOnline, binding.dotPh, phDotPulse)
+        tdsDotPulse = updateDotPulse(state.sensorStatus.tdsOnline, binding.dotTds, tdsDotPulse)
+        turbidityDotPulse = updateDotPulse(
+            state.sensorStatus.turbidityOnline,
+            binding.dotTurbidity,
+            turbidityDotPulse
+        )
+
+        binding.tvPhOnline.text = sensorOnlineLabel(R.string.sensor_ph_short, state.sensorStatus.phOnline)
+        binding.tvTdsOnline.text = sensorOnlineLabel(R.string.sensor_tds_short, state.sensorStatus.tdsOnline)
+        binding.tvTurbidityOnline.text = sensorOnlineLabel(
+            R.string.sensor_turbidity_short,
+            state.sensorStatus.turbidityOnline
+        )
+    }
+
     private fun updateDotPulse(isOnline: Boolean, dot: View, current: Animator?): Animator? {
         return if (isOnline) {
             current ?: AnimationUtils.startBreathingPulse(dot)
@@ -220,6 +183,7 @@ class DashboardFragment : Fragment() {
         phDotPulse = null
         tdsDotPulse = null
         turbidityDotPulse = null
+        previousWaterSafety = null
         _binding = null
         hasAnimatedEntrance = false
     }

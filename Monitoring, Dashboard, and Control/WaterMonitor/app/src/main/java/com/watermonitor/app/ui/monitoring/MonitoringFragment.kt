@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -59,10 +60,21 @@ class MonitoringFragment : Fragment() {
                 if (!hasAnimatedEntrance) {
                     hasAnimatedEntrance = true
                     AnimationUtils.animateCardEntrance(
-                        listOf(binding.cardPh, binding.cardTds, binding.cardTurbidity),
+                        listOf(
+                            binding.cardTank,
+                            binding.cardPh,
+                            binding.cardTds,
+                            binding.cardTurbidity
+                        ),
                         delayMs = 120
                     )
                 }
+
+                renderTankStatus(
+                    state.sensorData.tankLevel,
+                    state.sensorData.tankWarning,
+                    state.sensorData.tankDistanceMm
+                )
 
                 // pH card
                 AnimationUtils.animateTextCount(
@@ -125,6 +137,53 @@ class MonitoringFragment : Fragment() {
                 prevTurbidityStatusRes = state.turbidityStatus.statusLabelRes
                 prevTurbidity = state.sensorData.turbidity
                 prevCloudiness = state.turbidityStatus.cloudinessPercent.toDouble()
+            }
+        }
+    }
+
+    private fun renderTankStatus(
+        tankLevel: Float?,
+        reportedWarning: Int?,
+        tankDistanceMm: Int?
+    ) {
+        binding.tvTankDistance.text = if (tankDistanceMm == null) {
+            getString(R.string.tank_distance_waiting)
+        } else {
+            getString(R.string.tank_distance_format, tankDistanceMm)
+        }
+
+        if (tankLevel == null) {
+            binding.waterTankView.setFillPercent(0f)
+            binding.tvTankPercent.setText(R.string.tank_percent_waiting)
+            binding.tvTankWarning.visibility = View.GONE
+            return
+        }
+
+        val level = tankLevel.coerceIn(0f, 100f)
+        val warning = reportedWarning ?: when {
+            level >= 100f -> 3
+            level >= 90f -> 2
+            level >= 80f -> 1
+            else -> 0
+        }
+
+        binding.waterTankView.setFillPercent(level)
+        binding.tvTankPercent.text = getString(R.string.tank_percent_format, level.toInt())
+
+        val (messageRes, colorRes) = when (warning) {
+            1 -> R.string.tank_warning_80 to R.color.status_yellow
+            2 -> R.string.tank_warning_90 to R.color.status_yellow
+            3 -> R.string.tank_warning_100 to R.color.status_red
+            else -> null to null
+        }
+
+        if (messageRes == null || colorRes == null) {
+            binding.tvTankWarning.visibility = View.GONE
+        } else {
+            binding.tvTankWarning.apply {
+                visibility = View.VISIBLE
+                setText(messageRes)
+                setTextColor(ContextCompat.getColor(requireContext(), colorRes))
             }
         }
     }

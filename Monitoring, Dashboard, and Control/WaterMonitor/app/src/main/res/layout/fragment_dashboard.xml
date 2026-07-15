@@ -22,68 +22,101 @@
             android:paddingTop="24dp"
             android:paddingBottom="48dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="12dp"
-                android:drawableStart="@drawable/ic_info"
-                android:drawablePadding="8dp"
-                android:gravity="center_vertical"
-                android:text="@string/dashboard_details_hint"
-                android:textColor="@color/text_medium"
-                android:textSize="13sp" />
-
-            <!-- Tank Level Card -->
+            <!-- Synthesized Water Safety Card -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardTank"
+                android:id="@+id/cardWaterSafety"
                 style="@style/Style.WaterMonitor.GlassCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:alpha="0"
-                android:clickable="true"
-                android:focusable="true"
-                app:rippleColor="@color/ripple_teal">
+                android:alpha="0">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="@dimen/card_padding"
-                    android:gravity="center_horizontal">
+                    android:padding="@dimen/card_padding">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/Style.WaterMonitor.SensorTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/water_safety_title" />
+
+                        <ImageView
+                            android:id="@+id/imgWaterSafetyStatus"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_status_dot" />
+                    </LinearLayout>
 
                     <TextView
+                        android:id="@+id/tvWaterSafetyStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/tank_level_label"
-                        style="@style/Style.WaterMonitor.SensorTitle"
-                        android:layout_marginBottom="12dp" />
-
-                    <com.watermonitor.app.ui.views.WaterTankView
-                        android:id="@+id/waterTankView"
-                        android:layout_width="@dimen/tank_width"
-                        android:layout_height="@dimen/tank_height" />
-
-                    <TextView
-                        android:id="@+id/tvTankPercent"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tank: 0%"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_medium"
-                        android:layout_marginTop="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvTankWarning"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textSize="13sp"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/water_safety_checking"
+                        android:textColor="@color/status_grey"
+                        android:textSize="30sp"
                         android:textStyle="bold"
+                        android:letterSpacing="0.06" />
+
+                    <TextView
+                        android:id="@+id/tvWaterSafetySummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="4dp"
-                        android:visibility="gone" />
+                        android:text="@string/water_safety_checking_summary"
+                        android:textColor="@color/text_medium"
+                        android:textSize="14sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="16dp"
+                        android:background="@color/card_border" />
+
+                    <TextView
+                        android:id="@+id/tvSafetyPh"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/water_safety_ph_pending"
+                        android:textColor="@color/text_dark"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvSafetyTds"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/water_safety_tds_pending"
+                        android:textColor="@color/text_dark"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvSafetyTurbidity"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/water_safety_turbidity_pending"
+                        android:textColor="@color/text_dark"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/water_safety_basis"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -95,10 +128,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:alpha="0"
-                android:clickable="true"
-                android:focusable="true"
-                app:rippleColor="@color/ripple_teal">
+                android:alpha="0">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -174,10 +204,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
-                android:alpha="0"
-                android:clickable="true"
-                android:focusable="true"
-                app:rippleColor="@color/ripple_teal">
+                android:alpha="0">
 
                 <LinearLayout
                     android:layout_width="match_parent"

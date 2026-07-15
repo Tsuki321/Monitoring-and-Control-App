@@ -3,8 +3,10 @@ package com.watermonitor.app.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watermonitor.app.data.model.PumpState
+import com.watermonitor.app.data.model.SensorData
 import com.watermonitor.app.data.model.SensorStatus
-import com.watermonitor.app.data.model.TankStatus
+import com.watermonitor.app.data.model.WaterQualityAssessment
+import com.watermonitor.app.data.model.WaterQualityEvaluator
 import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import com.watermonitor.app.data.repository.MockSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,19 +16,28 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class DashboardUiState(
-    val tankStatus: TankStatus = TankStatus(),
     val pumpState: PumpState = PumpState(),
-    val sensorStatus: SensorStatus = SensorStatus()
-)
+    val sensorStatus: SensorStatus = SensorStatus(),
+    val sensorData: SensorData = SensorData(),
+    val waterQuality: WaterQualityAssessment = WaterQualityEvaluator.evaluate(sensorData)
+) {
+    val hasSensorReading: Boolean
+        get() = sensorData.timestamp > 0L
+}
 
 class DashboardViewModel : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = combine(
-        MockSensorRepository.tankStatus,
         MockSensorRepository.pumpState,
-        MockSensorRepository.sensorStatus
-    ) { tank, pump, sensors ->
-        DashboardUiState(tankStatus = tank, pumpState = pump, sensorStatus = sensors)
+        MockSensorRepository.sensorStatus,
+        FirebaseRealtimeSensorRepository.sensorDataFlow
+    ) { pump, sensors, sensorData ->
+        DashboardUiState(
+            pumpState = pump,
+            sensorStatus = sensors,
+            sensorData = sensorData,
+            waterQuality = WaterQualityEvaluator.evaluate(sensorData)
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -34,25 +45,11 @@ class DashboardViewModel : ViewModel() {
     )
 
     init {
-        // Sync actual pump states from RTDB → mock so the dashboard reflects
-        // what the hardware is really doing. pumpControlFlow is a SharedFlow,
-        // so this shares the same underlying RTDB listener as ControlViewModel.
+        // Sync actual pump states from RTDB into the dashboard's pump simulation.
         viewModelScope.launch {
             FirebaseRealtimeSensorRepository.pumpControlFlow.collect { state ->
                 MockSensorRepository.setPumpA(state.actualPumpA)
                 MockSensorRepository.setPumpB(state.actualPumpB)
-            }
-        }
-
-        // Sync real tank fill level + warning from the ToF sensor (RTDB /sensors)
-        // into the mock so WaterTankView reflects hardware reality.
-        viewModelScope.launch {
-            FirebaseRealtimeSensorRepository.sensorDataFlow.collect { data ->
-                data.tankLevel?.let { level ->
-                    data.tankWarning?.let { warning ->
-                        MockSensorRepository.setTankLevel(level, warning)
-                    } ?: MockSensorRepository.setTankLevel(level)
-                }
             }
         }
     }

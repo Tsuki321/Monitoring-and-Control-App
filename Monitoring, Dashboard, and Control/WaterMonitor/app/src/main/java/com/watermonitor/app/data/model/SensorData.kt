@@ -7,5 +7,6 @@ data class SensorData(
     val tankDistanceMm: Int? = null,
     val tankLevel: Float? = null,
     val tankWarning: Int? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    // Zero identifies placeholder/no-data states; RTDB snapshots receive the current time.
+    val timestamp: Long = 0L
 )

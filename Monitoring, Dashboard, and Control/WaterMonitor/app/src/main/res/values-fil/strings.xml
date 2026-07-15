@@ -53,23 +53,30 @@
     <string name="system_standby">Naka-standby</string>
     <string name="tank_full">PUNO</string>
     <string name="tank_low">MABABA</string>
+    <string name="tank_percent_waiting">Tangke: --</string>
     <string name="tank_percent_format">Tangke: %d%%</string>
-    <string name="tank_warning_80">⚠ Lalapit na sa kaya ang tangke (80%%)</string>
-    <string name="tank_warning_90">⚠ KRITIKAL: Tangke sa 90%% kaya</string>
+    <string name="tank_distance_waiting">Distansya ng ToF: --</string>
+    <string name="tank_distance_format">Distansya ng ToF: %1$d mm</string>
+    <string name="tank_warning_80" formatted="false">⚠ Lalapit na sa kaya ang tangke (80%)</string>
+    <string name="tank_warning_90" formatted="false">⚠ KRITIKAL: Tangke sa 90% kaya</string>
     <string name="tank_warning_100">⛔ PUNO ANG TANGKE — Nakapatay ang mga pump</string>
     <string name="sensor_status_format">%1$s: %2$s</string>
-    <string name="dashboard_details_hint">I-tap ang anumang card para sa detalye ng katayuan</string>
-    <string name="tank_info_title">Impormasyon sa antas ng tangke</string>
-    <string name="tank_info_message">Kasalukuyang antas: %1$d%%\nKatayuan: %2$s\nKoneksyon: %3$s\n\nGabay sa antas ng tubig\n0-24%% - Mababa\n25-79%% - Normal\n80-89%% - Halos puno\n90-99%% - Kritikal\n100%% - Puno; nakapatay ang mga pump</string>
-    <string name="tank_state_low">Mababa</string>
-    <string name="tank_state_normal">Normal</string>
-    <string name="tank_state_near_capacity">Halos puno</string>
-    <string name="tank_state_critical">Kritikal</string>
-    <string name="tank_state_full">Puno</string>
-    <string name="pump_info_title">Impormasyon sa pump</string>
-    <string name="pump_info_message">Kasalukuyang katayuan\nPump A: %1$s\nPump B: %2$s\n\nAng BUKAS ay nangangahulugang aktibo ang pump relay. Ang PATAY ay nangangahulugang nakahinto ito. Maaaring awtomatikong kontrolin ng antas ng tubig ang mga pump o manu-manong kontrolin ang mga ito sa Kontrol screen.</string>
-    <string name="sensor_info_title">Impormasyon sa sensor</string>
-    <string name="sensor_info_message">Kasalukuyang koneksyon\npH: %1$s\nTDS: %2$s\nTurbidity: %3$s\n\nGabay sa reading\nSinusukat ng pH ang acidity; 6.5-8.5 ang katanggap-tanggap na range.\nSinusukat ng TDS ang dissolved solids; mas mababa sa 50 ppm ay napakababa, 50-300 ppm ay napakahusay, 301-500 ppm ay maganda, at higit sa 500 ppm ay mahina.\nSinusukat ng turbidity ang linaw; hanggang 1.5 NTU ay malinaw, 1.6-4.0 NTU ay bahagyang malabo, at higit sa 4.0 NTU ay malabo.</string>
+    <string name="water_safety_title">Kaligtasan ng Tubig</string>
+    <string name="water_safety_checking">SINUSURI</string>
+    <string name="water_safety_safe">LIGTAS</string>
+    <string name="water_safety_caution">MAG-INGAT</string>
+    <string name="water_safety_unsafe">HINDI LIGTAS</string>
+    <string name="water_safety_checking_summary">Naghihintay ng live monitoring readings bago suriin ang kaligtasan.</string>
+    <string name="water_safety_safe_summary">Lahat ng minomonitor na reading ay nasa kanais-nais na range.</string>
+    <string name="water_safety_caution_summary">May reading na nangangailangan ng pansin. Tingnan ang Pagmamasid screen.</string>
+    <string name="water_safety_unsafe_summary">May reading na lumampas sa tinatanggap na safety limit.</string>
+    <string name="water_safety_basis">Pinagsamang resulta mula sa live na pH, TDS, at turbidity readings.</string>
+    <string name="water_safety_ph_format">pH: %1$.2f</string>
+    <string name="water_safety_tds_format">TDS: %1$d ppm</string>
+    <string name="water_safety_turbidity_format">Turbidity: %1$.1f NTU</string>
+    <string name="water_safety_ph_pending">pH: --</string>
+    <string name="water_safety_tds_pending">TDS: --</string>
+    <string name="water_safety_turbidity_pending">Turbidity: --</string>
 
     <!-- Control screen -->
     <string name="control_pump_a">Pump A</string>

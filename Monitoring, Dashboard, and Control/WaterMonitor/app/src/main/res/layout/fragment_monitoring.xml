@@ -22,6 +22,66 @@
             android:paddingTop="24dp"
             android:paddingBottom="48dp">
 
+            <!-- Tank Level Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTank"
+                style="@style/Style.WaterMonitor.GlassCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:alpha="0">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:padding="@dimen/card_padding">
+
+                    <TextView
+                        style="@style/Style.WaterMonitor.SensorTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/tank_level_label" />
+
+                    <com.watermonitor.app.ui.views.WaterTankView
+                        android:id="@+id/waterTankView"
+                        android:layout_width="@dimen/tank_width"
+                        android:layout_height="@dimen/tank_height" />
+
+                    <TextView
+                        android:id="@+id/tvTankPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/tank_percent_waiting"
+                        android:textColor="@color/text_medium"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tvTankDistance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/tank_distance_waiting"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvTankWarning"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="4dp"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- pH Sensor Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPh"

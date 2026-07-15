@@ -50,26 +50,33 @@
     <string name="system_standby">Standby</string>
     <string name="tank_full">FULL</string>
     <string name="tank_low">LOW</string>
+    <string name="tank_percent_waiting">Tank: --</string>
     <string name="tank_percent_format">Tank: %d%%</string>
-    <string name="tank_warning_80">⚠ Tank nearing capacity (80%%)</string>
-    <string name="tank_warning_90">⚠ CRITICAL: Tank at 90%% capacity</string>
+    <string name="tank_distance_waiting">ToF distance: --</string>
+    <string name="tank_distance_format">ToF distance: %1$d mm</string>
+    <string name="tank_warning_80" formatted="false">⚠ Tank nearing capacity (80%)</string>
+    <string name="tank_warning_90" formatted="false">⚠ CRITICAL: Tank at 90% capacity</string>
     <string name="tank_warning_100">⛔ TANK FULL — Pumps disabled</string>
     <string name="sensor_ph_short">pH</string>
     <string name="sensor_tds_short">TDS</string>
     <string name="sensor_turbidity_short">Turbidity</string>
     <string name="sensor_status_format">%1$s: %2$s</string>
-    <string name="dashboard_details_hint">Tap any card for status details</string>
-    <string name="tank_info_title">Tank level information</string>
-    <string name="tank_info_message">Current level: %1$d%%\nState: %2$s\nConnection: %3$s\n\nWater level guide\n0-24%% - Low\n25-79%% - Normal\n80-89%% - Nearing capacity\n90-99%% - Critical\n100%% - Full; pumps are disabled</string>
-    <string name="tank_state_low">Low</string>
-    <string name="tank_state_normal">Normal</string>
-    <string name="tank_state_near_capacity">Nearing capacity</string>
-    <string name="tank_state_critical">Critical</string>
-    <string name="tank_state_full">Full</string>
-    <string name="pump_info_title">Pump information</string>
-    <string name="pump_info_message">Current state\nPump A: %1$s\nPump B: %2$s\n\nON means the pump relay is active. OFF means it is stopped. Pump behavior can be automated by the water level or controlled manually from the Control screen.</string>
-    <string name="sensor_info_title">Sensor information</string>
-    <string name="sensor_info_message">Current connection\npH: %1$s\nTDS: %2$s\nTurbidity: %3$s\n\nReading guide\npH measures acidity; 6.5-8.5 is the acceptable range.\nTDS measures dissolved solids; below 50 ppm is very low, 50-300 ppm is excellent, 301-500 ppm is good, and above 500 ppm is poor.\nTurbidity measures cloudiness; up to 1.5 NTU is clear, 1.6-4.0 NTU is slightly turbid, and above 4.0 NTU is turbid.</string>
+    <string name="water_safety_title">Water Safety</string>
+    <string name="water_safety_checking">CHECKING</string>
+    <string name="water_safety_safe">SAFE</string>
+    <string name="water_safety_caution">CAUTION</string>
+    <string name="water_safety_unsafe">UNSAFE</string>
+    <string name="water_safety_checking_summary">Waiting for live monitoring readings before assessing safety.</string>
+    <string name="water_safety_safe_summary">All monitored readings are within their preferred ranges.</string>
+    <string name="water_safety_caution_summary">At least one reading needs attention. Review the Monitoring screen.</string>
+    <string name="water_safety_unsafe_summary">At least one reading is outside the accepted safety limits.</string>
+    <string name="water_safety_basis">Synthesized from the live pH, TDS, and turbidity readings.</string>
+    <string name="water_safety_ph_format">pH: %1$.2f</string>
+    <string name="water_safety_tds_format">TDS: %1$d ppm</string>
+    <string name="water_safety_turbidity_format">Turbidity: %1$.1f NTU</string>
+    <string name="water_safety_ph_pending">pH: --</string>
+    <string name="water_safety_tds_pending">TDS: --</string>
+    <string name="water_safety_turbidity_pending">Turbidity: --</string>
 
     <!-- Control screen -->
     <string name="control_pump_a">Pump A</string>

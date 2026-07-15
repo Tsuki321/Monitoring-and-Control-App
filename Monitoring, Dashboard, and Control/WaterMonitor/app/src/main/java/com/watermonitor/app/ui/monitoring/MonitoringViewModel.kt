@@ -3,7 +3,12 @@ package com.watermonitor.app.ui.monitoring
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watermonitor.app.R
+import com.watermonitor.app.data.model.PhQuality
 import com.watermonitor.app.data.model.SensorData
+import com.watermonitor.app.data.model.TdsQuality
+import com.watermonitor.app.data.model.TurbidityQuality
+import com.watermonitor.app.data.model.WaterQualityEvaluator
+import com.watermonitor.app.data.model.WaterSafetyLevel
 import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,43 +39,54 @@ class MonitoringViewModel : ViewModel() {
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = MonitoringUiState()
+                initialValue = buildUiState(SensorData())
             )
 
     private fun buildUiState(data: SensorData): MonitoringUiState {
+        val assessment = WaterQualityEvaluator.evaluate(data)
         return MonitoringUiState(
             sensorData = data,
-            phStatus = phCardState(data.ph),
-            tdsStatus = tdsCardState(data.tds),
-            turbidityStatus = turbidityCardState(data.turbidity)
+            phStatus = phCardState(data.ph, assessment.phQuality),
+            tdsStatus = tdsCardState(data.tds, assessment.tdsQuality),
+            turbidityStatus = turbidityCardState(data.turbidity, assessment.turbidityQuality)
         )
     }
 
-    private fun phCardState(ph: Double): SensorCardUiState {
-        // EPA/WHO drinking water acceptable range is 6.5–8.5.
-        val (labelRes, color) = when {
-            ph < 6.5 -> Pair(R.string.status_acidic, STATUS_RED)
-            ph > 8.5 -> Pair(R.string.status_alkaline, STATUS_YELLOW)
-            else -> Pair(R.string.status_neutral, STATUS_GREEN)
+    private fun phCardState(ph: Double, quality: PhQuality): SensorCardUiState {
+        val labelRes = when (quality) {
+            PhQuality.ACIDIC -> R.string.status_acidic
+            PhQuality.ACCEPTABLE -> R.string.status_neutral
+            PhQuality.ALKALINE -> R.string.status_alkaline
         }
-        return SensorCardUiState(value = ph, statusLabelRes = labelRes, statusColorRes = color)
+        return SensorCardUiState(
+            value = ph,
+            statusLabelRes = labelRes,
+            statusColorRes = statusColor(quality.safetyLevel)
+        )
     }
 
-    private fun tdsCardState(tds: Int): SensorCardUiState {
-        val (labelRes, color) = when {
-            tds < 50 -> Pair(R.string.status_very_low, STATUS_YELLOW)
-            tds > 500 -> Pair(R.string.status_poor, STATUS_RED)
-            tds > 300 -> Pair(R.string.status_good, STATUS_YELLOW)
-            else -> Pair(R.string.status_excellent, STATUS_GREEN)
+    private fun tdsCardState(tds: Int, quality: TdsQuality): SensorCardUiState {
+        val labelRes = when (quality) {
+            TdsQuality.VERY_LOW -> R.string.status_very_low
+            TdsQuality.EXCELLENT -> R.string.status_excellent
+            TdsQuality.GOOD -> R.string.status_good
+            TdsQuality.POOR -> R.string.status_poor
         }
-        return SensorCardUiState(value = tds.toDouble(), statusLabelRes = labelRes, statusColorRes = color)
+        return SensorCardUiState(
+            value = tds.toDouble(),
+            statusLabelRes = labelRes,
+            statusColorRes = statusColor(quality.safetyLevel)
+        )
     }
 
-    private fun turbidityCardState(turbidity: Double): SensorCardUiState {
-        val (labelRes, color) = when {
-            turbidity > 4.0 -> Pair(R.string.status_turbid, STATUS_RED)
-            turbidity > 1.5 -> Pair(R.string.status_slightly_turbid, STATUS_YELLOW)
-            else -> Pair(R.string.status_clear, STATUS_GREEN)
+    private fun turbidityCardState(
+        turbidity: Double,
+        quality: TurbidityQuality
+    ): SensorCardUiState {
+        val labelRes = when (quality) {
+            TurbidityQuality.CLEAR -> R.string.status_clear
+            TurbidityQuality.SLIGHTLY_TURBID -> R.string.status_slightly_turbid
+            TurbidityQuality.TURBID -> R.string.status_turbid
         }
         val cloudiness = (turbidity / TURBIDITY_FULL_SCALE_NTU * 100)
             .toInt()
@@ -78,16 +94,24 @@ class MonitoringViewModel : ViewModel() {
         return SensorCardUiState(
             value = turbidity,
             statusLabelRes = labelRes,
-            statusColorRes = color,
+            statusColorRes = statusColor(quality.safetyLevel),
             cloudinessPercent = cloudiness
         )
     }
 
+    private fun statusColor(safetyLevel: WaterSafetyLevel): Int = when (safetyLevel) {
+        WaterSafetyLevel.UNKNOWN -> STATUS_GREY
+        WaterSafetyLevel.SAFE -> STATUS_GREEN
+        WaterSafetyLevel.CAUTION -> STATUS_YELLOW
+        WaterSafetyLevel.UNSAFE -> STATUS_RED
+    }
+
     private companion object {
-        // Mirror the refined palette in colors.xml so status text matches the rest of the UI
+        // Mirror the status palette in colors.xml so the animated transitions stay consistent.
         val STATUS_GREEN = android.graphics.Color.parseColor("#10B981")
         val STATUS_YELLOW = android.graphics.Color.parseColor("#F59E0B")
         val STATUS_RED = android.graphics.Color.parseColor("#EF4444")
+        val STATUS_GREY = android.graphics.Color.parseColor("#94A3B8")
         const val TURBIDITY_FULL_SCALE_NTU = 5.0
     }
 }
