@@ -122,6 +122,9 @@ class MainActivity : AppCompatActivity() {
             binding.btnSettings.setImageResource(
                 if (isSecondaryPage) R.drawable.ic_back else R.drawable.ic_gear
             )
+            binding.btnSettings.contentDescription = getString(
+                if (isSecondaryPage) R.string.navigate_up else R.string.settings
+            )
         }
 
         // Navigate to Settings (from main pages) or navigate up (from secondary pages)

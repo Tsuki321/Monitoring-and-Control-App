@@ -58,6 +58,18 @@
     <string name="tank_warning_90">⚠ KRITIKAL: Tangke sa 90%% kaya</string>
     <string name="tank_warning_100">⛔ PUNO ANG TANGKE — Nakapatay ang mga pump</string>
     <string name="sensor_status_format">%1$s: %2$s</string>
+    <string name="dashboard_details_hint">I-tap ang anumang card para sa detalye ng katayuan</string>
+    <string name="tank_info_title">Impormasyon sa antas ng tangke</string>
+    <string name="tank_info_message">Kasalukuyang antas: %1$d%%\nKatayuan: %2$s\nKoneksyon: %3$s\n\nGabay sa antas ng tubig\n0-24%% - Mababa\n25-79%% - Normal\n80-89%% - Halos puno\n90-99%% - Kritikal\n100%% - Puno; nakapatay ang mga pump</string>
+    <string name="tank_state_low">Mababa</string>
+    <string name="tank_state_normal">Normal</string>
+    <string name="tank_state_near_capacity">Halos puno</string>
+    <string name="tank_state_critical">Kritikal</string>
+    <string name="tank_state_full">Puno</string>
+    <string name="pump_info_title">Impormasyon sa pump</string>
+    <string name="pump_info_message">Kasalukuyang katayuan\nPump A: %1$s\nPump B: %2$s\n\nAng BUKAS ay nangangahulugang aktibo ang pump relay. Ang PATAY ay nangangahulugang nakahinto ito. Maaaring awtomatikong kontrolin ng antas ng tubig ang mga pump o manu-manong kontrolin ang mga ito sa Kontrol screen.</string>
+    <string name="sensor_info_title">Impormasyon sa sensor</string>
+    <string name="sensor_info_message">Kasalukuyang koneksyon\npH: %1$s\nTDS: %2$s\nTurbidity: %3$s\n\nGabay sa reading\nSinusukat ng pH ang acidity; 6.5-8.5 ang katanggap-tanggap na range.\nSinusukat ng TDS ang dissolved solids; mas mababa sa 50 ppm ay napakababa, 50-300 ppm ay napakahusay, 301-500 ppm ay maganda, at higit sa 500 ppm ay mahina.\nSinusukat ng turbidity ang linaw; hanggang 1.5 NTU ay malinaw, 1.6-4.0 NTU ay bahagyang malabo, at higit sa 4.0 NTU ay malabo.</string>
 
     <!-- Control screen -->
     <string name="control_pump_a">Pump A</string>
@@ -77,6 +89,7 @@
 
     <!-- Settings -->
     <string name="settings">Mga Setting</string>
+    <string name="navigate_up">Bumalik</string>
     <string name="settings_placeholder">Mga setting ay darating sa susunod na update.</string>
     <string name="settings_appearance">Hitsura</string>
     <string name="settings_dark_mode">Dark Mode</string>

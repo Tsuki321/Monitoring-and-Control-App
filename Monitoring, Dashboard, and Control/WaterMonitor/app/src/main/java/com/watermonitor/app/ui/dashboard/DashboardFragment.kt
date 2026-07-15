@@ -9,7 +9,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.watermonitor.app.R
+import com.watermonitor.app.data.model.TankStatus
 import com.watermonitor.app.databinding.FragmentDashboardBinding
 import com.watermonitor.app.utils.AnimationUtils
 import kotlinx.coroutines.launch
@@ -39,8 +41,78 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupInfoPopups()
         observeState()
     }
+
+    private fun setupInfoPopups() {
+        binding.cardTank.setOnClickListener {
+            val state = viewModel.uiState.value.tankStatus
+            val percent = state.fillPercent.toInt().coerceIn(0, 100)
+            showInfoPopup(
+                titleRes = R.string.tank_info_title,
+                message = getString(
+                    R.string.tank_info_message,
+                    percent,
+                    getString(tankStateLabel(state)),
+                    onlineLabel(state.isOnline)
+                )
+            )
+        }
+
+        binding.cardSystemStatus.setOnClickListener {
+            val state = viewModel.uiState.value.pumpState
+            showInfoPopup(
+                titleRes = R.string.pump_info_title,
+                message = getString(
+                    R.string.pump_info_message,
+                    onOffLabel(state.pumpA),
+                    onOffLabel(state.pumpB)
+                )
+            )
+        }
+
+        binding.cardSensorStatus.setOnClickListener {
+            val state = viewModel.uiState.value.sensorStatus
+            showInfoPopup(
+                titleRes = R.string.sensor_info_title,
+                message = getString(
+                    R.string.sensor_info_message,
+                    onlineLabel(state.phOnline),
+                    onlineLabel(state.tdsOnline),
+                    onlineLabel(state.turbidityOnline)
+                )
+            )
+        }
+    }
+
+    private fun showInfoPopup(titleRes: Int, message: String) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setIcon(R.drawable.ic_info)
+            .setTitle(titleRes)
+            .setMessage(message)
+            .setPositiveButton(R.string.ok, null)
+            .show()
+    }
+
+    private fun tankStateLabel(tankStatus: TankStatus): Int {
+        val percent = tankStatus.fillPercent.coerceIn(0f, 100f)
+        return when {
+            tankStatus.tankWarning >= 3 || percent >= 100f -> R.string.tank_state_full
+            tankStatus.tankWarning == 2 || percent >= 90f -> R.string.tank_state_critical
+            tankStatus.tankWarning == 1 || percent >= 80f -> R.string.tank_state_near_capacity
+            percent < 25f -> R.string.tank_state_low
+            else -> R.string.tank_state_normal
+        }
+    }
+
+    private fun onlineLabel(isOnline: Boolean): String = getString(
+        if (isOnline) R.string.status_online else R.string.status_offline
+    )
+
+    private fun onOffLabel(isOn: Boolean): String = getString(
+        if (isOn) R.string.state_on else R.string.state_off
+    )
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {

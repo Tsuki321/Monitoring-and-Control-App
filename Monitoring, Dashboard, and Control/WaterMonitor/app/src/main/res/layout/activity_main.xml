@@ -20,8 +20,9 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/topBar"
         android:layout_width="0dp"
-        android:layout_height="@dimen/top_bar_height"
+        android:layout_height="wrap_content"
         android:background="@drawable/bg_top_bar"
+        android:minHeight="@dimen/top_bar_height"
         android:paddingHorizontal="@dimen/top_bar_padding_horizontal"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -32,8 +33,10 @@
             android:layout_width="@dimen/gear_icon_size"
             android:layout_height="@dimen/gear_icon_size"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_gear"
             android:contentDescription="@string/settings"
+            android:padding="10dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_gear"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
