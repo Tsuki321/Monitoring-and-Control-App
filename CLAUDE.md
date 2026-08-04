@@ -99,7 +99,7 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 ### Data Flow
 
 - **Sensor readings (Monitoring):** `FirebaseRealtimeSensorRepository.sensorDataFlow` → `MonitoringViewModel` → `StateFlow` → `MonitoringFragment` (animated count-ups + tank/leak card)
-- **Tank + leak status:** RTDB `/sensors` fields `tankLevel`, `tankDistanceMm`, `tankWarning`, `rainDetected` → `SensorData` → Monitoring tank card + Dashboard system status. App maps firmware key `rainDetected` → domain field `leakDetected` (moisture/leak sensor, not weather).
+- **Tank + leak status:** RTDB `/sensors` fields `tankLevel`, `tankDistanceMm`, `tankWarning`, `rainDetected` → `SensorData` → Monitoring tank card; `rainDetected` also feeds the Dashboard system status card. App maps firmware key `rainDetected` → domain field `leakDetected` (moisture/leak sensor, not weather). Tank level is shown on Monitoring only — the Dashboard Pump Status card lists leak + Pump A/B.
 - **Pump control (bidirectional):**
   - App reads actual relay states: `FirebaseRealtimeSensorRepository.pumpControlFlow` (listens to `/status`) → `ControlViewModel.pumpControlState` → `ControlFragment` (switches reflect actual pump on/off)
   - App sends commands: `ControlFragment` → `ControlViewModel.togglePumpA/B()` → `FirebaseRealtimeSensorRepository.setPumpA/B()` (writes to `/control/pumpA` or `/control/pumpB`)
@@ -188,7 +188,7 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 
 **Done (phase 2d — tank level + leak sensor app integration):**
 - **Firmware V14** — VL53L1X ToF tank level + warnings; moisture/leak sensor on GPIO33 published as `rainDetected`; float switch on GPIO25 (Pump A safety, not published).
-- **App** — Parses tank + `rainDetected` → `SensorData.leakDetected`. Monitoring shows tank fill/distance/warnings + leak status. Dashboard system card shows tank % + leak. Control shows leak banner and disables pump switches while wet.
+- **App** — Parses tank + `rainDetected` → `SensorData.leakDetected`. Monitoring shows tank fill/distance/warnings + leak status. Dashboard system card shows leak + Pump A/B (no tank row). Control shows leak banner and disables pump switches while wet.
 
 **Pending (end-to-end test on hardware):**
 - ESP32 publishing → Monitoring screen matches hardware readings without Console edits. Verify via Serial Monitor (`[OK] Publish successful`) + app logcat (`HydroSenseRTDB` tag, `onDataChange`).
