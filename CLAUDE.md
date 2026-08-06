@@ -94,7 +94,13 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
    - `OceanWaveView` — Multi-layer parallax wave background using `Choreographer` for frame-perfect animation
    - Both use delta-time calculations to avoid Float precision loss (see "Animation System" below)
 
-4. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Auth pages. Top bar dynamically switches between settings gear and back arrow.
+4. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Filter/Auth pages. Top bar dynamically switches between settings gear and back arrow. **The secondary-page list appears twice in `MainActivity.setupNavigation()`** — once for `isSecondaryPage` and once in the `btnSettings` click handler. Adding a destination to one and not the other yields a back arrow that navigates forward into Settings.
+
+5. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over pump runtime and water quality, predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters. See phase 2e in the roadmap below. Key invariants:
+   - `Double.NaN.coerceIn(a, b)` returns **NaN**, not a bound — Kotlin implements it with `<`/`>` comparisons that are both false for NaN. Always call `finiteOr(fallback)` *before* `coerceIn`, or a NaN reaches the UI, rounds to 0, and renders as a plausible empty progress bar instead of an obvious crash.
+   - RTDB hands back integers as `java.lang.Long`; parse runtime with `parseLongOrNull`/`asLongOrNull`, never `parseIntOrNull` (uint32 seconds overflow `Int` after ~68 years, but a corrupt value truncates immediately).
+   - The wear hook is upstream of `shareIn` and **must** stay wrapped in `runCatching`: an exception there cancels the sharing coroutine, and `WhileSubscribed` does not restart after upstream failure — one bad sample would kill sensor data app-wide until the process died.
+   - A ridge solve that goes singular returns `null` and the caller keeps its prior. Never substitute zeros: an all-zero coefficient vector silently reports every stage as wearing at the minimum rate.
 
 ### Data Flow
 
@@ -122,7 +128,9 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
     "tankDistanceMm": 500,
     "tankLevel": 48.3,
     "tankWarning": 0,
-    "rainDetected": 0
+    "rainDetected": 0,
+    "runtimeA": 18432,
+    "runtimeB": 9210
   },
   "status": {
     "pumpA": 0,
@@ -136,7 +144,7 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 }
 ```
 
-**`/sensors` field notes (firmware V14):**
+**`/sensors` field notes (firmware V17):**
 
 | Field | Type | Meaning |
 |-------|------|---------|
@@ -145,6 +153,16 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 | `tankLevel` | float | Fill % (0–100) from ToF; float-switch estimate if ToF offline |
 | `tankWarning` | int | `0` normal, `1` ≥80%, `2` ≥90%, `3` ≥100% full |
 | `rainDetected` | 0/1 | **Leak / moisture sensor** (not weather). `1` = wet → ESP32 stops both pumps |
+| `runtimeA` / `runtimeB` | uint32 | **Cumulative seconds** each pump has been energized, all-time (V17+). Persisted in NVS; survives reboot. Absent on V16 and earlier |
+
+**Turbidity scale:** firmware publishes **0–3000 NTU** and emits exactly `3000` as a *fault
+sentinel* when `trueSensorVolt < 2.5` (probe unpowered, dry or disconnected). The filter model
+rejects samples at that ceiling. Note `WaterQualityEvaluator` still normalizes against 5.0 NTU —
+see "Known issues" below.
+
+**Runtime counters are absolute, not deltas.** The app stores the last value it saw and derives
+its own delta, so time with the app closed costs no runtime and a counter that decreases (reflash
+or NVS erase) is detected and accrues zero rather than a negative or huge jump.
 
 **Path ownership (prevents write conflicts):**
 
@@ -194,6 +212,39 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 - ESP32 publishing → Monitoring screen matches hardware readings without Console edits. Verify via Serial Monitor (`[OK] Publish successful`) + app logcat (`HydroSenseRTDB` tag, `onDataChange`).
 - Pump control round-trip: Toggle a pump in the app → Serial Monitor shows `[CTRL]` → `/status` updates → app switch reflects actual state. Toggle Auto/Manual and verify pump switches enable/disable.
 - Leak: wet the moisture sensor → Serial shows rain/leak override → `/sensors/rainDetected=1` → app leak UI + pumps stop.
+- Runtime counters (V17): run a pump ~1 min → Serial `[RUNTIME] Saved to NVS` → `/sensors/runtimeA`
+  increases → Filter screen flips from "Estimated — using simulated run time" to "Based on measured
+  pump run time". Reboot the ESP32 and confirm the counter resumes rather than restarting at 0.
+
+**Done (phase 2e — filter life prediction, on-device ML):**
+- **Firmware V17** — `Sketch Arduino/UPDATED_CODE_V17.ino` adds cumulative pump runtime counters
+  (`runtimeA`/`runtimeB`, uint32 seconds) persisted in NVS via `Preferences`. Ticked at the top of
+  `loop()` so accrual is independent of the 500 ms pump-logic block; the millis() remainder is
+  carried so sub-second drift does not compound. Committed every 10 min and on each pump-off edge
+  (~10 year flash life; committing per publish would destroy the partition in months). Publish
+  buffer grew 200 → 256 bytes and now checks `snprintf` truncation, which V16 did silently.
+- **App model** — `data/ml/`: `RidgeRegression` (normal equations `(XᵀX + λI)b = Xᵀy`, λ=1e-2,
+  Gaussian elimination with partial pivoting, nullable on singular); `SyntheticWearData` (seeded
+  LCG, 400 rows/stage, **non-linear** ground truth — Carman–Kozeny clogging for particulate media,
+  Freundlich saturation for adsorption media — so the linear fit is a real surrogate, not a
+  recovery of its own constants); `FilterLifeModel` (load factor, wear accrual, condition bands,
+  forecast, training).
+- **Five-stage biofilter** — `data/model/FilterSpecs.kt` holds the whole tunable table: mesh,
+  sand, carbon, charcoal, rocks, each with rated hours, rated days, wear profile and per-medium
+  TDS/turbidity sensitivities. **Every value is a `TODO(hardware)` placeholder.** REPLACE resets
+  runtime wear and calendar age; RINSE restores 70% of runtime wear only.
+- **Repository** — `FilterHealthRepository` accrues wear from each `/sensors` snapshot (hooked via
+  `onEach { runCatching { … } }` upstream of `shareIn`), persists through `utils/FilterPrefs.kt`
+  at most once a minute, and publishes `FilterHealthState`. Started from `HydroSenseApp`
+  (`Application`), **not** an Activity — `MainActivity.onCreate` re-runs on every `recreate()`,
+  which Settings triggers on theme/locale change, and each re-run would multiply wear.
+- **UI** — Dashboard `cardFilterHealth` (worst stage + five compact bars) taps through to
+  `ui/filter/FilterFragment`: per-stage bars, forecasts, service buttons and model diagnostics
+  (fitted R², real observations logged). Runtime provenance is labelled on both screens.
+- **Simulated until hardware lands** — with no `runtimeA` in RTDB the repository simulates runtime
+  at `FilterSpecs.SIMULATED_DUTY_CYCLE`, accelerated by `DEMO_TIME_SCALE` (currently **60×** —
+  `TODO(demo)`: set to 1.0 before submission). Both screens say "Estimated — using simulated run
+  time" whenever this path is active.
 
 **Later (phase 3 — app parity):**
 - Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold
@@ -323,11 +374,30 @@ To update dependencies, edit `libs.versions.toml` and push for CI validation (no
 - Confirm the database URL in `FirebaseRealtimeSensorRepository.DATABASE_URL` matches Firebase Console (regional `asia-southeast1.firebasedatabase.app`)
 - Filter Logcat for `HydroSenseRTDB` to see auth state, listener attach, `onDataChange`, or `onCancelled` (permission denied)
 
-### Pump switches not responding
-- User must be authenticated (same as sensor reads — RTDB rules require `auth != null`)
+### Pump switches not responding- User must be authenticated (same as sensor reads — RTDB rules require `auth != null`)
 - Switch to MANUAL mode (toggle the Mode switch OFF) — pump switches are disabled in AUTO mode
 - Check Serial Monitor for `[CTRL]` lines confirming the ESP32 is reading `/control` every 2s
 - Check Firebase Console → `control` has `pumpA`, `pumpB`, and `auto` fields
 - Check Firebase Console → `status` has `pumpA` and `pumpB` fields (written by ESP32)
 - Filter Logcat for `HydroSenseRTDB` to see `/status` and `/control/auto` listener events
 - Round-trip delay is 2–4 seconds (app writes → ESP32 reads → ESP32 writes status → app updates)
+
+### Filter health stuck at 100% or showing "Waiting for sensor data"
+
+- The wear hook only fires for real RTDB snapshots. Samples are rejected when `timestamp == 0L`
+  (the signed-out `SensorData()` placeholder, whose `ph=7.0/tds=150/turbidity=1.5` defaults would
+  otherwise accrue wear as if they were readings) or when `turbidity >= 2999.0` (the firmware's
+  probe-fault sentinel). Filter Logcat for `HydroSenseFilter`.
+- Health advances on *elapsed time*, so it will not move in a screenshot. Raise
+  `FilterSpecs.DEMO_TIME_SCALE` to watch a stage walk the condition bands quickly.
+- "Estimated — using simulated run time" means `/sensors/runtimeA` is absent — the ESP32 is still
+  on V16 or earlier.
+
+### Known issue: turbidity scale mismatch (pre-existing, unrelated to the filter model)
+
+Firmware publishes turbidity on **0–3000 NTU**, but `WaterQualityEvaluator`
+(`WaterQualityAssessment.kt:66-68`) classifies `> 4.0` as TURBID and `MonitoringViewModel:115`
+uses `TURBIDITY_FULL_SCALE_NTU = 5.0`. The Monitoring cloudiness percentage therefore reads ~600×
+too high and nearly any real reading classifies as TURBID. The filter model is unaffected — it
+normalizes against 3000 in `FilterSpecs.TURBIDITY_FULL_SCALE_NTU`. Fixing the Monitoring path is
+a separate change.

@@ -127,4 +127,65 @@
     <!-- Title Settings and About -->
     <string name="title_settings">Mga Setting</string>
     <string name="title_about">Tungkol</string>
+
+    <!-- Filter life prediction -->
+    <string name="title_filter">Kalagayan ng Filter</string>
+    <string name="filter_card_title">Kalagayan ng Filter</string>
+    <string name="filter_card_hint">Pindutin para sa lahat ng limang bahagi</string>
+    <string name="filter_stages_title">Mga Bahagi ng Filter</string>
+
+    <!-- Stage names (five-stage biofilter) -->
+    <string name="filter_stage_mesh">Pinong Mesh / Cotton Pad</string>
+    <string name="filter_stage_sand">Sediment na Buhangin</string>
+    <string name="filter_stage_carbon">Activated Carbon</string>
+    <string name="filter_stage_charcoal">Layer ng Uling</string>
+    <string name="filter_stage_rocks">Bato</string>
+
+    <!-- Conditions -->
+    <string name="filter_condition_good">Maayos</string>
+    <string name="filter_condition_monitor">Obserbahan</string>
+    <string name="filter_condition_replace_soon">Palitan Malapit Na</string>
+    <string name="filter_condition_replace_now">Palitan Na</string>
+    <string name="filter_condition_overdue">Lampas Na</string>
+
+    <!-- Service actions -->
+    <string name="filter_action_rinse">Banlawan</string>
+    <string name="filter_action_replace">Palitan</string>
+    <string name="filter_action_rinse_button">Nabanlawan Na</string>
+    <string name="filter_action_replace_button">Napalitan Na</string>
+    <string name="filter_rinse_wont_help">Hindi na tutulong ang banlaw — palitan ang media</string>
+
+    <!-- Values and forecasts -->
+    <string name="filter_health_format">%1$d%% ang natitira</string>
+    <string name="filter_percent_format">%1$d%%</string>
+    <string name="filter_days_remaining_format">~%1$s ang natitira</string>
+    <string name="filter_hours_remaining_format">~%1$s na oras ng pagtakbo ang natitira</string>
+    <string name="filter_days_unit_format">%1$d araw</string>
+    <string name="filter_day_unit_format">%1$d araw</string>
+    <string name="filter_hours_unit_format">%1$d oras</string>
+    <string name="filter_limited_by_runtime">Batay sa oras ng pagtakbo</string>
+    <string name="filter_limited_by_calendar">Batay sa tanda</string>
+    <string name="filter_serviced_days_ago_format">Naserbisyo %1$d araw na ang nakalipas</string>
+    <string name="filter_serviced_today">Naserbisyo ngayong araw</string>
+    <string name="filter_load_factor_format">Bilis ng pagkasira %1$.2f×</string>
+
+    <!-- Dashboard summary lines -->
+    <string name="filter_summary_all_good">Lahat ng limang bahagi ay nasa loob pa ng haba ng serbisyo</string>
+    <string name="filter_summary_worst_format">%1$s: %2$s</string>
+    <string name="filter_waiting_for_data">Hinihintay ang datos ng sensor…</string>
+    <string name="filter_waiting_summary">Tatantiyahin ang pagkasira ng filter kapag dumating na ang mga sukat</string>
+
+    <!-- Runtime provenance -->
+    <string name="filter_source_simulated">Tantiya — gumagamit ng simuladong oras ng pagtakbo</string>
+    <string name="filter_source_hardware">Batay sa sinukat na oras ng pagtakbo ng pump</string>
+    <string name="filter_runtime_total_format">%1$.1f na oras ng pump sa kabuuan</string>
+    <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
+
+    <!-- Model diagnostics -->
+    <string name="filter_model_title">Modelo ng Prediksyon</string>
+    <string name="filter_model_explainer">May least-squares na modelo na nag-aaral kung gaano kabilis masira ang bawat bahagi mula sa TDS, turbidity at pH. Nagsisimula ito sa simuladong datos at muling nag-aayos tuwing magtatala ka ng tunay na serbisyo.</string>
+    <string name="filter_model_row_format">%1$s — kalidad ng fit %2$d%%, %3$d tunay na serbisyo ang naitala</string>
+    <string name="filter_model_synthetic_only">Sinanay sa simuladong datos lamang</string>
+    <string name="filter_model_reset">I-reset ang Kasaysayan ng Filter</string>
+    <string name="filter_model_reset_confirm">Naalis ang kasaysayan ng pagkasira ng filter</string>
 </resources>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Layered filter vessel: media beds with water passing through -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="32"
+    android:viewportHeight="32">
+
+    <!-- Vessel body -->
+    <path
+        android:pathData="M9,5 L23,5 L23,25 L9,25 Z"
+        android:fillColor="#1A237E"
+        android:fillAlpha="0.10"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round" />
+
+    <!-- Inlet -->
+    <path
+        android:pathData="M16,2 L16,5"
+        android:strokeColor="#1A237E"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Coarse bed (top) -->
+    <path
+        android:pathData="M9,9 L23,9"
+        android:strokeColor="#4DB8C8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Sand bed -->
+    <path
+        android:pathData="M9,13.5 L23,13.5"
+        android:strokeColor="#0D7A8A"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Carbon bed -->
+    <path
+        android:pathData="M9,18 L23,18"
+        android:strokeColor="#4DB8C8"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round" />
+
+    <!-- Outlet drop -->
+    <path
+        android:pathData="M16,25 C16,25 13.5,28 13.5,29.2 C13.5,30.4 14.6,31.2 16,31.2 C17.4,31.2 18.5,30.4 18.5,29.2 C18.5,28 16,25 16,25 Z"
+        android:fillColor="#804DB8C8"
+        android:strokeColor="#0D7A8A"
+        android:strokeWidth="1" />
+</vector>

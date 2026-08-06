@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One filter stage row, inflated five times into fragment_filter's stageContainer.
+
+  Inflated in a loop rather than pulled in with <include> tags: <include> appears
+  nowhere else in this project, and it silently drops layout_margin unless both
+  layout_width and layout_height are also set on the tag itself.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardStage"
+    style="@style/Style.WaterMonitor.GlassCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/card_margin_small">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/card_padding_compact">
+
+        <!-- Name + condition badge -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvStageName"
+                style="@style/Style.WaterMonitor.ControlLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                tools:text="Activated Carbon" />
+
+            <TextView
+                android:id="@+id/tvStageCondition"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.04"
+                android:textColor="@color/status_green"
+                android:textSize="13sp"
+                tools:text="Good" />
+        </LinearLayout>
+
+        <!-- Remaining life bar -->
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressStage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:max="100"
+            app:indicatorColor="@color/status_green"
+            app:trackColor="@color/card_border"
+            app:trackCornerRadius="4dp"
+            app:trackThickness="8dp"
+            tools:progress="72" />
+
+        <!-- Percent + what is limiting it -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvStageHealth"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_dark"
+                android:textSize="14sp"
+                tools:text="72% remaining" />
+
+            <TextView
+                android:id="@+id/tvStageLimitedBy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/text_medium"
+                android:textSize="12sp"
+                tools:text="Limited by run time" />
+        </LinearLayout>
+
+        <!-- Forecast -->
+        <TextView
+            android:id="@+id/tvStageForecast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/text_medium"
+            android:textSize="13sp"
+            tools:text="~118 days left" />
+
+        <!-- Service history + measured wear rate -->
+        <TextView
+            android:id="@+id/tvStageDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            tools:text="Serviced 24 days ago · Wear rate 1.14x" />
+
+        <!-- Shown only when a rinse stage is bound by calendar age -->
+        <TextView
+            android:id="@+id/tvStageRinseWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/filter_rinse_wont_help"
+            android:textColor="@color/status_yellow"
+            android:textSize="12sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <!-- Service actions. Rinse is hidden for replace-only media. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRinse"
+                style="@style/Style.WaterMonitor.NavButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="@string/filter_action_rinse_button"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReplace"
+                style="@style/Style.WaterMonitor.NavButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/filter_action_replace_button"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

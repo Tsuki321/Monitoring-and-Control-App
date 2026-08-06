@@ -14,5 +14,14 @@ data class SensorData(
      */
     val leakDetected: Boolean? = null,
     // Zero identifies placeholder/no-data states; RTDB snapshots receive the current time.
-    val timestamp: Long = 0L
+    val timestamp: Long = 0L,
+    /**
+     * Cumulative seconds each pump has been energized, counted by the ESP32 and
+     * persisted in NVS so it survives reboots (firmware V17+).
+     *
+     * Absolute counters, not deltas: a gap while the app is closed costs no runtime.
+     * null = firmware predates V17, so the filter model falls back to simulation.
+     */
+    val runtimeASeconds: Long? = null,
+    val runtimeBSeconds: Long? = null
 )

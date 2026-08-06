@@ -167,4 +167,64 @@
     <string name="facebook_client_token">78eb357ce3e037649a04e15059301840</string>
     <string name="facebook_login_protocol_scheme">fb975973774805992</string>
 
+    <!-- Filter life prediction -->
+    <string name="title_filter">Filter Health</string>
+    <string name="filter_card_title">Filter Health</string>
+    <string name="filter_card_hint">Tap for all five stages</string>
+    <string name="filter_stages_title">Filter Stages</string>
+
+    <!-- Stage names (five-stage biofilter) -->
+    <string name="filter_stage_mesh">Fine Mesh / Cotton Pad</string>
+    <string name="filter_stage_sand">Sediment Sand</string>
+    <string name="filter_stage_carbon">Activated Carbon</string>
+    <string name="filter_stage_charcoal">Charcoal Layer</string>
+    <string name="filter_stage_rocks">Rock Bed</string>
+
+    <!-- Conditions -->
+    <string name="filter_condition_good">Good</string>
+    <string name="filter_condition_monitor">Monitor</string>
+    <string name="filter_condition_replace_soon">Service Soon</string>
+    <string name="filter_condition_replace_now">Service Now</string>
+    <string name="filter_condition_overdue">Overdue</string>
+
+    <!-- Service actions -->
+    <string name="filter_action_rinse">Rinse</string>
+    <string name="filter_action_replace">Replace</string>
+    <string name="filter_action_rinse_button">Mark Rinsed</string>
+    <string name="filter_action_replace_button">Mark Replaced</string>
+    <string name="filter_rinse_wont_help">Rinsing will not help — replace the media</string>
+
+    <!-- Values and forecasts -->
+    <string name="filter_health_format">%1$d%% remaining</string>
+    <string name="filter_percent_format">%1$d%%</string>
+    <string name="filter_days_remaining_format">~%1$s left</string>
+    <string name="filter_hours_remaining_format">~%1$s operating hours left</string>
+    <string name="filter_days_unit_format">%1$d days</string>
+    <string name="filter_day_unit_format">%1$d day</string>
+    <string name="filter_hours_unit_format">%1$d hours</string>
+    <string name="filter_limited_by_runtime">Limited by run time</string>
+    <string name="filter_limited_by_calendar">Limited by age</string>
+    <string name="filter_serviced_days_ago_format">Serviced %1$d days ago</string>
+    <string name="filter_serviced_today">Serviced today</string>
+    <string name="filter_load_factor_format">Wear rate %1$.2f×</string>
+
+    <!-- Dashboard summary lines -->
+    <string name="filter_summary_all_good">All five stages within service life</string>
+    <string name="filter_summary_worst_format">%1$s: %2$s</string>
+    <string name="filter_waiting_for_data">Waiting for sensor data…</string>
+    <string name="filter_waiting_summary">Filter wear is estimated once readings arrive</string>
+
+    <!-- Runtime provenance -->
+    <string name="filter_source_simulated">Estimated — using simulated run time</string>
+    <string name="filter_source_hardware">Based on measured pump run time</string>
+    <string name="filter_runtime_total_format">%1$.1f pump-hours total</string>
+    <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
+
+    <!-- Model diagnostics -->
+    <string name="filter_model_title">Prediction Model</string>
+    <string name="filter_model_explainer">A least-squares model learns how fast each stage wears from TDS, turbidity and pH. It starts from simulated wear data and re-fits itself each time you record a real service.</string>
+    <string name="filter_model_row_format">%1$s — fit quality %2$d%%, %3$d real services logged</string>
+    <string name="filter_model_synthetic_only">Trained on simulated data only</string>
+    <string name="filter_model_reset">Reset Filter History</string>
+    <string name="filter_model_reset_confirm">Filter wear history cleared</string>
 </resources>

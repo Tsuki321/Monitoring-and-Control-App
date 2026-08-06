@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,7 +67,16 @@ object FirebaseRealtimeSensorRepository {
         } else {
             sensorsSnapshotFlow()
         }
-    }.shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+    }
+        // Accrue filter wear once per snapshot. Placed upstream of shareIn, which has exactly
+        // one upstream collector regardless of how many ViewModels subscribe downstream — so
+        // this fires once per snapshot rather than once per subscriber.
+        //
+        // The runCatching is mandatory: an exception here cancels the sharing coroutine, and
+        // WhileSubscribed does not restart after an upstream failure. One bad sample would
+        // kill sensor data app-wide until the process died.
+        .onEach { runCatching { FilterHealthRepository.onSensorSample(it) } }
+        .shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     /**
      * Live pump control state: combines actual relay states from `/status`
@@ -262,7 +272,9 @@ object FirebaseRealtimeSensorRepository {
                 tankWarning = map.parseIntOrNull("tankWarning"),
                 // Firmware publishes as rainDetected; app treats it as leak.
                 leakDetected = map.parseBoolOrNull("rainDetected"),
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                runtimeASeconds = map.parseLongOrNull("runtimeA"),
+                runtimeBSeconds = map.parseLongOrNull("runtimeB")
             )
         }
 
@@ -274,7 +286,9 @@ object FirebaseRealtimeSensorRepository {
             tankLevel = child("tankLevel").asDoubleOrNull()?.toFloat(),
             tankWarning = child("tankWarning").asIntOrNull(),
             leakDetected = child("rainDetected").asBoolOrNull(),
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            runtimeASeconds = child("runtimeA").asLongOrNull(),
+            runtimeBSeconds = child("runtimeB").asLongOrNull()
         )
     }
 
@@ -310,6 +324,19 @@ object FirebaseRealtimeSensorRepository {
             null -> null
             is Number -> value.toInt()
             is String -> value.toIntOrNull()
+            else -> null
+        }
+    }
+
+    /**
+     * Runtime counters are uint32 seconds on the ESP32; RTDB hands them back as
+     * java.lang.Long. Parsing via [parseIntOrNull] would truncate them.
+     */
+    private fun Map<String, Any?>.parseLongOrNull(key: String): Long? {
+        return when (val value = this[key]) {
+            null -> null
+            is Number -> value.toLong()
+            is String -> value.toLongOrNull()
             else -> null
         }
     }
@@ -360,6 +387,15 @@ object FirebaseRealtimeSensorRepository {
         return when (value) {
             is Number -> value.toInt()
             is String -> value.toIntOrNull()
+            else -> null
+        }
+    }
+
+    private fun DataSnapshot.asLongOrNull(): Long? {
+        val value = getValue() ?: return null
+        return when (value) {
+            is Number -> value.toLong()
+            is String -> value.toLongOrNull()
             else -> null
         }
     }

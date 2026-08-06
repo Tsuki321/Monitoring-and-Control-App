@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.watermonitor.app.data.repository.FilterHealthRepository
 import com.watermonitor.app.databinding.ActivityMainBinding
 import com.watermonitor.app.utils.LocaleHelper
 import com.watermonitor.app.utils.ThemeHelper
@@ -100,6 +101,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.dashboardFragment -> getString(R.string.title_dashboard)
                 R.id.monitoringFragment -> getString(R.string.title_monitoring)
                 R.id.controlFragment -> getString(R.string.title_control)
+                R.id.filterFragment -> getString(R.string.title_filter)
                 R.id.settingsFragment -> getString(R.string.title_settings)
                 R.id.aboutFragment -> getString(R.string.title_about)
                 R.id.loginFragment -> getString(R.string.title_login)
@@ -107,9 +109,10 @@ class MainActivity : AppCompatActivity() {
                 else -> getString(R.string.app_name)
             }
 
-            // Hide bottom nav on Settings, About, and Auth pages
+            // Hide bottom nav on Settings, About, Filter, and Auth pages
             val isSecondaryPage = destination.id == R.id.settingsFragment ||
-                    destination.id == R.id.aboutFragment
+                    destination.id == R.id.aboutFragment ||
+                    destination.id == R.id.filterFragment
             val isAuthPage = destination.id == R.id.loginFragment ||
                     destination.id == R.id.registerFragment
 
@@ -127,10 +130,15 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Navigate to Settings (from main pages) or navigate up (from secondary pages)
+        // Navigate to Settings (from main pages) or navigate up (from secondary pages).
+        // This list must stay in step with isSecondaryPage above, or a secondary page shows
+        // a back arrow that navigates forward into Settings.
         binding.btnSettings.setOnClickListener {
             val currentId = navController.currentDestination?.id
-            if (currentId == R.id.settingsFragment || currentId == R.id.aboutFragment) {
+            if (currentId == R.id.settingsFragment ||
+                currentId == R.id.aboutFragment ||
+                currentId == R.id.filterFragment
+            ) {
                 navController.navigateUp()
             } else {
                 navController.navigate(R.id.settingsFragment)
@@ -179,6 +187,14 @@ class MainActivity : AppCompatActivity() {
     private fun updateClock() {
         val formatter = SimpleDateFormat("MMM d, h:mm a", Locale.getDefault())
         binding.tvDateTime.text = formatter.format(Date())
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Commit accrued filter wear once per foreground session. The repository throttles
+        // writes to one a minute, so without this the last stretch before backgrounding
+        // would be lost if the process were killed.
+        FilterHealthRepository.flush()
     }
 
     override fun onDestroy() {

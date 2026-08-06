@@ -28,6 +28,14 @@ class MonitoringFragment : Fragment() {
     private var prevCloudiness = 0.0
     private var hasAnimatedEntrance = false
 
+    /**
+     * False until the first emission has been rendered. The count-ups below are gated on
+     * value-changed (firmware V17 republishes /sensors every 5s, and re-running the animator
+     * on an unchanged value makes the digits stutter), but a first reading that happens to
+     * equal the seeded default would then never be written to the TextView at all.
+     */
+    private var hasRenderedValues = false
+
     // Track previous status label so we can flash only when the status actually changes.
     // 0 means "not yet seen" — the first emission shouldn't trigger a flash.
     private var prevPhStatusRes = 0
@@ -77,14 +85,18 @@ class MonitoringFragment : Fragment() {
                     state.sensorData.leakDetected
                 )
 
-                // pH card
-                AnimationUtils.animateTextCount(
-                    binding.tvPhValue,
-                    from = prevPh,
-                    to = state.sensorData.ph,
-                    decimals = 2
-                )
-                if (state.sensorData.ph != prevPh) AnimationUtils.pulseView(binding.imgPhIcon)
+                // pH card. The count-up only runs on a genuine change: the ESP32 republishes
+                // /sensors every 5s, and restarting the animator on an unchanged value makes
+                // the digits visibly stutter.
+                if (!hasRenderedValues || state.sensorData.ph != prevPh) {
+                    AnimationUtils.animateTextCount(
+                        binding.tvPhValue,
+                        from = prevPh,
+                        to = state.sensorData.ph,
+                        decimals = 2
+                    )
+                    AnimationUtils.pulseView(binding.imgPhIcon)
+                }
                 prevPhColor = applyStatus(
                     binding.tvPhStatus,
                     state.phStatus.statusLabelRes,
@@ -96,13 +108,15 @@ class MonitoringFragment : Fragment() {
                 prevPh = state.sensorData.ph
 
                 // TDS card
-                AnimationUtils.animateTextCount(
-                    binding.tvTdsValue,
-                    from = prevTds,
-                    to = state.sensorData.tds.toDouble(),
-                    decimals = 0
-                )
-                if (state.sensorData.tds.toDouble() != prevTds) AnimationUtils.pulseView(binding.imgTdsIcon)
+                if (!hasRenderedValues || state.sensorData.tds.toDouble() != prevTds) {
+                    AnimationUtils.animateTextCount(
+                        binding.tvTdsValue,
+                        from = prevTds,
+                        to = state.sensorData.tds.toDouble(),
+                        decimals = 0
+                    )
+                    AnimationUtils.pulseView(binding.imgTdsIcon)
+                }
                 prevTdsColor = applyStatus(
                     binding.tvTdsStatus,
                     state.tdsStatus.statusLabelRes,
@@ -114,13 +128,17 @@ class MonitoringFragment : Fragment() {
                 prevTds = state.sensorData.tds.toDouble()
 
                 // Turbidity card — big value is cloudiness %, NTU reading moves to unit row
-                AnimationUtils.animateTextCount(
-                    binding.tvTurbidityValue,
-                    from = prevCloudiness,
-                    to = state.turbidityStatus.cloudinessPercent.toDouble(),
-                    suffix = "%",
-                    decimals = 0
-                )
+                if (!hasRenderedValues ||
+                    state.turbidityStatus.cloudinessPercent.toDouble() != prevCloudiness
+                ) {
+                    AnimationUtils.animateTextCount(
+                        binding.tvTurbidityValue,
+                        from = prevCloudiness,
+                        to = state.turbidityStatus.cloudinessPercent.toDouble(),
+                        suffix = "%",
+                        decimals = 0
+                    )
+                }
                 binding.tvTurbidityUnit.text =
                     getString(R.string.ntu_value_format, state.sensorData.turbidity)
                 val isCloudy = state.turbidityStatus.cloudinessPercent > CLOUDY_THRESHOLD_PERCENT
@@ -138,6 +156,7 @@ class MonitoringFragment : Fragment() {
                 prevTurbidityStatusRes = state.turbidityStatus.statusLabelRes
                 prevTurbidity = state.sensorData.turbidity
                 prevCloudiness = state.turbidityStatus.cloudinessPercent.toDouble()
+                hasRenderedValues = true
             }
         }
     }
@@ -231,6 +250,7 @@ class MonitoringFragment : Fragment() {
         super.onDestroyView()
         _binding = null
         hasAnimatedEntrance = false
+        hasRenderedValues = false
         // Reset prev* fields so count-up animations start from the current value
         // on view recreation instead of a stale baseline.
         prevPh = 7.0

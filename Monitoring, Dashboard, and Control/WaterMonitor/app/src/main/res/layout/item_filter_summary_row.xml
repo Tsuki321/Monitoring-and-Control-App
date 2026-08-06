@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Compact one-line stage summary for the Dashboard filter card. Five of these are inflated
+  into cardFilterHealth's filterStageSummary container and rebound in place.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingVertical="5dp">
+
+    <TextView
+        android:id="@+id/tvSummaryStageName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.9"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_dark"
+        android:textSize="13sp"
+        tools:text="Activated Carbon" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressSummaryStage"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="10dp"
+        android:layout_weight="1"
+        android:max="100"
+        app:indicatorColor="@color/status_green"
+        app:trackColor="@color/card_border"
+        app:trackCornerRadius="3dp"
+        app:trackThickness="6dp"
+        tools:progress="72" />
+
+    <TextView
+        android:id="@+id/tvSummaryStagePercent"
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:textColor="@color/status_green"
+        android:textSize="13sp"
+        android:fontFamily="sans-serif-medium"
+        tools:text="72%" />
+
+</LinearLayout>

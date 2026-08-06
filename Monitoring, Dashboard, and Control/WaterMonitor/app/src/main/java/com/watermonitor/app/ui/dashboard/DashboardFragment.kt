@@ -5,13 +5,22 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.watermonitor.app.R
+import com.watermonitor.app.data.model.FilterCondition
+import com.watermonitor.app.data.model.FilterHealthState
+import com.watermonitor.app.data.model.FilterSpecs
+import com.watermonitor.app.data.model.RuntimeSource
 import com.watermonitor.app.data.model.WaterSafetyLevel
+import com.watermonitor.app.data.repository.FilterHealthRepository
 import com.watermonitor.app.databinding.FragmentDashboardBinding
+import com.watermonitor.app.ui.filter.FilterFormatter
 import com.watermonitor.app.utils.AnimationUtils
 import kotlinx.coroutines.launch
 
@@ -23,6 +32,9 @@ class DashboardFragment : Fragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private var hasAnimatedEntrance = false
     private var previousWaterSafety: WaterSafetyLevel? = null
+    private var previousFilterCondition: FilterCondition? = null
+
+    private val filterSummaryRows = mutableListOf<View>()
 
     // Breathing-pulse animators for the online sensor dots (null when offline)
     private var phDotPulse: Animator? = null
@@ -40,7 +52,107 @@ class DashboardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        buildFilterSummaryRows()
+        binding.cardFilterHealth.setOnClickListener {
+            findNavController().navigate(R.id.action_dashboardFragment_to_filterFragment)
+        }
         observeState()
+        observeFilterHealth()
+    }
+
+    /**
+     * Collected separately rather than folded into [DashboardViewModel]'s `combine`.
+     *
+     * `combine` emits nothing until *every* source has emitted at least once, so wiring
+     * filter health into it would freeze the whole dashboard at its initial value whenever
+     * the filter repository was slow to publish — for instance while it loads prefs and fits
+     * five models off the main thread on a cold start.
+     */
+    private fun observeFilterHealth() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            FilterHealthRepository.filterHealthFlow.collect { renderFilterHealth(it) }
+        }
+    }
+
+    /** Inflates one compact row per stage; rebound in place on each emission. */
+    private fun buildFilterSummaryRows() {
+        val inflater = LayoutInflater.from(requireContext())
+        FilterSpecs.stages.forEach { _ ->
+            val row = inflater.inflate(
+                R.layout.item_filter_summary_row,
+                binding.filterStageSummary,
+                false
+            )
+            binding.filterStageSummary.addView(row)
+            filterSummaryRows.add(row)
+        }
+    }
+
+    private fun renderFilterHealth(state: FilterHealthState) {
+        val worst = state.worstStage
+        if (state.isWaitingForData || worst == null) {
+            binding.tvFilterCondition.setText(R.string.filter_waiting_for_data)
+            binding.tvFilterCondition.setTextColor(
+                ContextCompat.getColor(requireContext(), R.color.status_grey)
+            )
+            binding.tvFilterSummary.setText(R.string.filter_waiting_summary)
+            binding.imgFilterStatus.setColorFilter(
+                ContextCompat.getColor(requireContext(), R.color.status_grey)
+            )
+        } else {
+            val statusColor = ContextCompat.getColor(
+                requireContext(),
+                FilterFormatter.conditionColorRes(worst.condition)
+            )
+            binding.tvFilterCondition.setText(FilterFormatter.conditionRes(worst.condition))
+            binding.tvFilterCondition.setTextColor(statusColor)
+            binding.imgFilterStatus.setColorFilter(statusColor)
+            binding.tvFilterSummary.text = if (worst.condition == FilterCondition.GOOD) {
+                getString(R.string.filter_summary_all_good)
+            } else {
+                getString(
+                    R.string.filter_summary_worst_format,
+                    FilterFormatter.stageName(requireContext(), worst.stageKey),
+                    FilterFormatter.forecastLabel(requireContext(), worst)
+                )
+            }
+
+            if (previousFilterCondition != null && previousFilterCondition != worst.condition) {
+                AnimationUtils.pulseView(binding.tvFilterCondition, scalePeak = 1.06f)
+                AnimationUtils.pulseView(binding.imgFilterStatus, scalePeak = 1.15f)
+            }
+            previousFilterCondition = worst.condition
+        }
+
+        // Rows carry no meaning until the repository has published; showing five empty bars
+        // reads as "all stages at zero" rather than "not loaded yet".
+        binding.filterStageSummary.visibility =
+            if (state.stages.isEmpty()) View.GONE else View.VISIBLE
+
+        state.stages.forEachIndexed { index, stage ->
+            val row = filterSummaryRows.getOrNull(index) ?: return@forEachIndexed
+            val name = row.findViewById<TextView>(R.id.tvSummaryStageName)
+            val bar = row.findViewById<LinearProgressIndicator>(R.id.progressSummaryStage)
+            val percent = row.findViewById<TextView>(R.id.tvSummaryStagePercent)
+            val color = ContextCompat.getColor(
+                requireContext(),
+                FilterFormatter.conditionColorRes(stage.condition)
+            )
+            val value = FilterFormatter.healthPercent(stage)
+
+            name.text = FilterFormatter.stageName(requireContext(), stage.stageKey)
+            bar.setIndicatorColor(color)
+            bar.setProgressCompat(value, true)
+            percent.text = getString(R.string.filter_percent_format, value)
+            percent.setTextColor(color)
+        }
+
+        binding.tvFilterSource.setText(
+            when (state.runtimeSource) {
+                RuntimeSource.HARDWARE -> R.string.filter_source_hardware
+                RuntimeSource.SIMULATED -> R.string.filter_source_simulated
+            }
+        )
     }
 
     private fun observeState() {
@@ -52,7 +164,8 @@ class DashboardFragment : Fragment() {
                         listOf(
                             binding.cardWaterSafety,
                             binding.cardSystemStatus,
-                            binding.cardSensorStatus
+                            binding.cardSensorStatus,
+                            binding.cardFilterHealth
                         ),
                         delayMs = 100
                     )
@@ -204,6 +317,8 @@ class DashboardFragment : Fragment() {
         tdsDotPulse = null
         turbidityDotPulse = null
         previousWaterSafety = null
+        previousFilterCondition = null
+        filterSummaryRows.clear()
         _binding = null
         hasAnimatedEntrance = false
     }
