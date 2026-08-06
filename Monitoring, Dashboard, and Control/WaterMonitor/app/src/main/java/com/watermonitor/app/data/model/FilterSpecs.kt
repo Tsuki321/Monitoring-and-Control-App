@@ -33,9 +33,24 @@ enum class LimitedBy {
 object FilterSpecs {
 
     /**
-     * Speeds up the simulated runtime generator so a demo can walk a stage from GOOD to
-     * OVERDUE in minutes rather than months. 1.0 = real time. Only affects the simulated
-     * path; real ESP32 counters are never scaled.
+     * Multiplies simulated runtime so the feature can be demonstrated before the ESP32
+     * publishes real counters. 1.0 = real time. Never applied to hardware counters.
+     *
+     * At the current 60× (with [SIMULATED_DUTY_CYCLE] 0.35) the app accrues 21 pump-hours
+     * per hour of wall time, so a stage takes roughly:
+     *
+     * | stage    | rated | real hours to exhaust |
+     * |----------|-------|-----------------------|
+     * | charcoal |  250h |  ~12                  |
+     * | mesh     |  300h |  ~14                  |
+     * | carbon   |  600h |  ~29                  |
+     * | sand     | 1200h |  ~57                  |
+     * | rocks    | 3000h | ~143                  |
+     *
+     * Wear only accrues while the app is open and receiving samples, so a few minutes of
+     * screen time moves a bar by well under a percent. To watch a stage walk GOOD → OVERDUE
+     * inside a short demo, raise this to ~10000 — but note that the forecast then reports a
+     * duty cycle far above 1.0, which is arithmetically consistent yet obviously unphysical.
      *
      * TODO(demo): set back to 1.0 before final submission.
      */

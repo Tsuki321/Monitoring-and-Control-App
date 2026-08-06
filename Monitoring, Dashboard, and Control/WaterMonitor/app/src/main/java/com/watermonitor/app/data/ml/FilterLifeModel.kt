@@ -51,6 +51,17 @@ class StageModel(
  * Health is deliberately linear in `u`. Any strictly decreasing curve is just a relabelling
  * of the same information, and an exponential would show a filter at one third of its rated
  * life as 58% — which reads as "broken", not "two thirds left".
+ *
+ * ### Known bias
+ * The fitted line is a surrogate for a curved process, so it does not pass exactly through
+ * `L = 1.0` at nominal water quality. Measured against the current synthetic generator it
+ * lands near 1.35 for the particulate stages (mesh, sand, rocks) and 0.85 for the adsorption
+ * stages (carbon, charcoal), with R² between 0.68 and 0.85. In practice that means
+ * particulate media reach their replace threshold roughly a third sooner than their nominal
+ * rated hours, and carbon a little later. This is a property of fitting a line to a convex
+ * clogging law, not a defect in the accrual — but it does mean `ratedHours` should be read
+ * as "rated under this model", and it will shift once real service observations displace the
+ * synthetic prior.
  */
 object FilterLifeModel {
 
