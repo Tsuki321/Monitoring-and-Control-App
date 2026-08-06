@@ -197,6 +197,7 @@ object FilterLifeModel {
         val usage = max(runtimeUsage, calendarUsage)
         val limitedBy = if (calendarUsage > runtimeUsage) LimitedBy.CALENDAR else LimitedBy.RUNTIME
         val health = (100.0 * (1.0 - usage)).finiteOr(0.0).coerceIn(0.0, 100.0)
+        val condition = condition(usage)
 
         val hoursRemaining = if (spec.ratedHours > 0.0) {
             (((1.0 - runtimeUsage) * spec.ratedHours) / load).finiteOr(0.0).coerceAtLeast(0.0)
@@ -223,8 +224,13 @@ object FilterLifeModel {
         // A rinse only restores runtime wear. If calendar age is what is killing the stage,
         // rinsing changes nothing — and a user who rinses and sees no movement concludes the
         // feature is broken, so say "replace" instead.
+        //
+        // Gated on the stage actually needing service: on nearly-new media the recovery is a
+        // small *absolute* delta simply because there is little wear to recover, which would
+        // otherwise disable the rinse button on a fresh filter and tell the user to replace it.
         val usageAfterRinse = max(usageAfterRinse(runtimeUsage), calendarUsage)
         val rinseWontHelp = spec.action == ServiceAction.RINSE &&
+            condition.severity >= FilterCondition.REPLACE_SOON.severity &&
             (usage - usageAfterRinse) < RINSE_MEANINGFUL_RECOVERY
 
         return FilterStageHealth(
@@ -233,7 +239,7 @@ object FilterLifeModel {
             action = spec.action,
             healthPercent = health,
             usage = usage,
-            condition = condition(usage),
+            condition = condition,
             limitedBy = limitedBy,
             operatingHoursRemaining = hoursRemaining,
             daysRemaining = daysRemaining,
