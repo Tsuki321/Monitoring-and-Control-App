@@ -46,7 +46,7 @@ data class FilterStageHealth(
     val weightedHours: Double = 0.0,
     /** Calendar days since this stage was last replaced (rinsing does not reset this). */
     val daysSinceService: Double = 0.0,
-    /** Current wear multiplier from water quality. 1.0 = nominal water. */
+    /** Current wear multiplier from water quality. 1.0 = configured rated wear pace. */
     val loadFactor: Double = 1.0,
     /**
      * True when this stage is a RINSE stage whose health is bound by calendar age —

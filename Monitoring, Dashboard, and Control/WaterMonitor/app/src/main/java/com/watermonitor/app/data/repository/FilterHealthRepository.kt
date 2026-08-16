@@ -393,8 +393,8 @@ object FilterHealthRepository {
 
     /**
      * Stand-in runtime while the firmware predates V17. Assumes a fixed duty cycle over the
-     * elapsed wall time, accelerated by [FilterSpecs.DEMO_TIME_SCALE] so a demo can walk a
-     * stage through every condition band in minutes.
+     * elapsed wall time, accelerated by [FilterSpecs.DEMO_TIME_SCALE]. The acceleration is
+     * intentional demo behavior, not a physical runtime measurement.
      */
     private fun simulatedRuntimeHours(wallDeltaHours: Double): Double {
         if (wallDeltaHours <= 0.0) return 0.0
@@ -445,8 +445,8 @@ object FilterHealthRepository {
      *
      * Deliberately **not** clamped to 1.0. Real hardware cannot exceed it — the delta is
      * bounded by wall time in [hardwareRuntimeHours] — but the simulated path runs at
-     * [FilterSpecs.DEMO_TIME_SCALE], and clamping there would forecast "10 days" for a stage
-     * the demo actually consumes in an evening. The ceiling is only an absurdity backstop.
+     * [FilterSpecs.DEMO_TIME_SCALE]. The ceiling is an absurdity backstop; above roughly 286×
+     * demo scale it also means the date forecast no longer tracks accelerated health exactly.
      */
     private fun observedDutyCycle(): Double? {
         val wall = persisted.accumulatedWallHours

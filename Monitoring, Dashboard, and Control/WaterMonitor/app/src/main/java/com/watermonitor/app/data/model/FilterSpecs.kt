@@ -37,20 +37,23 @@ object FilterSpecs {
      * publishes real counters. 1.0 = real time. Never applied to hardware counters.
      *
      * At the current 60× (with [SIMULATED_DUTY_CYCLE] 0.35) the app accrues 21 pump-hours
-     * per hour of wall time, so a stage takes roughly:
+     * per wall-clock hour. The table below assumes a neutral load factor (`L = 1.0`), so it
+     * is a pacing reference rather than a prediction for nominal or live readings:
      *
-     * | stage    | rated | real hours to exhaust |
-     * |----------|-------|-----------------------|
-     * | charcoal |  250h |  ~12                  |
-     * | mesh     |  300h |  ~14                  |
-     * | carbon   |  600h |  ~29                  |
-     * | sand     | 1200h |  ~57                  |
-     * | rocks    | 3000h | ~143                  |
+     * | stage    | rated pump-hours | neutral-load wall-clock hours to exhaust |
+     * |----------|------------------|------------------------------------------|
+     * | charcoal |  250h            |  ~12                                     |
+     * | mesh     |  300h            |  ~14                                     |
+     * | carbon   |  600h            |  ~29                                     |
+     * | sand     | 1200h            |  ~57                                     |
+     * | rocks    | 3000h            | ~143                                     |
      *
      * Wear only accrues while the app is open and receiving samples, so a few minutes of
      * screen time moves a bar by well under a percent. To watch a stage walk GOOD → OVERDUE
-     * inside a short demo, raise this to ~10000 — but note that the forecast then reports a
-     * duty cycle far above 1.0, which is arithmetically consistent yet obviously unphysical.
+     * inside a short demo, raise this to ~10000. At scales above roughly 286×, simulated
+     * runtime exceeds the forecast's 100 pump-hours-per-wall-hour guard, so the condition bars
+     * remain useful for the demo but the displayed remaining-days estimate does not track the
+     * accelerated progression.
      *
      * TODO(demo): set back to 1.0 before final submission.
      */
@@ -92,10 +95,10 @@ object FilterSpecs {
     const val TDS_FULL_SCALE_PPM: Double = 1000.0
 
     /**
-     * The water quality at which a stage achieves exactly its [FilterStageSpec.ratedHours] —
-     * i.e. the conditions where the wear multiplier is 1.0. Dirtier water wears faster,
-     * cleaner water slower. These anchor the synthetic generator's ground truth; they are
-     * not display values.
+     * The water quality that anchors the synthetic generator's non-linear ground truth at a
+     * wear multiplier of 1.0. The fitted linear surrogate is unconstrained and can predict a
+     * different multiplier at this point, so [FilterStageSpec.ratedHours] is a reference scale
+     * rather than a guaranteed fitted lifetime. These are not display values.
      *
      * TODO(hardware): revise once the real feed water has been characterised.
      */

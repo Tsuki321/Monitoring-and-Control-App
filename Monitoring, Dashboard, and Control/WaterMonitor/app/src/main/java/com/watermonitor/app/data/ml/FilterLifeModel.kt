@@ -52,16 +52,15 @@ class StageModel(
  * of the same information, and an exponential would show a filter at one third of its rated
  * life as 58% — which reads as "broken", not "two thirds left".
  *
- * ### Known bias
- * The fitted line is a surrogate for a curved process, so it does not pass exactly through
- * `L = 1.0` at nominal water quality. Measured against the current synthetic generator it
- * lands near 1.35 for the particulate stages (mesh, sand, rocks) and 0.85 for the adsorption
- * stages (carbon, charcoal), with R² between 0.68 and 0.85. In practice that means
- * particulate media reach their replace threshold roughly a third sooner than their nominal
- * rated hours, and carbon a little later. This is a property of fitting a line to a convex
- * clogging law, not a defect in the accrual — but it does mean `ratedHours` should be read
- * as "rated under this model", and it will shift once real service observations displace the
- * synthetic prior.
+ * ### Surrogate baseline
+ * The synthetic ground truth is anchored at `L = 1.0` for nominal water, but the fitted line
+ * is an unconstrained surrogate for that curved process and does not pass exactly through the
+ * anchor. With the current synthetic prior it lands near 1.35 for particulate stages (mesh,
+ * sand, rocks) and 0.85 for adsorption stages (carbon, charcoal), with R² between 0.68 and
+ * 0.85. The model therefore predicts an effective runtime of approximately
+ * `ratedHours / L` at that point. [FilterStageSpec.ratedHours] remains the configured reference
+ * used to scale wear and training targets; real service observations update the fitted response,
+ * not the configured value itself.
  */
 object FilterLifeModel {
 
