@@ -15,11 +15,11 @@ object FilterFormatter {
 
     /** Stage display names, keyed by the stable spec key. Never key these off the index. */
     fun stageNameRes(stageKey: String): Int = when (stageKey) {
-        "mesh" -> R.string.filter_stage_mesh
+        "pumice" -> R.string.filter_stage_pumice
+        "pebbles" -> R.string.filter_stage_pebbles
+        "lava_rock" -> R.string.filter_stage_lava_rock
+        "carbon" -> R.string.filter_stage_activated_carbon
         "sand" -> R.string.filter_stage_sand
-        "carbon" -> R.string.filter_stage_carbon
-        "charcoal" -> R.string.filter_stage_charcoal
-        "rocks" -> R.string.filter_stage_rocks
         else -> R.string.filter_stages_title
     }
 

@@ -55,9 +55,9 @@ class StageModel(
  * ### Surrogate baseline
  * The synthetic ground truth is anchored at `L = 1.0` for nominal water, but the fitted line
  * is an unconstrained surrogate for that curved process and does not pass exactly through the
- * anchor. With the current synthetic prior it lands near 1.35 for particulate stages (mesh,
- * sand, rocks) and 0.85 for adsorption stages (carbon, charcoal), with R² between 0.68 and
- * 0.85. The model therefore predicts an effective runtime of approximately
+ * anchor. With the current synthetic prior it lands near 1.35 for particulate stages (pumice,
+ * pebbles, lava rock and sand) and 0.85 for the adsorption stage (activated carbon), with R²
+ * between 0.68 and 0.85. The model therefore predicts an effective runtime of approximately
  * `ratedHours / L` at that point. [FilterStageSpec.ratedHours] remains the configured reference
  * used to scale wear and training targets; real service observations update the fitted response,
  * not the configured value itself.

@@ -229,10 +229,11 @@ or NVS erase) is detected and accrues zero rather than a negative or huge jump.
   Freundlich saturation for adsorption media — so the linear fit is a real surrogate, not a
   recovery of its own constants); `FilterLifeModel` (load factor, wear accrual, condition bands,
   forecast, training).
-- **Five-stage biofilter** — `data/model/FilterSpecs.kt` holds the whole tunable table: mesh,
-  sand, carbon, charcoal, rocks, each with rated hours, rated days, wear profile and per-medium
-  TDS/turbidity sensitivities. **Every value is a `TODO(hardware)` placeholder.** REPLACE resets
-  runtime wear and calendar age; RINSE restores 70% of runtime wear only.
+- **Five-stage biofilter** — `data/model/FilterSpecs.kt` holds the confirmed physical order:
+  pumice, pebbles, lava rock, activated carbon, sand. Each has rated hours, rated days, wear
+  profile and per-medium TDS/turbidity sensitivities. **Lifetimes, service actions and
+  sensitivities are `TODO(hardware)` estimates.** REPLACE resets runtime wear and calendar age;
+  RINSE restores 70% of runtime wear only.
 - **Repository** — `FilterHealthRepository` accrues wear from each `/sensors` snapshot (hooked via
   `onEach { runCatching { … } }` upstream of `shareIn`), persists through `utils/FilterPrefs.kt`
   at most once a minute, and publishes `FilterHealthState`. Started from `HydroSenseApp`

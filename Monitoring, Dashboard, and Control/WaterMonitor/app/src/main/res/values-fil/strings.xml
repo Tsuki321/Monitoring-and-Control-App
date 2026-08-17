@@ -135,11 +135,11 @@
     <string name="filter_stages_title">Mga Bahagi ng Filter</string>
 
     <!-- Stage names (five-stage biofilter) -->
-    <string name="filter_stage_mesh">Pinong Mesh / Cotton Pad</string>
-    <string name="filter_stage_sand">Sediment na Buhangin</string>
-    <string name="filter_stage_carbon">Activated Carbon</string>
-    <string name="filter_stage_charcoal">Layer ng Uling</string>
-    <string name="filter_stage_rocks">Bato</string>
+    <string name="filter_stage_pumice">Batong Pumice</string>
+    <string name="filter_stage_pebbles">Maliliit na Bato</string>
+    <string name="filter_stage_lava_rock">Batong Lava</string>
+    <string name="filter_stage_activated_carbon">Activated Carbon</string>
+    <string name="filter_stage_sand">Buhangin</string>
 
     <!-- Conditions -->
     <string name="filter_condition_good">Maayos</string>

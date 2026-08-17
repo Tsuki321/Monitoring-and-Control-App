@@ -25,10 +25,11 @@ enum class LimitedBy {
 /**
  * Static, tunable specification of the five biofilter stages.
  *
- * TODO(hardware): every value below is a placeholder. The stage lineup was reconstructed
- * from memory — activated carbon, rocks and sediment sand are confirmed; the fine mesh and
- * charcoal layers are educated guesses. Rated lifetimes are typical values for the media
- * type, not measurements of this build. Correct each line once the filter is finalised.
+ * The physical order is confirmed: pumice, pebbles, lava rock, activated carbon, then sand.
+ *
+ * TODO(hardware): rated lifetimes, service actions and sensitivities are provisional estimates,
+ * not measurements of this build. Replace them with manufacturer values or measured service
+ * intervals once they are available.
  */
 object FilterSpecs {
 
@@ -40,13 +41,13 @@ object FilterSpecs {
      * per wall-clock hour. The table below assumes a neutral load factor (`L = 1.0`), so it
      * is a pacing reference rather than a prediction for nominal or live readings:
      *
-     * | stage    | rated pump-hours | neutral-load wall-clock hours to exhaust |
-     * |----------|------------------|------------------------------------------|
-     * | charcoal |  250h            |  ~12                                     |
-     * | mesh     |  300h            |  ~14                                     |
-     * | carbon   |  600h            |  ~29                                     |
-     * | sand     | 1200h            |  ~57                                     |
-     * | rocks    | 3000h            | ~143                                     |
+     * | stage            | rated pump-hours | neutral-load wall-clock hours to exhaust |
+     * |------------------|------------------|------------------------------------------|
+     * | pumice           | 2000h            |  ~95                                     |
+     * | pebbles          | 3000h            | ~143                                     |
+     * | lava rock        | 2500h            | ~119                                     |
+     * | activated carbon |  600h            |  ~29                                     |
+     * | sand             | 1200h            |  ~57                                     |
      *
      * Wear only accrues while the app is open and receiving samples, so a few minutes of
      * screen time moves a bar by well under a percent. To watch a stage walk GOOD → OVERDUE
@@ -108,27 +109,39 @@ object FilterSpecs {
     val stages: List<FilterStageSpec> = listOf(
         FilterStageSpec(
             index = 0,
-            key = "mesh",
-            action = ServiceAction.REPLACE,
-            ratedHours = 300.0,
-            ratedDays = 90.0,
+            key = "pumice",
+            action = ServiceAction.RINSE,
+            ratedHours = 2000.0,
+            ratedDays = 730.0,
             wearProfile = WearProfile.PARTICULATE,
-            // Catches everything upstream, so it clogs fastest and warns first.
-            turbiditySensitivity = 1.0,
+            // Porous first bed captures suspended solids before the downstream media.
+            turbiditySensitivity = 0.7,
             tdsSensitivity = 0.1
         ),
         FilterStageSpec(
             index = 1,
-            key = "sand",
+            key = "pebbles",
             action = ServiceAction.RINSE,
-            ratedHours = 1200.0,
-            ratedDays = 365.0,
+            ratedHours = 3000.0,
+            ratedDays = 730.0,
             wearProfile = WearProfile.PARTICULATE,
-            turbiditySensitivity = 0.8,
-            tdsSensitivity = 0.15
+            // Coarse media traps larger particles and supports the finer beds.
+            turbiditySensitivity = 0.35,
+            tdsSensitivity = 0.05
         ),
         FilterStageSpec(
             index = 2,
+            key = "lava_rock",
+            action = ServiceAction.RINSE,
+            ratedHours = 2500.0,
+            ratedDays = 730.0,
+            wearProfile = WearProfile.PARTICULATE,
+            turbiditySensitivity = 0.6,
+            tdsSensitivity = 0.1
+        ),
+        FilterStageSpec(
+            index = 3,
+            // Keep the existing persisted key so activated-carbon history survives the reorder.
             key = "carbon",
             action = ServiceAction.REPLACE,
             ratedHours = 600.0,
@@ -138,25 +151,15 @@ object FilterSpecs {
             tdsSensitivity = 1.0
         ),
         FilterStageSpec(
-            index = 3,
-            key = "charcoal",
-            action = ServiceAction.REPLACE,
-            ratedHours = 250.0,
-            ratedDays = 90.0,
-            wearProfile = WearProfile.ADSORPTION,
-            turbiditySensitivity = 0.2,
-            tdsSensitivity = 0.9
-        ),
-        FilterStageSpec(
             index = 4,
-            key = "rocks",
+            key = "sand",
             action = ServiceAction.RINSE,
-            ratedHours = 3000.0,
-            ratedDays = 730.0,
+            ratedHours = 1200.0,
+            ratedDays = 365.0,
             wearProfile = WearProfile.PARTICULATE,
-            // Coarse pre-strainer: only heavy solids load it.
-            turbiditySensitivity = 0.5,
-            tdsSensitivity = 0.05
+            // Final polishing layer takes the remaining fine suspended solids.
+            turbiditySensitivity = 0.9,
+            tdsSensitivity = 0.1
         )
     )
 

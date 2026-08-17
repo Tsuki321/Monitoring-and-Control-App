@@ -249,8 +249,8 @@ object FilterHealthRepository {
      * The turbidity check matters most: firmware emits exactly 3000 NTU as a *fault
      * sentinel* when `trueSensorVolt < 2.5` — probe unpowered, dry or disconnected
      * (`UPDATED_CODE_V16.ino:265-266`). Treated as a reading it pins the normalised feature
-     * at 1.0, drives the load factor to its 4.0 ceiling, and consumes a 300-hour cartridge
-     * in 75 hours of running.
+     * at 1.0, drives the load factor to its 4.0 ceiling, and consumes a 600-hour carbon stage
+     * in 150 hours of running.
      */
     private fun isUsable(data: SensorData): Boolean {
         // On sign-out `flatMapLatest` emits `flowOf(SensorData())`, whose ph=7.0/tds=150/

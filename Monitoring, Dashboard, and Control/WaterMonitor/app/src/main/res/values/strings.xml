@@ -174,11 +174,11 @@
     <string name="filter_stages_title">Filter Stages</string>
 
     <!-- Stage names (five-stage biofilter) -->
-    <string name="filter_stage_mesh">Fine Mesh / Cotton Pad</string>
-    <string name="filter_stage_sand">Sediment Sand</string>
-    <string name="filter_stage_carbon">Activated Carbon</string>
-    <string name="filter_stage_charcoal">Charcoal Layer</string>
-    <string name="filter_stage_rocks">Rock Bed</string>
+    <string name="filter_stage_pumice">Pumice</string>
+    <string name="filter_stage_pebbles">Pebbles</string>
+    <string name="filter_stage_lava_rock">Lava Rock</string>
+    <string name="filter_stage_activated_carbon">Activated Carbon</string>
+    <string name="filter_stage_sand">Sand</string>
 
     <!-- Conditions -->
     <string name="filter_condition_good">Good</string>
