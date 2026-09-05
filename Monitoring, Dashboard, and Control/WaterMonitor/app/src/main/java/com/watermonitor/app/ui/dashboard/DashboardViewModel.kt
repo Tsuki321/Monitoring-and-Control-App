@@ -11,6 +11,7 @@ import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import com.watermonitor.app.data.repository.MockSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -38,11 +39,16 @@ class DashboardViewModel : ViewModel() {
             sensorData = sensorData,
             waterQuality = WaterQualityEvaluator.evaluate(sensorData)
         )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = DashboardUiState()
-    )
+    }
+        // Defense in depth, matching MonitoringViewModel: without this, a failure upstream
+        // cancels the sharing coroutine inside viewModelScope and takes the screen — and
+        // potentially the process — down with it.
+        .catch { emit(DashboardUiState()) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = DashboardUiState()
+        )
 
     init {
         // Sync actual pump states from RTDB into the dashboard's pump simulation.

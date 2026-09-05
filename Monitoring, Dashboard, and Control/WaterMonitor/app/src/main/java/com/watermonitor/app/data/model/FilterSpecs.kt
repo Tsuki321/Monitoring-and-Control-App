@@ -106,6 +106,17 @@ object FilterSpecs {
     const val NOMINAL_TDS_PPM: Double = 300.0
     const val NOMINAL_TURBIDITY_NTU: Double = 50.0
 
+    /**
+     * Nominal feed pressure and pump speed. The wear model normalises live readings
+     * against these (a reading at nominal contributes a ratio of 1.0 — rated operating
+     * condition), and the simulated telemetry reports them under normal water conditions.
+     *
+     * TODO(hardware): no pressure or RPM sensor exists in this build. The app simulates
+     * these at nominal (±3% wobble) until firmware publishes `psi`/`rpm` under /sensors.
+     */
+    const val NOMINAL_PRESSURE_PSI: Double = 40.0
+    const val NOMINAL_PUMP_RPM: Double = 1450.0
+
     val stages: List<FilterStageSpec> = listOf(
         FilterStageSpec(
             index = 0,

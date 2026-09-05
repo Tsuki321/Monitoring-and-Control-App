@@ -96,11 +96,12 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 4. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Filter/Auth pages. Top bar dynamically switches between settings gear and back arrow. **The secondary-page list appears twice in `MainActivity.setupNavigation()`** — once for `isSecondaryPage` and once in the `btnSettings` click handler. Adding a destination to one and not the other yields a back arrow that navigates forward into Settings.
 
-5. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over pump runtime and water quality, predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters. See phase 2e in the roadmap below. Key invariants:
+5. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over pump runtime and water quality (TDS, turbidity, pH, feed pressure, pump speed), predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters — pressure and RPM have no sensor and are simulated at nominal. See phase 2e in the roadmap below. Key invariants:
    - `Double.NaN.coerceIn(a, b)` returns **NaN**, not a bound — Kotlin implements it with `<`/`>` comparisons that are both false for NaN. Always call `finiteOr(fallback)` *before* `coerceIn`, or a NaN reaches the UI, rounds to 0, and renders as a plausible empty progress bar instead of an obvious crash.
    - RTDB hands back integers as `java.lang.Long`; parse runtime with `parseLongOrNull`/`asLongOrNull`, never `parseIntOrNull` (uint32 seconds overflow `Int` after ~68 years, but a corrupt value truncates immediately).
    - The wear hook is upstream of `shareIn` and **must** stay wrapped in `runCatching`: an exception there cancels the sharing coroutine, and `WhileSubscribed` does not restart after upstream failure — one bad sample would kill sensor data app-wide until the process died.
    - A ridge solve that goes singular returns `null` and the caller keeps its prior. Never substitute zeros: an all-zero coefficient vector silently reports every stage as wearing at the minimum rate.
+   - Hardware runtime deltas are validated against the **uncapped** wall clock and accrued in full (neutral load above 1 h). The first real counter retires all simulated history; counters vanishing after being seen pauses accrual — never simulate on top of measured data.
 
 ### Data Flow
 
@@ -154,6 +155,7 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 | `tankWarning` | int | `0` normal, `1` ≥80%, `2` ≥90%, `3` ≥100% full |
 | `rainDetected` | 0/1 | **Leak / moisture sensor** (not weather). `1` = wet → ESP32 stops both pumps |
 | `runtimeA` / `runtimeB` | uint32 | **Cumulative seconds** each pump has been energized, all-time (V17+). Persisted in NVS; survives reboot. Absent on V16 and earlier |
+| `psi` / `rpm` | number | Feed pressure (PSI) + pump speed (RPM). **Planned — not published by any firmware build.** The app simulates them at nominal (`FilterSpecs.NOMINAL_PRESSURE_PSI`/`NOMINAL_PUMP_RPM`) until the keys appear |
 
 **Turbidity scale:** firmware publishes **0–3000 NTU** and emits exactly `3000` as a *fault
 sentinel* when `trueSensorVolt < 2.5` (probe unpowered, dry or disconnected). The filter model
@@ -162,7 +164,11 @@ see "Known issues" below.
 
 **Runtime counters are absolute, not deltas.** The app stores the last value it saw and derives
 its own delta, so time with the app closed costs no runtime and a counter that decreases (reflash
-or NVS erase) is detected and accrues zero rather than a negative or huge jump.
+or NVS erase) is detected and accrues zero rather than a negative or huge jump. A gap delta is
+plausibility-checked against the **uncapped** wall clock (5% + 60 s slack) and then accrued in
+full at a neutral load factor — capping the wall side first used to silently discard every gap
+longer than ~6 pump-hours. The first real counter wipes simulated history; counters disappearing
+after being seen pause accrual rather than simulating on top of measured data.
 
 **Path ownership (prevents write conflicts):**
 
@@ -226,9 +232,12 @@ or NVS erase) is detected and accrues zero rather than a negative or huge jump.
 - **App model** — `data/ml/`: `RidgeRegression` (normal equations `(XᵀX + λI)b = Xᵀy`, λ=1e-2,
   Gaussian elimination with partial pivoting, nullable on singular); `SyntheticWearData` (seeded
   LCG, 400 rows/stage, **non-linear** ground truth — Carman–Kozeny clogging for particulate media,
-  Freundlich saturation for adsorption media — so the linear fit is a real surrogate, not a
-  recovery of its own constants); `FilterLifeModel` (load factor, wear accrual, condition bands,
-  forecast, training).
+  Freundlich saturation for adsorption media, plus a hydraulic factor (pressure^0.5 × RPM^1.0) —
+  so the linear fit is a real surrogate, not a recovery of its own constants); `FilterLifeModel`
+  (six-feature load factor: TDS, turbidity, |pH−7|, and pressure/RPM ratios against nominal;
+  wear accrual, condition bands, forecast, training). Pressure/RPM have no sensor — the
+  repository simulates them at nominal ±3% wobble (normal water), so those features sit at 1.0
+  and predictions stay anchored until real firmware publishes `psi`/`rpm` (`TODO(hardware)`).
 - **Five-stage biofilter** — `data/model/FilterSpecs.kt` holds the confirmed physical order:
   pumice, pebbles, lava rock, activated carbon, sand. Each has rated hours, rated days, wear
   profile and per-medium TDS/turbidity sensitivities. **Lifetimes, service actions and
@@ -241,10 +250,16 @@ or NVS erase) is detected and accrues zero rather than a negative or huge jump.
   which Settings triggers on theme/locale change, and each re-run would multiply wear.
 - **UI** — Dashboard `cardFilterHealth` (worst stage + five compact bars) taps through to
   `ui/filter/FilterFragment`: per-stage bars, forecasts, service buttons and model diagnostics
-  (fitted R², real observations logged). Runtime provenance is labelled on both screens.
+  (fitted R², real observations logged, plus whether real data has displaced the synthetic
+  prior). Runtime provenance and simulated pressure/RPM telemetry are labelled on the Filter
+  screen. Mark Replaced and Reset Filter History ask for confirmation — both permanently
+  rewrite wear history, and a replaced stage records a training observation.
 - **Simulated until hardware lands** — with no `runtimeA` in RTDB the repository simulates runtime
   at `FilterSpecs.SIMULATED_DUTY_CYCLE`, accelerated by `DEMO_TIME_SCALE` (currently **60×** —
-  `TODO(demo)`: set to 1.0 before submission). Both screens say "Estimated — using simulated run
+  `TODO(demo)`: set to 1.0 before submission). Simulated wear bills only in-session time (the
+  interval is capped at one publish period, so reopening the app after hours does not bill the
+  closed gap). The first real counter wipes all simulated wear, duty and observations; a counter
+  disappearing after being seen pauses accrual. Both screens say "Estimated — using simulated run
   time" whenever this path is active.
 
 **Later (phase 3 — app parity):**

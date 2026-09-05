@@ -24,7 +24,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.PI
 import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
 
 /**
  * Owns filter wear state: accrues it from sensor samples, persists it, and publishes the
@@ -44,14 +47,22 @@ object FilterHealthRepository {
 
     private const val TAG = "HydroSenseFilter"
 
-    /** Longest runtime delta accepted from one sample, in hours. */
-    private const val MAX_DELTA_HOURS = 6.0
+    /**
+     * Longest interval the simulated path will bill, in hours — one firmware publish
+     * period. Simulated wear models the app being open and receiving samples; a closed
+     * gap is not screen time and must not inject a lump of fiction on reopen.
+     */
+    private const val MAX_SIMULATED_GAP_HOURS = 1.0 / 60.0
 
     /**
      * Above this delta the water quality at the moment of the sample is not representative
      * of the interval, so wear accrues at a neutral load factor instead.
      */
     private const val NEUTRAL_LOAD_ABOVE_HOURS = 1.0
+
+    /** Amplitude and period of the simulated pressure/RPM wobble around nominal. */
+    private const val TELEMETRY_WOBBLE = 0.03
+    private const val TELEMETRY_WOBBLE_PERIOD_MS = 420_000.0
 
     /** Minimum gap between prefs writes. Protects against per-tick XML rewrites. */
     private const val SAVE_INTERVAL_MILLIS = 60_000L
@@ -93,6 +104,11 @@ object FilterHealthRepository {
      * as simulated instead of continuing to claim hardware.
      */
     private var hardwareRuntimeSeen = false
+
+    /** Last feed pressure / pump speed for the telemetry line; simulated until real. */
+    private var lastPressurePsi = FilterSpecs.NOMINAL_PRESSURE_PSI
+    private var lastPumpRpm = FilterSpecs.NOMINAL_PUMP_RPM
+    private var telemetryFromHardware = false
 
     /**
      * Loads state and fits the models. Safe to call more than once; only the first call does
@@ -228,6 +244,9 @@ object FilterHealthRepository {
                 persisted = FilterPrefs.default()
                 models = fitModels()
                 hardwareRuntimeSeen = false
+                lastPressurePsi = FilterSpecs.NOMINAL_PRESSURE_PSI
+                lastPumpRpm = FilterSpecs.NOMINAL_PUMP_RPM
+                telemetryFromHardware = false
                 FilterPrefs.clear(ctx)
                 lastSaveMillis = System.currentTimeMillis()
                 stateLoaded = true
@@ -271,36 +290,77 @@ object FilterHealthRepository {
         val now = data.timestamp
         val previousWall = persisted.lastSampleWallMillis
         // Clock rolled backwards (timezone, NTP correction, user edit): re-anchor, accrue 0.
-        // Capped for the same reason runtime is: an app-closed gap of days must not land as
-        // one enormous interval in the duty-cycle denominator.
+        // Deliberately NOT capped: the plausibility guard in [hardwareRuntimeHours] must see
+        // the true gap, or a legitimate weekend of pumping looks like a garbage counter and
+        // gets discarded. The duty-cycle denominator stays honest because the runtime
+        // numerator is uncapped by the same amount.
         val wallDeltaHours = if (previousWall in 1 until now) {
-            ((now - previousWall) / 3_600_000.0).coerceAtMost(MAX_DELTA_HOURS)
+            (now - previousWall) / 3_600_000.0
         } else {
             0.0
         }
 
         val hardware = data.runtimeASeconds != null || data.runtimeBSeconds != null
         hardwareRuntimeSeen = hardware
-        val runtimeHours = if (hardware) {
-            hardwareRuntimeHours(data, wallDeltaHours)
+        val previouslySawHardware =
+            persisted.lastRuntimeSecondsA != null || persisted.lastRuntimeSecondsB != null
+
+        val runtimeHours: Double
+        val wallHoursForDuty: Double
+        val advanceWallAnchor: Boolean
+        if (hardware) {
+            if (!previouslySawHardware) {
+                // First real counter after a simulated period: retire the fiction (see
+                // [resetSimulatedAccrual]) so it cannot masquerade as measured history.
+                resetSimulatedAccrual()
+            }
+            runtimeHours = hardwareRuntimeHours(data, wallDeltaHours)
+            wallHoursForDuty = wallDeltaHours
+            advanceWallAnchor = true
+        } else if (previouslySawHardware) {
+            // Counters vanished: firmware downgraded below V17, or a snapshot that omits
+            // them. Runtime for the interval is unknown — simulating demo-scaled fiction
+            // on top of measured history would be worse than accruing nothing.
+            runtimeHours = 0.0
+            wallHoursForDuty = 0.0
+            advanceWallAnchor = false
         } else {
-            simulatedRuntimeHours(wallDeltaHours)
+            runtimeHours = simulatedRuntimeHours(wallDeltaHours)
+            wallHoursForDuty = min(wallDeltaHours, MAX_SIMULATED_GAP_HOURS)
+            advanceWallAnchor = true
         }
 
-        val features = FilterLifeModel.features(data)
+        // Feed pressure and pump speed: real telemetry when the firmware publishes it (no
+        // build does yet), otherwise simulated around nominal for normal water conditions.
+        val hardwarePressure = data.pressurePsi?.takeIf { it.isFinite() }
+        val hardwareRpm = data.pumpRpm?.takeIf { it.isFinite() }
+        telemetryFromHardware = hardwarePressure != null || hardwareRpm != null
+        lastPressurePsi = hardwarePressure ?: simulatedPressurePsi(now)
+        lastPumpRpm = hardwareRpm ?: simulatedRpm(now)
+
+        val features = FilterLifeModel.features(
+            data.tds.toDouble(),
+            data.turbidity,
+            data.ph,
+            lastPressurePsi,
+            lastPumpRpm
+        )
         val tdsNorm = features[1]
         val turbidityNorm = features[2]
         val phDeviation = features[3]
 
         if (runtimeHours > 0.0) {
+            // A delta spanning hours of app-closed time must not be weighted by whatever
+            // the water happens to look like at the instant the app reopens — and its
+            // quality must not enter the condition sums either, or a later training row
+            // would pair a long interval's wear with one instant's water.
+            val useLiveLoad = runtimeHours <= NEUTRAL_LOAD_ABOVE_HOURS
             val stages = persisted.stages.map { stage ->
                 val spec = specFor(stage.key) ?: return@map stage
-                // A delta spanning hours of app-closed time must not be weighted by whatever
-                // the water happens to look like at the instant the app reopens.
-                val load = if (runtimeHours > NEUTRAL_LOAD_ABOVE_HOURS) {
-                    FilterLifeModel.NEUTRAL_LOAD_FACTOR
-                } else {
+                val load = if (useLiveLoad) {
                     FilterLifeModel.loadFactor(coefficientsFor(stage.key), features)
+                } else {
+                    FilterLifeModel.NEUTRAL_LOAD_FACTOR
                 }
                 val delta = FilterLifeModel.usageDelta(spec, runtimeHours, load)
 
@@ -308,9 +368,21 @@ object FilterHealthRepository {
                     usageRuntime = (stage.usageRuntime + delta).finiteOr(stage.usageRuntime),
                     weightedHours = stage.weightedHours + runtimeHours * load,
                     rawHours = stage.rawHours + runtimeHours,
-                    sumTdsNorm = stage.sumTdsNorm + tdsNorm * runtimeHours,
-                    sumTurbidityNorm = stage.sumTurbidityNorm + turbidityNorm * runtimeHours,
-                    sumPhDeviation = stage.sumPhDeviation + phDeviation * runtimeHours,
+                    sumTdsNorm = if (useLiveLoad) {
+                        stage.sumTdsNorm + tdsNorm * runtimeHours
+                    } else {
+                        stage.sumTdsNorm
+                    },
+                    sumTurbidityNorm = if (useLiveLoad) {
+                        stage.sumTurbidityNorm + turbidityNorm * runtimeHours
+                    } else {
+                        stage.sumTurbidityNorm
+                    },
+                    sumPhDeviation = if (useLiveLoad) {
+                        stage.sumPhDeviation + phDeviation * runtimeHours
+                    } else {
+                        stage.sumPhDeviation
+                    },
                     // First sample after install: anchor calendar age to now rather than to
                     // the epoch, or every stage reads as decades overdue.
                     lastServiceWallMillis = if (stage.lastServiceWallMillis == 0L) {
@@ -333,8 +405,10 @@ object FilterHealthRepository {
         }
 
         persisted = persisted.copy(
-            lastSampleWallMillis = now,
-            accumulatedWallHours = persisted.accumulatedWallHours + wallDeltaHours,
+            // While counters are absent the anchor stays frozen, so the delta when they
+            // return is validated against the whole elapsed gap rather than one tick.
+            lastSampleWallMillis = if (advanceWallAnchor) now else previousWall,
+            accumulatedWallHours = persisted.accumulatedWallHours + wallHoursForDuty,
             lastRuntimeSecondsA = data.runtimeASeconds ?: persisted.lastRuntimeSecondsA,
             lastRuntimeSecondsB = data.runtimeBSeconds ?: persisted.lastRuntimeSecondsB
         )
@@ -344,15 +418,18 @@ object FilterHealthRepository {
      * Runtime hours from the ESP32's cumulative counters.
      *
      * The counters are absolute, so a gap while the app was closed is captured in full and
-     * costs nothing. Three things are guarded:
+     * costs nothing: the counter kept ticking whether or not the app was listening. Three
+     * things are guarded:
      *
      * - **No previous reading** (first hardware sample, or the simulated → hardware
      *   switchover): anchor and accrue zero, or the switchover injects a delta of the
      *   device's entire lifetime.
      * - **Counter decreased** (reflash, NVS erase): re-anchor and accrue zero.
-     * - **Delta exceeds wall time**: runtime cannot outrun the clock. Catches a restored-from-
-     *   garbage counter that a decrease check alone would miss. 5% + 60s of slack absorbs
-     *   ordinary clock skew.
+     * - **Delta exceeds wall time**: runtime cannot outrun the clock. Catches a
+     *   restored-from-garbage counter that the decrease check alone would miss. 5% + 60s
+     *   of slack absorbs clock skew. The comparison runs against the **uncapped** wall
+     *   delta and an accepted delta is accrued in full — capping either side silently
+     *   discarded every app-closed gap longer than ~6 hours of pump runtime.
      */
     private fun hardwareRuntimeHours(data: SensorData, wallDeltaHours: Double): Double {
         val currentA = data.runtimeASeconds
@@ -374,12 +451,12 @@ object FilterHealthRepository {
 
         val hours = deltaSeconds / 3600.0
         val allowance = wallDeltaHours * 1.05 + (60.0 / 3600.0)
-        if (wallDeltaHours > 0.0 && hours > allowance) {
+        if (hours > allowance) {
             Log.w(TAG, "Rejecting runtime delta ${hours}h; exceeds wall clock ${wallDeltaHours}h")
             return 0.0
         }
 
-        return hours.coerceAtMost(MAX_DELTA_HOURS)
+        return hours.finiteOr(0.0)
     }
 
     private fun pumpDelta(current: Long?, previous: Long?): Long {
@@ -392,15 +469,60 @@ object FilterHealthRepository {
     }
 
     /**
-     * Stand-in runtime while the firmware predates V17. Assumes a fixed duty cycle over the
-     * elapsed wall time, accelerated by [FilterSpecs.DEMO_TIME_SCALE]. The acceleration is
-     * intentional demo behavior, not a physical runtime measurement.
+     * Retires everything the simulator invented when the first real runtime counter
+     * arrives. Simulated runtime is demo-scaled fiction: keeping it would leave phantom
+     * wear and an inflated duty cycle mixed into history that is then labelled
+     * "measured". Calendar age survives — wall-clock time is real regardless of runtime
+     * source — and so do rinse counts; observations recorded against simulated intervals
+     * are dropped because their targets are scaled fiction too.
+     */
+    private fun resetSimulatedAccrual() {
+        Log.i(TAG, "Hardware runtime counters appeared; retiring simulated wear history")
+        persisted = persisted.copy(
+            stages = persisted.stages.map { stage ->
+                stage.copy(
+                    usageRuntime = 0.0,
+                    weightedHours = 0.0,
+                    rawHours = 0.0,
+                    sumTdsNorm = 0.0,
+                    sumTurbidityNorm = 0.0,
+                    sumPhDeviation = 0.0
+                )
+            },
+            totalRuntimeHours = 0.0,
+            accumulatedWallHours = 0.0,
+            observations = emptyList()
+        )
+    }
+
+    /**
+     * Stand-in runtime while the firmware predates V17. Models the pumps running while the
+     * app is open and receiving samples: the interval is capped at one publish period, so
+     * reopening the app after hours does not bill the closed gap. Scaled by
+     * [FilterSpecs.DEMO_TIME_SCALE]; the acceleration is intentional demo behaviour, not a
+     * physical runtime measurement.
      */
     private fun simulatedRuntimeHours(wallDeltaHours: Double): Double {
-        if (wallDeltaHours <= 0.0) return 0.0
-        val hours = wallDeltaHours * FilterSpecs.SIMULATED_DUTY_CYCLE * FilterSpecs.DEMO_TIME_SCALE
-        return hours.finiteOr(0.0).coerceIn(0.0, MAX_DELTA_HOURS)
+        val sessionHours = wallDeltaHours.finiteOr(0.0).coerceIn(0.0, MAX_SIMULATED_GAP_HOURS)
+        if (sessionHours <= 0.0) return 0.0
+        return (sessionHours * FilterSpecs.SIMULATED_DUTY_CYCLE * FilterSpecs.DEMO_TIME_SCALE)
+            .finiteOr(0.0).coerceAtLeast(0.0)
     }
+
+    /**
+     * Pressure/RPM stand-ins while no firmware publishes them: nominal with a slow
+     * sinusoidal wobble, so the telemetry line reads like a live sensor without drifting
+     * away from the normal-water assumption the wear model is anchored on.
+     */
+    private fun simulatedPressurePsi(nowMillis: Long): Double =
+        (FilterSpecs.NOMINAL_PRESSURE_PSI *
+            (1.0 + TELEMETRY_WOBBLE * sin(nowMillis / TELEMETRY_WOBBLE_PERIOD_MS)))
+            .finiteOr(FilterSpecs.NOMINAL_PRESSURE_PSI)
+
+    private fun simulatedRpm(nowMillis: Long): Double =
+        (FilterSpecs.NOMINAL_PUMP_RPM *
+            (1.0 + TELEMETRY_WOBBLE * sin(nowMillis / TELEMETRY_WOBBLE_PERIOD_MS + PI / 3.0)))
+            .finiteOr(FilterSpecs.NOMINAL_PUMP_RPM)
 
     // ── Publishing ─────────────────────────────────────────────────────────
 
@@ -434,6 +556,9 @@ object FilterHealthRepository {
             },
             totalRuntimeHours = persisted.totalRuntimeHours,
             dutyCycle = duty,
+            pressurePsi = lastPressurePsi,
+            pumpRpm = lastPumpRpm,
+            telemetrySimulated = !telemetryFromHardware,
             diagnostics = models.map { it.diagnostics },
             isWaitingForData = persisted.lastSampleWallMillis == 0L
         )
@@ -468,7 +593,12 @@ object FilterHealthRepository {
                 1.0,
                 stage.sumTdsNorm / stage.rawHours,
                 stage.sumTurbidityNorm / stage.rawHours,
-                stage.sumPhDeviation / stage.rawHours
+                stage.sumPhDeviation / stage.rawHours,
+                // Hydraulic history is not persisted: simulated telemetry sat at nominal
+                // by definition, and observation rows carry nominal ratios until real
+                // pressure/RPM sensors land (TODO(hardware)).
+                1.0,
+                1.0
             )
         )
     }

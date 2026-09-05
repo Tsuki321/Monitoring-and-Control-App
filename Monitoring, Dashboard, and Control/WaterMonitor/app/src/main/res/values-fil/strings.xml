@@ -162,8 +162,8 @@
     <string name="filter_hours_unit_format">%1$d oras</string>
     <string name="filter_limited_by_runtime">Batay sa oras ng pagtakbo</string>
     <string name="filter_limited_by_calendar">Batay sa tanda</string>
-    <string name="filter_serviced_days_ago_format">Naserbisyo %1$d araw na ang nakalipas</string>
-    <string name="filter_serviced_today">Naserbisyo ngayong araw</string>
+    <string name="filter_serviced_days_ago_format">Napalitan %1$d araw na ang nakalipas</string>
+    <string name="filter_serviced_today">Napalitan ngayong araw</string>
     <string name="filter_load_factor_format">Bilis ng pagkasira %1$.2f×</string>
 
     <!-- Dashboard summary lines -->
@@ -177,12 +177,18 @@
     <string name="filter_source_hardware">Batay sa sinukat na oras ng pagtakbo ng pump</string>
     <string name="filter_runtime_total_format">%1$.1f na oras ng pump sa kabuuan</string>
     <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
+    <string name="filter_telemetry_format">Presyon ng daloy %1$.0f PSI · Pump %2$.0f RPM</string>
+    <string name="filter_telemetry_simulated_suffix"> (simulado)</string>
 
     <!-- Model diagnostics -->
     <string name="filter_model_title">Modelo ng Prediksyon</string>
-    <string name="filter_model_explainer">May least-squares na modelo na nag-aaral kung gaano kabilis masira ang bawat bahagi mula sa TDS, turbidity at pH. Nagsisimula ito sa simuladong datos at muling nag-aayos tuwing magtatala ka ng tunay na serbisyo.</string>
+    <string name="filter_model_explainer">May least-squares na modelo na nag-aaral kung gaano kabilis masira ang bawat bahagi mula sa TDS, turbidity, pH, presyon ng daloy at bilis ng pump. Nagsisimula ito sa simuladong datos at nagsisimulang matuto mula sa mga naitalang serbisyo kapag sapat na ang nakatipon.</string>
     <string name="filter_model_row_format">%1$s — kalidad ng fit %2$d%%, %3$d tunay na serbisyo ang naitala</string>
     <string name="filter_model_synthetic_only">Sinanay sa simuladong datos lamang</string>
     <string name="filter_model_reset">I-reset ang Kasaysayan ng Filter</string>
     <string name="filter_model_reset_confirm">Naalis ang kasaysayan ng pagkasira ng filter</string>
+    <string name="filter_confirm_replace_title">Palitan ang media na ito?</string>
+    <string name="filter_confirm_replace_message">Mabubura ang kasaysayan ng pagkasira ng %1$s at maitatala ang serbisyo.</string>
+    <string name="filter_confirm_reset_title">I-reset ang buong kasaysayan ng filter?</string>
+    <string name="filter_confirm_reset_message">Babalik ang bawat bahagi sa bago at mabubura ang lahat ng naitalang serbisyo. Hindi na ito maibabalik.</string>
 </resources>

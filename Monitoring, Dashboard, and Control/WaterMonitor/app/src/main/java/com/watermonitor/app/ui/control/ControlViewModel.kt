@@ -8,6 +8,7 @@ import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
 import com.watermonitor.app.data.repository.MockSensorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -17,6 +18,9 @@ class ControlViewModel : ViewModel() {
     /** Live pump states + mode from RTDB (/status written by ESP32, /control/auto by app). */
     val pumpControlState: StateFlow<PumpControlState> =
         FirebaseRealtimeSensorRepository.pumpControlFlow
+            // Defense in depth, matching MonitoringViewModel: without this, a failure
+            // upstream cancels the sharing coroutine inside viewModelScope.
+            .catch { emit(PumpControlState()) }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
@@ -30,6 +34,7 @@ class ControlViewModel : ViewModel() {
     val leakDetected: StateFlow<Boolean?> =
         FirebaseRealtimeSensorRepository.sensorDataFlow
             .map { it.leakDetected }
+            .catch { emit(null) }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),

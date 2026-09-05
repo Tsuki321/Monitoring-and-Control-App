@@ -19,6 +19,7 @@ import com.watermonitor.app.data.model.LimitedBy
 import com.watermonitor.app.data.model.RuntimeSource
 import com.watermonitor.app.data.model.ServiceAction
 import com.watermonitor.app.data.model.StageModelDiagnostics
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.watermonitor.app.databinding.FragmentFilterBinding
 import com.watermonitor.app.databinding.ItemFilterStageBinding
 import com.watermonitor.app.utils.AnimationUtils
@@ -57,12 +58,18 @@ class FilterFragment : Fragment() {
         buildStageRows()
 
         binding.btnResetHistory.setOnClickListener {
-            viewModel.resetHistory()
-            Toast.makeText(
-                requireContext(),
-                R.string.filter_model_reset_confirm,
-                Toast.LENGTH_SHORT
-            ).show()
+            confirmDestructive(
+                titleRes = R.string.filter_confirm_reset_title,
+                message = getString(R.string.filter_confirm_reset_message),
+                positiveRes = R.string.filter_model_reset
+            ) {
+                viewModel.resetHistory()
+                Toast.makeText(
+                    requireContext(),
+                    R.string.filter_model_reset_confirm,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -85,8 +92,17 @@ class FilterFragment : Fragment() {
                 AnimationUtils.pulseView(row.progressStage, scalePeak = 1.04f)
             }
             row.btnReplace.setOnClickListener {
-                viewModel.replaceStage(spec.index)
-                AnimationUtils.pulseView(row.progressStage, scalePeak = 1.04f)
+                confirmDestructive(
+                    titleRes = R.string.filter_confirm_replace_title,
+                    message = getString(
+                        R.string.filter_confirm_replace_message,
+                        FilterFormatter.stageName(requireContext(), spec.key)
+                    ),
+                    positiveRes = R.string.filter_action_replace_button
+                ) {
+                    viewModel.replaceStage(spec.index)
+                    AnimationUtils.pulseView(row.progressStage, scalePeak = 1.04f)
+                }
             }
 
             binding.stageContainer.addView(row.root)
@@ -104,6 +120,12 @@ class FilterFragment : Fragment() {
         }
 
         renderOverall(state)
+
+        // Before the repository's first publish the state carries no stages. Showing the
+        // inflated rows then renders five blank cards with live service buttons; hide the
+        // container until real state exists, as the Dashboard card does.
+        binding.stageContainer.visibility =
+            if (state.stages.isEmpty()) View.GONE else View.VISIBLE
         state.stages.forEachIndexed { index, stage ->
             stageRows.getOrNull(index)?.let { bindStage(it, stage) }
         }
@@ -158,6 +180,14 @@ class FilterFragment : Fragment() {
         } else {
             total
         }
+
+        binding.tvTelemetry.text =
+            getString(R.string.filter_telemetry_format, state.pressurePsi, state.pumpRpm) +
+                if (state.telemetrySimulated) {
+                    getString(R.string.filter_telemetry_simulated_suffix)
+                } else {
+                    ""
+                }
     }
 
     private fun bindStage(row: ItemFilterStageBinding, stage: FilterStageHealth) {
@@ -218,8 +248,33 @@ class FilterFragment : Fragment() {
                 FilterFormatter.stageName(requireContext(), item.stageKey),
                 (item.rSquared * 100).roundToInt().coerceIn(0, 100),
                 item.realObservations
-            )
+            ) + if (!item.fittedOnRealData) {
+                // Real services only join the fit at MIN_OBSERVATIONS_FOR_FIT; say which
+                // regime the coefficients are in rather than implying every service teaches.
+                " · " + getString(R.string.filter_model_synthetic_only)
+            } else {
+                ""
+            }
         }
+    }
+
+    /**
+     * Replace and Reset permanently rewrite wear history (and a replaced stage at ≥85%
+     * usage records a training observation that shifts the model), so a stray tap must
+     * not trigger them silently.
+     */
+    private fun confirmDestructive(
+        titleRes: Int,
+        message: String,
+        positiveRes: Int,
+        onConfirm: () -> Unit
+    ) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(titleRes)
+            .setMessage(message)
+            .setPositiveButton(positiveRes) { _, _ -> onConfirm() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun color(resId: Int) = ContextCompat.getColor(requireContext(), resId)

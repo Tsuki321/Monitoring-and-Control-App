@@ -23,5 +23,12 @@ data class SensorData(
      * null = firmware predates V17, so the filter model falls back to simulation.
      */
     val runtimeASeconds: Long? = null,
-    val runtimeBSeconds: Long? = null
+    val runtimeBSeconds: Long? = null,
+    /**
+     * Feed-line pressure (PSI) and pump motor speed (RPM). No firmware publishes these
+     * yet — RTDB leaves them null and the filter repository simulates them at nominal
+     * until a future build writes `psi`/`rpm` keys under /sensors.
+     */
+    val pressurePsi: Double? = null,
+    val pumpRpm: Double? = null
 )

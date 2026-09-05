@@ -158,7 +158,11 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "onCancelled code=${error.code} message=${error.message}")
-                close(error.toException())
+                // Closing with the exception would cancel the shareIn sharer permanently
+                // (WhileSubscribed never restarts after an upstream failure), freezing
+                // every screen's data until process death. Close normally instead, so the
+                // next subscription can re-attach the listener.
+                close()
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/sensors")
@@ -180,7 +184,11 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "/status cancelled code=${error.code} message=${error.message}")
-                close(error.toException())
+                // Closing with the exception would cancel the shareIn sharer permanently
+                // (WhileSubscribed never restarts after an upstream failure), freezing
+                // every screen's data until process death. Close normally instead, so the
+                // next subscription can re-attach the listener.
+                close()
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/status")
@@ -201,7 +209,11 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "/control/auto cancelled code=${error.code} message=${error.message}")
-                close(error.toException())
+                // Closing with the exception would cancel the shareIn sharer permanently
+                // (WhileSubscribed never restarts after an upstream failure), freezing
+                // every screen's data until process death. Close normally instead, so the
+                // next subscription can re-attach the listener.
+                close()
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/control/auto")
@@ -222,7 +234,11 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "/control/pumpA cancelled code=${error.code} message=${error.message}")
-                close(error.toException())
+                // Closing with the exception would cancel the shareIn sharer permanently
+                // (WhileSubscribed never restarts after an upstream failure), freezing
+                // every screen's data until process death. Close normally instead, so the
+                // next subscription can re-attach the listener.
+                close()
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/control/pumpA")
@@ -243,7 +259,11 @@ object FirebaseRealtimeSensorRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "/control/pumpB cancelled code=${error.code} message=${error.message}")
-                close(error.toException())
+                // Closing with the exception would cancel the shareIn sharer permanently
+                // (WhileSubscribed never restarts after an upstream failure), freezing
+                // every screen's data until process death. Close normally instead, so the
+                // next subscription can re-attach the listener.
+                close()
             }
         }
         Log.d(TAG, "Attaching listener to $DATABASE_URL/control/pumpB")
@@ -263,6 +283,16 @@ object FirebaseRealtimeSensorRepository {
         @Suppress("UNCHECKED_CAST")
         val map = getValue() as? Map<String, Any?>
         if (map != null) {
+            // An existing snapshot missing the quality keys is a partial write — an
+            // in-progress console edit, commissioning, or a firmware build that omits a
+            // failed probe's key. Falling back to defaults would fabricate near-pristine
+            // readings that the filter model cannot distinguish from real ones, so treat
+            // it as no data. Runtime counters are absolute, so rejecting the snapshot
+            // loses nothing: the next complete one re-derives the full delta.
+            if (!map.containsKey("ph") || !map.containsKey("tds") || !map.containsKey("turbidity")) {
+                Log.w(TAG, "/sensors snapshot missing ph/tds/turbidity; treating as no data")
+                return SensorData()
+            }
             return SensorData(
                 ph = map.parseDouble("ph", 7.0),
                 tds = map.parseInt("tds", 150),
@@ -274,10 +304,16 @@ object FirebaseRealtimeSensorRepository {
                 leakDetected = map.parseBoolOrNull("rainDetected"),
                 timestamp = System.currentTimeMillis(),
                 runtimeASeconds = map.parseLongOrNull("runtimeA"),
-                runtimeBSeconds = map.parseLongOrNull("runtimeB")
+                runtimeBSeconds = map.parseLongOrNull("runtimeB"),
+                pressurePsi = map.parseDoubleOrNull("psi"),
+                pumpRpm = map.parseDoubleOrNull("rpm")
             )
         }
 
+        if (!child("ph").exists() || !child("tds").exists() || !child("turbidity").exists()) {
+            Log.w(TAG, "/sensors snapshot missing ph/tds/turbidity; treating as no data")
+            return SensorData()
+        }
         return SensorData(
             ph = child("ph").asDouble(7.0),
             tds = child("tds").asInt(150),
@@ -288,45 +324,44 @@ object FirebaseRealtimeSensorRepository {
             leakDetected = child("rainDetected").asBoolOrNull(),
             timestamp = System.currentTimeMillis(),
             runtimeASeconds = child("runtimeA").asLongOrNull(),
-            runtimeBSeconds = child("runtimeB").asLongOrNull()
+            runtimeBSeconds = child("runtimeB").asLongOrNull(),
+            pressurePsi = child("psi").asDoubleOrNull(),
+            pumpRpm = child("rpm").asDoubleOrNull()
         )
     }
 
-    private fun Map<String, Any?>.parseDouble(key: String, default: Double): Double {
-        return when (val value = this[key]) {
-            null -> default
-            is Number -> value.toDouble()
-            is String -> value.toDoubleOrNull() ?: default
-            else -> default
-        }
-    }
+    private fun Map<String, Any?>.parseDouble(key: String, default: Double): Double =
+        parseDoubleOrNull(key) ?: default
 
-    private fun Map<String, Any?>.parseInt(key: String, default: Int): Int {
-        return when (val value = this[key]) {
-            null -> default
-            is Number -> value.toInt()
-            is String -> value.toIntOrNull() ?: default
-            else -> default
-        }
-    }
+    private fun Map<String, Any?>.parseInt(key: String, default: Int): Int =
+        parseIntOrNull(key) ?: default
 
-    private fun Map<String, Any?>.parseDoubleOrNull(key: String): Double? {
-        return when (val value = this[key]) {
+    /**
+     * Strings like "NaN" and "Infinity" parse successfully under Java's
+     * [Double.parseDouble] semantics, and JSON numbers can never be non-finite — so a
+     * non-finite result can only come from a hand-edited or corrupt node. Reject it: a NaN
+     * that reaches `coerceIn` passes straight through (both comparisons are false for NaN)
+     * and renders as a plausible zero instead of an obvious error.
+     */
+    private fun Map<String, Any?>.parseDoubleOrNull(key: String): Double? =
+        when (val value = this[key]) {
             null -> null
-            is Number -> value.toDouble()
-            is String -> value.toDoubleOrNull()
+            is Number -> value.toDouble().takeIf { it.isFinite() }
+            is String -> value.toDoubleOrNull()?.takeIf { it.isFinite() }
             else -> null
         }
-    }
 
-    private fun Map<String, Any?>.parseIntOrNull(key: String): Int? {
-        return when (val value = this[key]) {
+    /**
+     * `Number.toInt()` on a Long wraps modulo 2^32, so a corrupt 4_294_967_446 would read
+     * as a perfectly plausible 150. Range-check instead of truncating.
+     */
+    private fun Map<String, Any?>.parseIntOrNull(key: String): Int? =
+        when (val value = this[key]) {
             null -> null
-            is Number -> value.toInt()
+            is Number -> value.toLong().takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }?.toInt()
             is String -> value.toIntOrNull()
             else -> null
         }
-    }
 
     /**
      * Runtime counters are uint32 seconds on the ESP32; RTDB hands them back as
@@ -355,37 +390,25 @@ object FirebaseRealtimeSensorRepository {
         }
     }
 
-    private fun DataSnapshot.asDouble(default: Double): Double {
-        val value = getValue() ?: return default
-        return when (value) {
-            is Number -> value.toDouble()
-            is String -> value.toDoubleOrNull() ?: default
-            else -> default
-        }
-    }
+    private fun DataSnapshot.asDouble(default: Double): Double = asDoubleOrNull() ?: default
 
-    private fun DataSnapshot.asInt(default: Int): Int {
-        val value = getValue() ?: return default
-        return when (value) {
-            is Number -> value.toInt()
-            is String -> value.toIntOrNull() ?: default
-            else -> default
-        }
-    }
+    private fun DataSnapshot.asInt(default: Int): Int = asIntOrNull() ?: default
 
+    /** Same non-finite rejection as the map-path parsers — see [parseDoubleOrNull]. */
     private fun DataSnapshot.asDoubleOrNull(): Double? {
         val value = getValue() ?: return null
         return when (value) {
-            is Number -> value.toDouble()
-            is String -> value.toDoubleOrNull()
+            is Number -> value.toDouble().takeIf { it.isFinite() }
+            is String -> value.toDoubleOrNull()?.takeIf { it.isFinite() }
             else -> null
         }
     }
 
+    /** Same range check as the map-path parsers — see [parseIntOrNull]. */
     private fun DataSnapshot.asIntOrNull(): Int? {
         val value = getValue() ?: return null
         return when (value) {
-            is Number -> value.toInt()
+            is Number -> value.toLong().takeIf { it in Int.MIN_VALUE..Int.MAX_VALUE }?.toInt()
             is String -> value.toIntOrNull()
             else -> null
         }

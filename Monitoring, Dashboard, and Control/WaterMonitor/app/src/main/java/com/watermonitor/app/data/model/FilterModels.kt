@@ -80,6 +80,12 @@ data class FilterHealthState(
     val totalRuntimeHours: Double = 0.0,
     /** Observed duty cycle (runtime / wall time), or null when not yet measurable. */
     val dutyCycle: Double? = null,
+    /** Last feed pressure (PSI). Simulated at nominal until firmware publishes `psi`. */
+    val pressurePsi: Double = FilterSpecs.NOMINAL_PRESSURE_PSI,
+    /** Last pump speed (RPM). Simulated at nominal until firmware publishes `rpm`. */
+    val pumpRpm: Double = FilterSpecs.NOMINAL_PUMP_RPM,
+    /** True while pressure/RPM come from the simulator rather than hardware. */
+    val telemetrySimulated: Boolean = true,
     val diagnostics: List<StageModelDiagnostics> = emptyList(),
     /** True before any sample has been ingested, so the UI can show a waiting state. */
     val isWaitingForData: Boolean = true

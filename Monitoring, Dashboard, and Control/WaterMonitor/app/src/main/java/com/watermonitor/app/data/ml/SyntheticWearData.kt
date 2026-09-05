@@ -70,6 +70,20 @@ object SyntheticWearData {
     private const val PH_MIN = 5.0
     private const val PH_MAX = 9.5
 
+    // Hydraulic ranges as ratios of nominal. Tight and skewed toward 1.0 — normal water
+    // is the common case; the tails exist so the fit can identify the sensitivities.
+    private const val PRESSURE_RATIO_MIN = 0.75
+    private const val PRESSURE_RATIO_MAX = 1.25
+    private const val PRESSURE_RATIO_SKEW = 1.5
+    private const val RPM_RATIO_MIN = 0.8
+    private const val RPM_RATIO_MAX = 1.2
+    private const val RPM_RATIO_SKEW = 1.5
+
+    // Hydraulic wear exponents: pump speed drives flow (and throughput) roughly linearly;
+    // the square-root pressure term is the extra push a partially clogged bed needs.
+    private const val PRESSURE_EXPONENT = 0.5
+    private const val RPM_EXPONENT = 1.0
+
     /** Per-stage seed base, so every stage gets a different but fixed sample sequence. */
     private const val SEED_BASE = 0x5EED_0000L
 
@@ -97,14 +111,22 @@ object SyntheticWearData {
             } else {
                 (7.0 + rng.nextGaussian() * PH_SIGMA).coerceIn(PH_MIN, PH_MAX)
             }
+            val pressurePsi = FilterSpecs.NOMINAL_PRESSURE_PSI *
+                rng.skewed(PRESSURE_RATIO_MIN, PRESSURE_RATIO_MAX, PRESSURE_RATIO_SKEW)
+            val pumpRpm = FilterSpecs.NOMINAL_PUMP_RPM *
+                rng.skewed(RPM_RATIO_MIN, RPM_RATIO_MAX, RPM_RATIO_SKEW)
 
-            val truth = trueWearRate(spec, ph, tdsPpm, turbidityNtu)
+            val truth = trueWearRate(spec, ph, tdsPpm, turbidityNtu) *
+                hydraulicFactor(
+                    pressurePsi / FilterSpecs.NOMINAL_PRESSURE_PSI,
+                    pumpRpm / FilterSpecs.NOMINAL_PUMP_RPM
+                )
             val noise = rng.nextGaussian() * (NOISE_BASE + NOISE_SLOPE * truth)
             val observed = (truth + noise)
                 .finiteOr(FilterLifeModel.NEUTRAL_LOAD_FACTOR)
                 .coerceIn(FilterLifeModel.MIN_LOAD_FACTOR, FilterLifeModel.MAX_LOAD_FACTOR)
 
-            design.add(FilterLifeModel.features(tdsPpm, turbidityNtu, ph))
+            design.add(FilterLifeModel.features(tdsPpm, turbidityNtu, ph, pressurePsi, pumpRpm))
             targets.add(observed)
         }
 
@@ -144,6 +166,16 @@ object SyntheticWearData {
         val phFactor = 1.0 + PH_COEFFICIENT * abs(ph - 7.0).pow(PH_EXPONENT)
         return (base * phFactor).finiteOr(FilterLifeModel.NEUTRAL_LOAD_FACTOR)
     }
+
+    /**
+     * Hydraulic contribution to the wear multiplier: how much faster the media ages when
+     * the feed is pushed harder or faster than nominal. Exactly 1.0 at nominal pressure
+     * and nominal pump speed, by construction, so the overall anchor is unchanged.
+     */
+    private fun hydraulicFactor(pressureRatio: Double, rpmRatio: Double): Double =
+        (pressureRatio.coerceAtLeast(0.0).pow(PRESSURE_EXPONENT) *
+            rpmRatio.coerceAtLeast(0.0).pow(RPM_EXPONENT))
+            .finiteOr(1.0)
 
     /**
      * Carman–Kozeny bed resistance, `(1-ε)² / ε³`, with porosity ε falling as deposit

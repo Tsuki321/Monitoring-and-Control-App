@@ -42,12 +42,16 @@ class StageModel(
  *
  * ### The maths
  * ```
- * L        = b0 + b1·tdsNorm + b2·turbNorm + b3·|pH − 7|     (fitted, clamped 0.25..4.0)
+ * L        = b0 + b1·tdsNorm + b2·turbNorm + b3·|pH − 7|
+ *            + b4·(psi/psiNominal) + b5·(rpm/rpmNominal)   (fitted, clamped 0.25..4.0)
  * usageRun += (runtimeHoursDelta × L) / ratedHours
  * usageCal  = daysSinceService / ratedDays
  * u         = max(usageRun, usageCal)                        whichever limit binds first
  * health%   = 100 × (1 − u)
  * ```
+ * Pressure and pump speed are simulated at nominal until firmware publishes them, so
+ * under normal water conditions those two ratios sit at 1.0 and contribute nothing —
+ * predictions stay anchored to the rated-life reference until real telemetry lands.
  * Health is deliberately linear in `u`. Any strictly decreasing curve is just a relabelling
  * of the same information, and an exponential would show a filter at one third of its rated
  * life as 58% — which reads as "broken", not "two thirds left".
@@ -64,8 +68,13 @@ class StageModel(
  */
 object FilterLifeModel {
 
-    /** Feature vector width: intercept, tdsNorm, turbNorm, |pH − 7|. */
-    const val FEATURE_COUNT = 4
+    /**
+     * Feature vector width: intercept, tdsNorm, turbNorm, |pH − 7|, pressure ratio,
+     * pump-speed ratio. Training and inference must build rows of exactly this width —
+     * [loadFactor] falls back to neutral on a size mismatch, so a stale-width coefficient
+     * vector would silently neutralise the load factor, not crash.
+     */
+    const val FEATURE_COUNT = 6
 
     const val MIN_LOAD_FACTOR = 0.25
     const val MAX_LOAD_FACTOR = 4.0
@@ -86,27 +95,51 @@ object FilterLifeModel {
 
     // ── Features ───────────────────────────────────────────────────────────
 
-    fun features(data: SensorData): DoubleArray =
-        features(data.tds.toDouble(), data.turbidity, data.ph)
+    fun features(data: SensorData): DoubleArray = features(
+        data.tds.toDouble(),
+        data.turbidity,
+        data.ph,
+        data.pressurePsi ?: FilterSpecs.NOMINAL_PRESSURE_PSI,
+        data.pumpRpm ?: FilterSpecs.NOMINAL_PUMP_RPM
+    )
 
     /**
      * Builds the feature row. Normalisation uses the **firmware's** published scales:
      * turbidity is 0–3000 NTU (`UPDATED_CODE_V16.ino:270-271`), not 0–5. Getting this wrong
-     * by 600× would pin every reading at full scale and burn a cartridge in days.
+     * by 600× would pin every reading at full scale and burn a cartridge in days. Pressure
+     * and pump speed normalise against [FilterSpecs.NOMINAL_PRESSURE_PSI] /
+     * [FilterSpecs.NOMINAL_PUMP_RPM] so that nominal telemetry contributes 1.0.
      */
-    fun features(tdsPpm: Double, turbidityNtu: Double, ph: Double): DoubleArray {
+    fun features(
+        tdsPpm: Double,
+        turbidityNtu: Double,
+        ph: Double,
+        pressurePsi: Double = FilterSpecs.NOMINAL_PRESSURE_PSI,
+        pumpRpm: Double = FilterSpecs.NOMINAL_PUMP_RPM
+    ): DoubleArray {
         val tdsNorm = (tdsPpm / FilterSpecs.TDS_FULL_SCALE_PPM).finiteOr(0.0).coerceIn(0.0, 1.0)
         val turbidityNorm = (turbidityNtu / FilterSpecs.TURBIDITY_FULL_SCALE_NTU)
             .finiteOr(0.0).coerceIn(0.0, 1.0)
         val phDeviation = abs(ph - 7.0).finiteOr(0.0).coerceIn(0.0, 7.0)
-        return doubleArrayOf(1.0, tdsNorm, turbidityNorm, phDeviation)
+        val pressureRatio = (pressurePsi / FilterSpecs.NOMINAL_PRESSURE_PSI)
+            .finiteOr(1.0).coerceIn(0.0, 4.0)
+        val rpmRatio = (pumpRpm / FilterSpecs.NOMINAL_PUMP_RPM)
+            .finiteOr(1.0).coerceIn(0.0, 4.0)
+        return doubleArrayOf(1.0, tdsNorm, turbidityNorm, phDeviation, pressureRatio, rpmRatio)
     }
 
+    /**
+     * Observation rows predate hydraulic telemetry (and all simulated history sat at
+     * nominal by definition), so their pressure/RPM features are nominal — a ratio of 1.0,
+     * same as a neutral pH contributes 0.
+     */
     private fun features(observation: WearObservation): DoubleArray = doubleArrayOf(
         1.0,
         observation.tdsNorm.finiteOr(0.0).coerceIn(0.0, 1.0),
         observation.turbidityNorm.finiteOr(0.0).coerceIn(0.0, 1.0),
-        observation.phDeviation.finiteOr(0.0).coerceIn(0.0, 7.0)
+        observation.phDeviation.finiteOr(0.0).coerceIn(0.0, 7.0),
+        1.0,
+        1.0
     )
 
     // ── Inference ──────────────────────────────────────────────────────────
@@ -163,6 +196,12 @@ object FilterLifeModel {
      * Turns a completed service interval into a training row's target: how fast this stage
      * actually wore, relative to its rating. 1.0 = lasted exactly as rated; 2.0 = wore out
      * in half the rated hours.
+     *
+     * The target assumes the operator replaced the stage at physical end-of-life. A stage
+     * swapped early (the nag band admits ≥85% usage) therefore teaches a slightly
+     * overstated wear rate — the timing of a service is the operator's call, and it is the
+     * only ground truth available; substituting the model's own predicted usage here would
+     * feed its predictions back to itself as truth and teach it nothing.
      */
     fun observedWearRate(spec: FilterStageSpec, rawHoursSurvived: Double): Double {
         val hours = rawHoursSurvived.finiteOr(0.0)
@@ -362,6 +401,8 @@ object FilterLifeModel {
             0.0
         }
 
-        return doubleArrayOf(intercept, tdsCoefficient, turbidityCoefficient, 0.25)
+        // Pressure/RPM coefficients are zero so the fallback keeps its exact L = 1.0 anchor
+        // at nominal: nominal hydraulic ratios are 1.0 and must not shift the prediction.
+        return doubleArrayOf(intercept, tdsCoefficient, turbidityCoefficient, 0.25, 0.0, 0.0)
     }
 }
