@@ -33,9 +33,6 @@
     <string name="status_good">Good</string>
     <string name="status_poor">Poor</string>
     <string name="status_very_low">Very Low</string>
-    <string name="status_clear">Clear</string>
-    <string name="status_slightly_turbid">Slightly Turbid</string>
-    <string name="status_turbid">Turbid</string>
     <string name="status_online">Online</string>
     <string name="status_offline">Offline</string>
 

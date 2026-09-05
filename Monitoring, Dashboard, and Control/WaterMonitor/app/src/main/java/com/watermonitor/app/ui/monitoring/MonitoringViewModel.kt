@@ -83,17 +83,11 @@ class MonitoringViewModel : ViewModel() {
         turbidity: Double,
         quality: TurbidityQuality
     ): SensorCardUiState {
-        val labelRes = when (quality) {
-            TurbidityQuality.CLEAR -> R.string.status_clear
-            TurbidityQuality.SLIGHTLY_TURBID -> R.string.status_slightly_turbid
-            TurbidityQuality.TURBID -> R.string.status_turbid
-        }
         val cloudiness = (turbidity / TURBIDITY_FULL_SCALE_NTU * 100)
             .toInt()
             .coerceIn(0, 100)
         return SensorCardUiState(
             value = turbidity,
-            statusLabelRes = labelRes,
             statusColorRes = statusColor(quality.safetyLevel),
             cloudinessPercent = cloudiness
         )

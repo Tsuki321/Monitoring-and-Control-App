@@ -36,9 +36,6 @@
     <string name="status_good">Maganda</string>
     <string name="status_poor">Mahina</string>
     <string name="status_very_low">Napakababa</string>
-    <string name="status_clear">Malinaw</string>
-    <string name="status_slightly_turbid">Bahagyang Malabo</string>
-    <string name="status_turbid">Malabo</string>
     <string name="status_online">Online</string>
     <string name="status_offline">Offline</string>
 

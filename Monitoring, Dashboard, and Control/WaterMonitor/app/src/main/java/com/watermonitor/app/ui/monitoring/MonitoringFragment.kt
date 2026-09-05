@@ -40,12 +40,10 @@ class MonitoringFragment : Fragment() {
     // 0 means "not yet seen" — the first emission shouldn't trigger a flash.
     private var prevPhStatusRes = 0
     private var prevTdsStatusRes = 0
-    private var prevTurbidityStatusRes = 0
 
     // Track previous status color so a band change can tween from the old hue to the new one.
     private var prevPhColor = 0
     private var prevTdsColor = 0
-    private var prevTurbidityColor = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -146,14 +144,6 @@ class MonitoringFragment : Fragment() {
                     getString(if (isCloudy) R.string.status_cloudy else R.string.status_not_cloudy)
                 binding.tvTurbidityCloudiness.setTextColor(state.turbidityStatus.statusColorRes)
                 if (state.sensorData.turbidity != prevTurbidity) AnimationUtils.pulseView(binding.imgTurbidityIcon)
-                prevTurbidityColor = applyStatus(
-                    binding.tvTurbidityStatus,
-                    state.turbidityStatus.statusLabelRes,
-                    state.turbidityStatus.statusColorRes,
-                    prevTurbidityStatusRes,
-                    prevTurbidityColor
-                )
-                prevTurbidityStatusRes = state.turbidityStatus.statusLabelRes
                 prevTurbidity = state.sensorData.turbidity
                 prevCloudiness = state.turbidityStatus.cloudinessPercent.toDouble()
                 hasRenderedValues = true
@@ -259,10 +249,8 @@ class MonitoringFragment : Fragment() {
         prevCloudiness = 0.0
         prevPhStatusRes = 0
         prevTdsStatusRes = 0
-        prevTurbidityStatusRes = 0
         prevPhColor = 0
         prevTdsColor = 0
-        prevTurbidityColor = 0
     }
 
     private companion object {
