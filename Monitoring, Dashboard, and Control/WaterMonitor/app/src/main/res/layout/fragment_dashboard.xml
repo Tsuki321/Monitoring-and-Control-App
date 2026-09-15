@@ -266,7 +266,7 @@
                             android:id="@+id/tvPhStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="pH: --"
+                            android:text="pH: Offline"
                             android:textSize="14sp"
                             android:textColor="@color/text_dark" />
 
@@ -291,7 +291,7 @@
                             android:id="@+id/tvTdsStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="TDS: --"
+                            android:text="TDS: Offline"
                             android:textSize="14sp"
                             android:textColor="@color/text_dark" />
 
@@ -315,7 +315,7 @@
                             android:id="@+id/tvTurbidityStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Turbidity: --"
+                            android:text="Turbidity: Offline"
                             android:textSize="14sp"
                             android:textColor="@color/text_dark" />
 

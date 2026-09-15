@@ -39,7 +39,7 @@ class DashboardFragment : Fragment() {
 
     private val filterSummaryRows = mutableListOf<View>()
 
-    // Breathing-pulse animators for the sensor status dots (null when status is not SAFE)
+    // Breathing-pulse animators for the sensor status dots (null when offline)
     private var phDotPulse: Animator? = null
     private var tdsDotPulse: Animator? = null
     private var turbidityDotPulse: Animator? = null
@@ -288,53 +288,36 @@ class DashboardFragment : Fragment() {
     }
 
     private fun renderSensorStatus(state: DashboardUiState) {
-        val quality = state.waterQuality
-        val hasReading = state.hasSensorReading
-
-        binding.tvPhStatus.text = if (hasReading) {
-            getString(R.string.water_safety_ph_format, state.sensorData.ph)
+        // All three readings arrive in one atomic /sensors snapshot, so per-sensor
+        // granularity does not exist upstream — Online means a live snapshot is flowing.
+        val online = state.hasSensorReading
+        val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
+        val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
+        val labelColor = if (online) {
+            ContextCompat.getColor(requireContext(), R.color.text_dark)
         } else {
-            getString(R.string.water_safety_ph_pending)
+            greyColor
         }
-        binding.tvTdsStatus.text = if (hasReading) {
-            getString(R.string.water_safety_tds_format, state.sensorData.tds)
-        } else {
-            getString(R.string.water_safety_tds_pending)
-        }
-        binding.tvTurbidityStatus.text = if (hasReading) {
-            getString(R.string.water_safety_turbidity_format, state.sensorData.turbidity)
-        } else {
-            getString(R.string.water_safety_turbidity_pending)
-        }
-        val valueColor = ContextCompat.getColor(
-            requireContext(),
-            if (hasReading) R.color.text_dark else R.color.status_grey
-        )
-        binding.tvPhStatus.setTextColor(valueColor)
-        binding.tvTdsStatus.setTextColor(valueColor)
-        binding.tvTurbidityStatus.setTextColor(valueColor)
 
-        binding.dotPh.setColorFilter(sensorRowColor(quality.phQuality.safetyLevel, hasReading))
-        binding.dotTds.setColorFilter(sensorRowColor(quality.tdsQuality.safetyLevel, hasReading))
-        binding.dotTurbidity.setColorFilter(
-            sensorRowColor(quality.turbidityQuality.safetyLevel, hasReading)
-        )
+        binding.tvPhStatus.text = sensorOnlineLabel(R.string.sensor_ph_short, online)
+        binding.tvTdsStatus.text = sensorOnlineLabel(R.string.sensor_tds_short, online)
+        binding.tvTurbidityStatus.text = sensorOnlineLabel(R.string.sensor_turbidity_short, online)
+        binding.tvPhStatus.setTextColor(labelColor)
+        binding.tvTdsStatus.setTextColor(labelColor)
+        binding.tvTurbidityStatus.setTextColor(labelColor)
 
-        phDotPulse = updateDotPulse(
-            hasReading && quality.phQuality.safetyLevel == WaterSafetyLevel.SAFE,
-            binding.dotPh,
-            phDotPulse
-        )
-        tdsDotPulse = updateDotPulse(
-            hasReading && quality.tdsQuality.safetyLevel == WaterSafetyLevel.SAFE,
-            binding.dotTds,
-            tdsDotPulse
-        )
-        turbidityDotPulse = updateDotPulse(
-            hasReading && quality.turbidityQuality.safetyLevel == WaterSafetyLevel.SAFE,
-            binding.dotTurbidity,
-            turbidityDotPulse
-        )
+        binding.dotPh.setColorFilter(if (online) greenColor else greyColor)
+        binding.dotTds.setColorFilter(if (online) greenColor else greyColor)
+        binding.dotTurbidity.setColorFilter(if (online) greenColor else greyColor)
+
+        phDotPulse = updateDotPulse(online, binding.dotPh, phDotPulse)
+        tdsDotPulse = updateDotPulse(online, binding.dotTds, tdsDotPulse)
+        turbidityDotPulse = updateDotPulse(online, binding.dotTurbidity, turbidityDotPulse)
+    }
+
+    private fun sensorOnlineLabel(sensorNameRes: Int, isOnline: Boolean): String {
+        val statusRes = if (isOnline) R.string.status_online else R.string.status_offline
+        return getString(R.string.sensor_status_format, getString(sensorNameRes), getString(statusRes))
     }
 
     private fun applySensorQuality(
