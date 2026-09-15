@@ -217,18 +217,32 @@ class DashboardFragment : Fragment() {
         }
         binding.tvWaterSafetySummary.setText(summaryRes)
         binding.imgWaterSafetyStatus.setColorFilter(statusColor)
-        if (state.hasSensorReading) {
-            binding.tvSafetyPh.text = getString(R.string.water_safety_ph_format, state.sensorData.ph)
-            binding.tvSafetyTds.text = getString(R.string.water_safety_tds_format, state.sensorData.tds)
-            binding.tvSafetyTurbidity.text = getString(
-                R.string.water_safety_turbidity_format,
-                state.sensorData.turbidity
-            )
-        } else {
-            binding.tvSafetyPh.setText(R.string.water_safety_ph_pending)
-            binding.tvSafetyTds.setText(R.string.water_safety_tds_pending)
-            binding.tvSafetyTurbidity.setText(R.string.water_safety_turbidity_pending)
-        }
+
+        val quality = state.waterQuality
+        applySensorQuality(
+            binding.tvSafetyPh,
+            R.string.sensor_ph_short,
+            phLabelRes(quality.phQuality),
+            quality.phQuality.safetyLevel,
+            state.hasSensorReading,
+            R.string.water_safety_ph_pending
+        )
+        applySensorQuality(
+            binding.tvSafetyTds,
+            R.string.sensor_tds_short,
+            tdsLabelRes(quality.tdsQuality),
+            quality.tdsQuality.safetyLevel,
+            state.hasSensorReading,
+            R.string.water_safety_tds_pending
+        )
+        applySensorQuality(
+            binding.tvSafetyTurbidity,
+            R.string.sensor_turbidity_short,
+            turbidityLabelRes(quality.turbidityQuality),
+            quality.turbidityQuality.safetyLevel,
+            state.hasSensorReading,
+            R.string.water_safety_turbidity_pending
+        )
 
         if (previousWaterSafety != null && previousWaterSafety != safety) {
             AnimationUtils.pulseView(binding.tvWaterSafetyStatus, scalePeak = 1.06f)
@@ -277,27 +291,28 @@ class DashboardFragment : Fragment() {
         val quality = state.waterQuality
         val hasReading = state.hasSensorReading
 
-        applySensorQuality(
-            binding.tvPhStatus,
-            R.string.sensor_ph_short,
-            phLabelRes(quality.phQuality),
-            quality.phQuality.safetyLevel,
-            hasReading
+        binding.tvPhStatus.text = if (hasReading) {
+            getString(R.string.water_safety_ph_format, state.sensorData.ph)
+        } else {
+            getString(R.string.water_safety_ph_pending)
+        }
+        binding.tvTdsStatus.text = if (hasReading) {
+            getString(R.string.water_safety_tds_format, state.sensorData.tds)
+        } else {
+            getString(R.string.water_safety_tds_pending)
+        }
+        binding.tvTurbidityStatus.text = if (hasReading) {
+            getString(R.string.water_safety_turbidity_format, state.sensorData.turbidity)
+        } else {
+            getString(R.string.water_safety_turbidity_pending)
+        }
+        val valueColor = ContextCompat.getColor(
+            requireContext(),
+            if (hasReading) R.color.text_dark else R.color.status_grey
         )
-        applySensorQuality(
-            binding.tvTdsStatus,
-            R.string.sensor_tds_short,
-            tdsLabelRes(quality.tdsQuality),
-            quality.tdsQuality.safetyLevel,
-            hasReading
-        )
-        applySensorQuality(
-            binding.tvTurbidityStatus,
-            R.string.sensor_turbidity_short,
-            turbidityLabelRes(quality.turbidityQuality),
-            quality.turbidityQuality.safetyLevel,
-            hasReading
-        )
+        binding.tvPhStatus.setTextColor(valueColor)
+        binding.tvTdsStatus.setTextColor(valueColor)
+        binding.tvTurbidityStatus.setTextColor(valueColor)
 
         binding.dotPh.setColorFilter(sensorRowColor(quality.phQuality.safetyLevel, hasReading))
         binding.dotTds.setColorFilter(sensorRowColor(quality.tdsQuality.safetyLevel, hasReading))
@@ -327,10 +342,14 @@ class DashboardFragment : Fragment() {
         sensorNameRes: Int,
         labelRes: Int,
         safetyLevel: WaterSafetyLevel,
-        hasReading: Boolean
+        hasReading: Boolean,
+        pendingRes: Int
     ) {
-        val label = if (hasReading) getString(labelRes) else getString(R.string.status_offline)
-        view.text = getString(R.string.sensor_status_format, getString(sensorNameRes), label)
+        view.text = if (hasReading) {
+            getString(R.string.sensor_status_format, getString(sensorNameRes), getString(labelRes))
+        } else {
+            getString(pendingRes)
+        }
         view.setTextColor(sensorRowColor(safetyLevel, hasReading))
     }
 

@@ -263,7 +263,7 @@ after being seen pause accrual rather than simulating on top of measured data.
   time" whenever this path is active.
 
 **Later (phase 3 — app parity):**
-- ~~Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold~~ — superseded: the Dashboard Sensor Status card now shows Monitoring-style per-sensor quality labels (Neutral/Acidic/Alkaline, Excellent/Good/Poor/Very Low, Clear/Slightly Turbid/Turbid) computed by `WaterQualityEvaluator` over live RTDB data, with dots/labels colored by safety level and rows reading "Offline" until a real snapshot arrives. The mock `SensorStatus` model and `MockSensorRepository.sensorStatus` flow were removed
+- ~~Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold~~ — superseded: the Dashboard Water Safety card now shows Monitoring-style per-sensor quality labels (Neutral/Acidic/Alkaline, Excellent/Good/Poor/Very Low, Clear/Slightly Turbid/Turbid) computed by `WaterQualityEvaluator` over live RTDB data and colored by safety level, while the Sensor Status card shows the live readings (pH/TDS/turbidity values) with dots colored by safety level. The mock `SensorStatus` model and `MockSensorRepository.sensorStatus` flow were removed
 - Optional publish float-switch state for UI visibility
 - Replace remaining `MockSensorRepository` usage (valve toggles, simulated speed/voltage)
 - Optional `SensorRepository` interface + DI for mock vs production builds
