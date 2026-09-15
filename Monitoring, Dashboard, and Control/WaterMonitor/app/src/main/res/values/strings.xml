@@ -29,10 +29,10 @@
     <string name="status_neutral">Neutral</string>
     <string name="status_acidic">Acidic</string>
     <string name="status_alkaline">Alkaline</string>
-    <string name="status_excellent">Excellent</string>
-    <string name="status_good">Good</string>
-    <string name="status_poor">Poor</string>
-    <string name="status_very_low">Very Low</string>
+    <string name="status_excellent">Ideal Solids</string>
+    <string name="status_good">Slightly High Solids</string>
+    <string name="status_poor">Too High Solids</string>
+    <string name="status_very_low">Very Low Solids</string>
     <string name="status_clear">Clear</string>
     <string name="status_slightly_turbid">Slightly Turbid</string>
     <string name="status_turbid">Turbid</string>

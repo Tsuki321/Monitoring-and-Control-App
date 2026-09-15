@@ -32,10 +32,10 @@
     <string name="status_neutral">Neutral</string>
     <string name="status_acidic">Asidiko</string>
     <string name="status_alkaline">Alkalina</string>
-    <string name="status_excellent">Napakahusay</string>
-    <string name="status_good">Maganda</string>
-    <string name="status_poor">Mahina</string>
-    <string name="status_very_low">Napakababa</string>
+    <string name="status_excellent">Ideyal na Solids</string>
+    <string name="status_good">Bahagyang Mataas na Solids</string>
+    <string name="status_poor">Sobrang Mataas na Solids</string>
+    <string name="status_very_low">Napakababang Solids</string>
     <string name="status_clear">Malinaw</string>
     <string name="status_slightly_turbid">Bahagyang Malabo</string>
     <string name="status_turbid">Malabo</string>
