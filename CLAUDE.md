@@ -106,7 +106,7 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 ### Data Flow
 
 - **Sensor readings (Monitoring):** `FirebaseRealtimeSensorRepository.sensorDataFlow` → `MonitoringViewModel` → `StateFlow` → `MonitoringFragment` (animated count-ups + tank/leak card)
-- **Tank + leak status:** RTDB `/sensors` fields `tankLevel`, `tankDistanceMm`, `tankWarning`, `rainDetected` → `SensorData` → Monitoring tank card; `rainDetected` also feeds the Dashboard system status card. App maps firmware key `rainDetected` → domain field `leakDetected` (moisture/leak sensor, not weather). Tank level is shown on Monitoring only — the Dashboard Pump Status card lists leak + Pump A/B.
+- **Tank + leak status:** RTDB `/sensors` fields `tankLevel`, `tankDistanceMm`, `tankWarning`, `rainDetected` → `SensorData` → Monitoring tank card; `rainDetected` also feeds the Dashboard system status card. App maps firmware key `rainDetected` → domain field `leakDetected` (moisture/leak sensor, not weather). Tank level is shown on Monitoring only — the Dashboard Pump Status card lists leak + the two pumps (display names: Intake Pump = Pump A, Five Stage Pump = Pump B; RTDB keys remain `pumpA`/`pumpB`).
 - **Pump control (bidirectional):**
   - App reads actual relay states: `FirebaseRealtimeSensorRepository.pumpControlFlow` (listens to `/status`) → `ControlViewModel.pumpControlState` → `ControlFragment` (switches reflect actual pump on/off)
   - App sends commands: `ControlFragment` → `ControlViewModel.togglePumpA/B()` → `FirebaseRealtimeSensorRepository.setPumpA/B()` (writes to `/control/pumpA` or `/control/pumpB`)
@@ -263,7 +263,7 @@ after being seen pause accrual rather than simulating on top of measured data.
   time" whenever this path is active.
 
 **Later (phase 3 — app parity):**
-- Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold
+- ~~Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold~~ — superseded: the Dashboard Sensor Status card now shows Monitoring-style per-sensor quality labels (Neutral/Acidic/Alkaline, Excellent/Good/Poor/Very Low, Clear/Slightly Turbid/Turbid) computed by `WaterQualityEvaluator` over live RTDB data, with dots/labels colored by safety level and rows reading "Offline" until a real snapshot arrives. The mock `SensorStatus` model and `MockSensorRepository.sensorStatus` flow were removed
 - Optional publish float-switch state for UI visibility
 - Replace remaining `MockSensorRepository` usage (valve toggles, simulated speed/voltage)
 - Optional `SensorRepository` interface + DI for mock vs production builds

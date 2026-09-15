@@ -192,7 +192,7 @@
                                 android:id="@+id/tvPumpAStatus"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Pump A: OFF"
+                                android:text="Intake Pump: OFF"
                                 android:textSize="15sp"
                                 android:textColor="@color/status_grey"
                                 android:fontFamily="sans-serif-medium" />
@@ -215,7 +215,7 @@
                                 android:id="@+id/tvPumpBStatus"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Pump B: OFF"
+                                android:text="Five Stage Pump: OFF"
                                 android:textSize="15sp"
                                 android:textColor="@color/status_grey"
                                 android:fontFamily="sans-serif-medium" />
@@ -263,10 +263,10 @@
                             android:layout_marginEnd="10dp" />
 
                         <TextView
-                            android:id="@+id/tvPhOnline"
+                            android:id="@+id/tvPhStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="pH: Online"
+                            android:text="pH: --"
                             android:textSize="14sp"
                             android:textColor="@color/text_dark" />
 
@@ -288,10 +288,10 @@
                             android:layout_marginEnd="10dp" />
 
                         <TextView
-                            android:id="@+id/tvTdsOnline"
+                            android:id="@+id/tvTdsStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="TDS: Online"
+                            android:text="TDS: --"
                             android:textSize="14sp"
                             android:textColor="@color/text_dark" />
 
@@ -312,10 +312,10 @@
                             android:layout_marginEnd="10dp" />
 
                         <TextView
-                            android:id="@+id/tvTurbidityOnline"
+                            android:id="@+id/tvTurbidityStatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Turbidity: Online"
+                            android:text="Turbidity: --"
                             android:textSize="14sp"
                             android:textColor="@color/text_dark" />
 

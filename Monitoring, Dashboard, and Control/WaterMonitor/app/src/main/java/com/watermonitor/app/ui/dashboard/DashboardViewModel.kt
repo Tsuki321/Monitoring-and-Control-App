@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.watermonitor.app.data.model.PumpState
 import com.watermonitor.app.data.model.SensorData
-import com.watermonitor.app.data.model.SensorStatus
 import com.watermonitor.app.data.model.WaterQualityAssessment
 import com.watermonitor.app.data.model.WaterQualityEvaluator
 import com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository
@@ -18,7 +17,6 @@ import kotlinx.coroutines.launch
 
 data class DashboardUiState(
     val pumpState: PumpState = PumpState(),
-    val sensorStatus: SensorStatus = SensorStatus(),
     val sensorData: SensorData = SensorData(),
     val waterQuality: WaterQualityAssessment = WaterQualityEvaluator.evaluate(sensorData)
 ) {
@@ -30,12 +28,10 @@ class DashboardViewModel : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = combine(
         MockSensorRepository.pumpState,
-        MockSensorRepository.sensorStatus,
         FirebaseRealtimeSensorRepository.sensorDataFlow
-    ) { pump, sensors, sensorData ->
+    ) { pump, sensorData ->
         DashboardUiState(
             pumpState = pump,
-            sensorStatus = sensors,
             sensorData = sensorData,
             waterQuality = WaterQualityEvaluator.evaluate(sensorData)
         )

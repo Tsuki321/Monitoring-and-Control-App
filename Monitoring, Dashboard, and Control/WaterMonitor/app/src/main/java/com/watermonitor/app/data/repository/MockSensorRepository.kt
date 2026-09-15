@@ -1,7 +1,6 @@
 package com.watermonitor.app.data.repository
 
 import com.watermonitor.app.data.model.PumpState
-import com.watermonitor.app.data.model.SensorStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,9 +18,6 @@ object MockSensorRepository {
 
     private val _pumpState = MutableStateFlow(PumpState())
     val pumpState: StateFlow<PumpState> = _pumpState.asStateFlow()
-
-    private val _sensorStatus = MutableStateFlow(SensorStatus())
-    val sensorStatus: StateFlow<SensorStatus> = _sensorStatus.asStateFlow()
 
     init {
         // Pump monitoring simulation — updates speed and voltage every 500ms when pumps are on

@@ -33,13 +33,16 @@
     <string name="status_good">Good</string>
     <string name="status_poor">Poor</string>
     <string name="status_very_low">Very Low</string>
+    <string name="status_clear">Clear</string>
+    <string name="status_slightly_turbid">Slightly Turbid</string>
+    <string name="status_turbid">Turbid</string>
     <string name="status_online">Online</string>
     <string name="status_offline">Offline</string>
 
     <!-- Dashboard -->
     <string name="tank_level_label">Tank Level</string>
-    <string name="pump_a_label">Pump A</string>
-    <string name="pump_b_label">Pump B</string>
+    <string name="pump_a_label">Intake Pump</string>
+    <string name="pump_b_label">Five Stage Pump</string>
     <string name="sensor_status_title">Sensor Status</string>
     <string name="btn_go_monitoring">Go to Monitoring</string>
     <string name="btn_go_control">Go to Control</string>
@@ -81,8 +84,8 @@
     <string name="water_safety_turbidity_pending">Turbidity: --</string>
 
     <!-- Control screen -->
-    <string name="control_pump_a">Pump A</string>
-    <string name="control_pump_b">Pump B</string>
+    <string name="control_pump_a">Intake Pump</string>
+    <string name="control_pump_b">Five Stage Pump</string>
     <string name="control_valve_main">Main Valve</string>
     <string name="control_valve_bypass">Bypass Valve</string>
     <string name="control_mode">Mode</string>

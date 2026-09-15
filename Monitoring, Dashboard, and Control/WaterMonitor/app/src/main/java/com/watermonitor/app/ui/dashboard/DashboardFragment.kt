@@ -16,7 +16,10 @@ import com.watermonitor.app.R
 import com.watermonitor.app.data.model.FilterCondition
 import com.watermonitor.app.data.model.FilterHealthState
 import com.watermonitor.app.data.model.FilterSpecs
+import com.watermonitor.app.data.model.PhQuality
 import com.watermonitor.app.data.model.RuntimeSource
+import com.watermonitor.app.data.model.TdsQuality
+import com.watermonitor.app.data.model.TurbidityQuality
 import com.watermonitor.app.data.model.WaterSafetyLevel
 import com.watermonitor.app.data.repository.FilterHealthRepository
 import com.watermonitor.app.databinding.FragmentDashboardBinding
@@ -36,7 +39,7 @@ class DashboardFragment : Fragment() {
 
     private val filterSummaryRows = mutableListOf<View>()
 
-    // Breathing-pulse animators for the online sensor dots (null when offline)
+    // Breathing-pulse animators for the sensor status dots (null when status is not SAFE)
     private var phDotPulse: Animator? = null
     private var tdsDotPulse: Animator? = null
     private var turbidityDotPulse: Animator? = null
@@ -173,7 +176,7 @@ class DashboardFragment : Fragment() {
 
                 renderWaterSafety(state)
                 renderSystemStatus(state)
-                renderSensorConnections(state)
+                renderSensorStatus(state)
             }
         }
     }
@@ -270,28 +273,98 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    private fun renderSensorConnections(state: DashboardUiState) {
-        val greenColor = ContextCompat.getColor(requireContext(), R.color.status_green)
-        val greyColor = ContextCompat.getColor(requireContext(), R.color.status_grey)
+    private fun renderSensorStatus(state: DashboardUiState) {
+        val quality = state.waterQuality
+        val hasReading = state.hasSensorReading
 
-        binding.dotPh.setColorFilter(if (state.sensorStatus.phOnline) greenColor else greyColor)
-        binding.dotTds.setColorFilter(if (state.sensorStatus.tdsOnline) greenColor else greyColor)
-        binding.dotTurbidity.setColorFilter(if (state.sensorStatus.turbidityOnline) greenColor else greyColor)
+        applySensorQuality(
+            binding.tvPhStatus,
+            R.string.sensor_ph_short,
+            phLabelRes(quality.phQuality),
+            quality.phQuality.safetyLevel,
+            hasReading
+        )
+        applySensorQuality(
+            binding.tvTdsStatus,
+            R.string.sensor_tds_short,
+            tdsLabelRes(quality.tdsQuality),
+            quality.tdsQuality.safetyLevel,
+            hasReading
+        )
+        applySensorQuality(
+            binding.tvTurbidityStatus,
+            R.string.sensor_turbidity_short,
+            turbidityLabelRes(quality.turbidityQuality),
+            quality.turbidityQuality.safetyLevel,
+            hasReading
+        )
 
-        phDotPulse = updateDotPulse(state.sensorStatus.phOnline, binding.dotPh, phDotPulse)
-        tdsDotPulse = updateDotPulse(state.sensorStatus.tdsOnline, binding.dotTds, tdsDotPulse)
+        binding.dotPh.setColorFilter(sensorRowColor(quality.phQuality.safetyLevel, hasReading))
+        binding.dotTds.setColorFilter(sensorRowColor(quality.tdsQuality.safetyLevel, hasReading))
+        binding.dotTurbidity.setColorFilter(
+            sensorRowColor(quality.turbidityQuality.safetyLevel, hasReading)
+        )
+
+        phDotPulse = updateDotPulse(
+            hasReading && quality.phQuality.safetyLevel == WaterSafetyLevel.SAFE,
+            binding.dotPh,
+            phDotPulse
+        )
+        tdsDotPulse = updateDotPulse(
+            hasReading && quality.tdsQuality.safetyLevel == WaterSafetyLevel.SAFE,
+            binding.dotTds,
+            tdsDotPulse
+        )
         turbidityDotPulse = updateDotPulse(
-            state.sensorStatus.turbidityOnline,
+            hasReading && quality.turbidityQuality.safetyLevel == WaterSafetyLevel.SAFE,
             binding.dotTurbidity,
             turbidityDotPulse
         )
+    }
 
-        binding.tvPhOnline.text = sensorOnlineLabel(R.string.sensor_ph_short, state.sensorStatus.phOnline)
-        binding.tvTdsOnline.text = sensorOnlineLabel(R.string.sensor_tds_short, state.sensorStatus.tdsOnline)
-        binding.tvTurbidityOnline.text = sensorOnlineLabel(
-            R.string.sensor_turbidity_short,
-            state.sensorStatus.turbidityOnline
-        )
+    private fun applySensorQuality(
+        view: TextView,
+        sensorNameRes: Int,
+        labelRes: Int,
+        safetyLevel: WaterSafetyLevel,
+        hasReading: Boolean
+    ) {
+        val label = if (hasReading) getString(labelRes) else getString(R.string.status_offline)
+        view.text = getString(R.string.sensor_status_format, getString(sensorNameRes), label)
+        view.setTextColor(sensorRowColor(safetyLevel, hasReading))
+    }
+
+    private fun sensorRowColor(safetyLevel: WaterSafetyLevel, hasReading: Boolean): Int {
+        val colorRes = if (!hasReading) {
+            R.color.status_grey
+        } else {
+            when (safetyLevel) {
+                WaterSafetyLevel.SAFE -> R.color.status_green
+                WaterSafetyLevel.CAUTION -> R.color.status_yellow
+                WaterSafetyLevel.UNSAFE -> R.color.status_red
+                WaterSafetyLevel.UNKNOWN -> R.color.status_grey
+            }
+        }
+        return ContextCompat.getColor(requireContext(), colorRes)
+    }
+
+    private fun phLabelRes(quality: PhQuality): Int = when (quality) {
+        PhQuality.ACIDIC -> R.string.status_acidic
+        PhQuality.ACCEPTABLE -> R.string.status_neutral
+        PhQuality.ALKALINE -> R.string.status_alkaline
+    }
+
+    private fun tdsLabelRes(quality: TdsQuality): Int = when (quality) {
+        TdsQuality.VERY_LOW -> R.string.status_very_low
+        TdsQuality.EXCELLENT -> R.string.status_excellent
+        TdsQuality.GOOD -> R.string.status_good
+        TdsQuality.POOR -> R.string.status_poor
+    }
+
+    private fun turbidityLabelRes(quality: TurbidityQuality): Int = when (quality) {
+        TurbidityQuality.CLEAR -> R.string.status_clear
+        TurbidityQuality.SLIGHTLY_TURBID -> R.string.status_slightly_turbid
+        TurbidityQuality.TURBID -> R.string.status_turbid
     }
 
     private fun updateDotPulse(isOnline: Boolean, dot: View, current: Animator?): Animator? {
@@ -301,11 +374,6 @@ class DashboardFragment : Fragment() {
             AnimationUtils.stopBreathingPulse(current, dot)
             null
         }
-    }
-
-    private fun sensorOnlineLabel(sensorNameRes: Int, isOnline: Boolean): String {
-        val statusRes = if (isOnline) R.string.status_online else R.string.status_offline
-        return getString(R.string.sensor_status_format, getString(sensorNameRes), getString(statusRes))
     }
 
     override fun onDestroyView() {
