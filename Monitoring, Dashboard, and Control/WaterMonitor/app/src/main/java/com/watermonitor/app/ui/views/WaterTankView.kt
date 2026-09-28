@@ -354,10 +354,15 @@ class WaterTankView @JvmOverloads constructor(
         val ambientAmp = BASE_AMBIENT_AMP * (1f + AMBIENT_SLOSH_GAIN * slosh.sloshIntensity)
         val bottom = tankRect.bottom
 
-        // Splash energy blends sustained sloshing with the instantaneous shake, so both a hard flick
-        // and a vigorous rock throw water; a cooldown (shorter the harder the shake) paces the bursts.
+        // Splash energy is dominated by how fast the surface is *rocking* (angular velocity), since a
+        // rock is rotation — the gravity low-pass absorbs most of its lateral-translation signal — with
+        // the instantaneous lateral shake and smoothed intensity added on. A cooldown (shorter the
+        // harder the motion) paces the bursts.
         splashCooldown -= dt
-        val energy = slosh.sloshIntensity + abs(lastLateralAccel) / SPLASH_ACCEL_REF
+        val rockRate = abs(slosh.angularVelocity)
+        val energy = rockRate / SPLASH_ANGVEL_REF +
+            abs(lastLateralAccel) / SPLASH_ACCEL_REF +
+            slosh.sloshIntensity * SPLASH_INTENSITY_WEIGHT
         if (energy > SPLASH_TRIGGER && splashCooldown <= 0f && displayFill > 5f) {
             spawnSplash(energy, w, cx, waterTop, slope, ambientAmp, bottom)
             splashCooldown = (SPLASH_COOLDOWN_MAX - energy * SPLASH_COOLDOWN_FALLOFF)
@@ -390,7 +395,8 @@ class WaterTankView @JvmOverloads constructor(
         ambientAmp: Float,
         bottom: Float
     ) {
-        val flingDir = if (lastLateralAccel >= 0f) 1f else -1f
+        // Fling toward the edge the water is piling onto (matches edgeFrac); mostly upward with scatter.
+        val flingDir = if (slosh.tiltRadians >= 0f) 1f else -1f
         val edgeFrac = if (slosh.tiltRadians >= 0f) 0.82f else 0.18f
         val count = (SPLASH_MIN_DROPS + energy * SPLASH_DROPS_PER_ENERGY).toInt()
             .coerceIn(SPLASH_MIN_DROPS, SPLASH_MAX_BURST)
@@ -472,13 +478,6 @@ class WaterTankView @JvmOverloads constructor(
             canvas.drawPath(edgePath, shimmerPaint)
         }
 
-        // Splash droplets flung off the surface when the tank is shaken; fade as they arc and fall.
-        for (d in droplets) {
-            val a = (d.life / d.maxLife).coerceIn(0f, 1f)
-            dropletPaint.alpha = (a * SPLASH_MAX_ALPHA).toInt().coerceIn(0, 255)
-            canvas.drawCircle(d.x, d.y, d.radius, dropletPaint)
-        }
-
         // Subtle level markers on the right edge — a fixed scale, so they stay horizontal
         val tickRight = tankRect.right - 8f
         val tickLeft = tickRight - w * 0.08f
@@ -496,6 +495,14 @@ class WaterTankView @JvmOverloads constructor(
             else -> "Level"
         }
         canvas.drawText(label, cx, textY + labelPaint.textSize + 4f, labelPaint)
+
+        // Splash droplets flung off the surface when the tank is rocked; drawn last (over the water and
+        // the readout, under the border) and fading as they arc and fall.
+        for (d in droplets) {
+            val a = (d.life / d.maxLife).coerceIn(0f, 1f)
+            dropletPaint.alpha = (a * SPLASH_MAX_ALPHA).toInt().coerceIn(0, 255)
+            canvas.drawCircle(d.x, d.y, d.radius, dropletPaint)
+        }
 
         canvas.restore()
 
@@ -652,39 +659,44 @@ class WaterTankView @JvmOverloads constructor(
         private const val ROCK_STIR_GAIN = 0.20f
 
         // --- Splash droplets ---------------------------------------------------------------------
-        /** Motion energy (sloshIntensity + shake/ref) above which the surface starts flinging water. */
-        private const val SPLASH_TRIGGER = 0.6f
+        /** Combined motion energy above which the surface starts flinging water. Low, so a moderate
+         *  rock already splashes. */
+        private const val SPLASH_TRIGGER = 0.45f
+        /** rad/s of surface rocking that maps to ~1.0 of splash energy (the dominant term). */
+        private const val SPLASH_ANGVEL_REF = 1.1f
         /** m/s² of lateral shake that maps to ~1.0 of splash energy. */
-        private const val SPLASH_ACCEL_REF = 14f
-        /** Seconds between bursts: capped high, dropping toward the min the harder the shake. */
-        private const val SPLASH_COOLDOWN_MAX = 0.14f
+        private const val SPLASH_ACCEL_REF = 12f
+        /** Weight of the smoothed slosh intensity in the energy sum. */
+        private const val SPLASH_INTENSITY_WEIGHT = 0.5f
+        /** Seconds between bursts: capped high, dropping toward the min the harder the motion. */
+        private const val SPLASH_COOLDOWN_MAX = 0.10f
         private const val SPLASH_COOLDOWN_MIN = 0.03f
-        private const val SPLASH_COOLDOWN_FALLOFF = 0.10f
+        private const val SPLASH_COOLDOWN_FALLOFF = 0.06f
         /** Droplets per burst scale with energy, between these bounds. */
-        private const val SPLASH_MIN_DROPS = 2
-        private const val SPLASH_MAX_BURST = 9
-        private const val SPLASH_DROPS_PER_ENERGY = 6f
+        private const val SPLASH_MIN_DROPS = 3
+        private const val SPLASH_MAX_BURST = 12
+        private const val SPLASH_DROPS_PER_ENERGY = 5f
         /** Absolute ceiling on live droplets, so a long shake can't unbound the list. */
-        private const val MAX_DROPLETS = 44
+        private const val MAX_DROPLETS = 60
         /** How wide (fraction of tank width) a burst scatters around the agitated edge. */
         private const val SPLASH_SPREAD_FRAC = 0.5f
         /** Upward launch speed (px/s) before the per-burst energy boost. */
         private const val SPLASH_LAUNCH_MIN = 260f
         private const val SPLASH_LAUNCH_SPAN = 320f
-        /** Sideways speed in the fling direction (px/s), plus symmetric scatter. */
-        private const val SPLASH_H_MIN = 40f
-        private const val SPLASH_H_SPAN = 180f
-        private const val SPLASH_H_JITTER = 140f
-        /** Droplet radius (px). */
-        private const val SPLASH_R_MIN = 1.6f
-        private const val SPLASH_R_SPAN = 3.0f
+        /** Sideways speed in the fling direction (px/s), plus symmetric scatter. Mostly vertical. */
+        private const val SPLASH_H_MIN = 20f
+        private const val SPLASH_H_SPAN = 140f
+        private const val SPLASH_H_JITTER = 160f
+        /** Droplet radius (px) — large enough to read as separated water on a dense screen. */
+        private const val SPLASH_R_MIN = 3.0f
+        private const val SPLASH_R_SPAN = 4.0f
         /** Droplet lifetime (s) — also the fade-out window. */
-        private const val SPLASH_LIFE_MIN = 0.45f
-        private const val SPLASH_LIFE_SPAN = 0.45f
+        private const val SPLASH_LIFE_MIN = 0.55f
+        private const val SPLASH_LIFE_SPAN = 0.5f
         /** Downward pull on airborne droplets (px/s²) — tuned to read as water, not confetti. */
         private const val SPLASH_GRAVITY_PX = 2600f
         /** Peak droplet opacity at spawn (0–255), scaled down by remaining life. */
-        private const val SPLASH_MAX_ALPHA = 230f
+        private const val SPLASH_MAX_ALPHA = 255f
 
         private const val SURFACE_STEP = 6f
 
