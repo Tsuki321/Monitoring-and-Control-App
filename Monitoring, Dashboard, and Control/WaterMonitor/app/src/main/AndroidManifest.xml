@@ -3,6 +3,12 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Water sloshes with device motion. Optional so the app still installs on the rare device
+         without an accelerometer — there the surface simply stays level. No runtime permission. -->
+    <uses-feature
+        android:name="android.hardware.sensor.accelerometer"
+        android:required="false" />
+
     <application
         android:name=".HydroSenseApp"
         android:allowBackup="true"

@@ -46,9 +46,27 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+        working-directory: "Monitoring, Dashboard, and Control/WaterMonitor"
+
+      - name: Upload unit test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: "Monitoring, Dashboard, and Control/WaterMonitor/app/build/reports/tests/testDebugUnitTest"
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: Build signed Debug APK
         run: ./gradlew assembleDebug --stacktrace
         working-directory: "Monitoring, Dashboard, and Control/WaterMonitor"
+        env:
+          SIGNING_STORE_FILE: keystore.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
 
       - name: Build signed Release APK
         run: ./gradlew assembleRelease --stacktrace
