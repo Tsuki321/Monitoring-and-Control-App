@@ -27,12 +27,19 @@ import kotlin.math.sqrt
 class WaterSloshSimulator(
     /** Slosh oscillation rate. ~1 Hz reads as water rather than jelly (fast) or oil (slow). */
     private val naturalFrequencyHz: Float = 0.9f,
-    /** < 1 is under-damped, so the surface overshoots the rest angle and rocks back — the slosh. */
-    private val dampingRatio: Float = 0.28f,
+    /**
+     * < 1 is under-damped, so the surface overshoots the rest angle and rocks back — the slosh.
+     * Lightly damped (0.18) so it visibly rocks several times before settling, like water in a
+     * small tank, instead of easing flatly to level.
+     */
+    private val dampingRatio: Float = 0.18f,
     /** Hard cap on how far the surface tilts, so extreme rolls never invert the water polygon. */
     private val maxTiltRadians: Float = DEFAULT_MAX_TILT,
-    /** How hard a lateral shake kicks the surface (rad/s² per m/s²). */
-    private val sloshGain: Float = 0.02f
+    /**
+     * How hard a lateral shake kicks the surface (rad/s² per m/s²). Sized so translating or
+     * flicking the phone — not just rolling it — visibly sloshes the water.
+     */
+    private val sloshGain: Float = 0.09f
 ) {
     /** Current surface tilt in radians (0 = level with the screen's horizontal). */
     var tiltRadians = 0f
@@ -135,8 +142,9 @@ class WaterSloshSimulator(
         // runtime, not compile time. Marking it `const val` fails to compile under Kotlin 2.1.0.
         private val TWO_PI = (2.0 * Math.PI).toFloat()
 
-        /** ~28°. Enough to read as a real tilt without the water clipping out of a low tank. */
-        val DEFAULT_MAX_TILT = Math.toRadians(28.0).toFloat()
+        /** ~32°. A dramatic-but-safe tilt: enough to pool convincingly to one side without the
+         *  water polygon clipping out of a shallow tank. */
+        val DEFAULT_MAX_TILT = Math.toRadians(32.0).toFloat()
 
         /** Never integrate more than one 30 fps frame per step, whatever the real delta was. */
         private const val MAX_STEP = 1f / 30f

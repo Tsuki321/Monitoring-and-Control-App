@@ -447,10 +447,10 @@ class WaterTankView @JvmOverloads constructor(
         /** Ripple angular speed, preserving the original ~2.5 s surface-wave loop. */
         private val WAVE_SPEED = TWO_PI / 2.5f
 
-        private const val BASE_WAVE_AMPLITUDE = 6f
+        private const val BASE_WAVE_AMPLITUDE = 10f
 
-        /** Ripple amplitude scales up to ~2.2× at peak agitation for a choppier surface. */
-        private const val SLOSH_WAVE_GAIN = 1.2f
+        /** Ripple amplitude scales up to ~3× at peak agitation for a much choppier surface. */
+        private const val SLOSH_WAVE_GAIN = 2.0f
 
         private const val SURFACE_STEP = 6f
 
