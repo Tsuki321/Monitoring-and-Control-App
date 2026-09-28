@@ -39,7 +39,18 @@ class WaterSloshSimulator(
      * How hard a lateral shake kicks the surface (rad/s² per m/s²). Sized so translating or
      * flicking the phone — not just rolling it — visibly sloshes the water.
      */
-    private val sloshGain: Float = 0.09f
+    private val sloshGain: Float = 0.09f,
+    /**
+     * Scales how far the surface follows a real roll. 1 keeps it level with the ground; < 1 makes
+     * it under-rotate so incidental handling barely disturbs it. Default 1 preserves old behaviour.
+     */
+    private val restAngleGain: Float = 1f,
+    /**
+     * Soft deadzone (radians) applied to the roll before driving the surface: rolls smaller than
+     * this leave the water flat, and past it the response ramps in continuously (no snap). Lets the
+     * caller demand an *intentional* rotation before the water moves. Default 0 is a no-op.
+     */
+    private val rollDeadzoneRadians: Float = 0f
 ) {
     /** Current surface tilt in radians (0 = level with the screen's horizontal). */
     var tiltRadians = 0f
@@ -102,7 +113,15 @@ class WaterSloshSimulator(
         // Roll angle of the screen: direction of "down" projected onto the glass. 0 when the phone
         // is held upright in portrait; grows as you roll it left/right.
         val rollAngle = atan2(gx, gy)
-        val restAngle = (uprightWeight * rollAngle).coerceIn(-maxTiltRadians, maxTiltRadians)
+        // Soft deadzone + gain: swallow small rolls so incidental handling doesn't tilt the water,
+        // and (with gain < 1) follow real rotation at less than 1:1. Odd about 0, so mirror symmetry
+        // is preserved. Defaults (deadzone 0, gain 1) leave rollAngle untouched.
+        val gatedRoll = when {
+            rollAngle > rollDeadzoneRadians -> rollAngle - rollDeadzoneRadians
+            rollAngle < -rollDeadzoneRadians -> rollAngle + rollDeadzoneRadians
+            else -> 0f
+        } * restAngleGain
+        val restAngle = (uprightWeight * gatedRoll).coerceIn(-maxTiltRadians, maxTiltRadians)
 
         // Driven, damped spring toward restAngle. Semi-implicit (symplectic) Euler: velocity first,
         // then position from the *new* velocity — noticeably more stable than explicit Euler for an
