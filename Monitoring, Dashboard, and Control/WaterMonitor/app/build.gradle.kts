@@ -88,4 +88,6 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.gson)
     implementation(libs.facebook.login)
+
+    testImplementation(libs.junit)
 }
