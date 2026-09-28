@@ -18,19 +18,21 @@ import android.view.View
 import android.view.animation.DecelerateInterpolator
 import androidx.core.content.ContextCompat
 import com.watermonitor.app.R
+import kotlin.math.abs
 import kotlin.math.sin
 import kotlin.math.tan
 
 /**
  * Animated water tank custom view.
- * Displays a rounded-rect tank with an animated water fill level, a ripple wave on the water
- * surface, and a percentage + status label.
+ * Displays a rounded-rect tank with an animated water fill level, a wavy water surface, and a
+ * percentage + status label.
  *
- * The surface also reacts to the phone's motion: the water tries to stay level with the ground as
- * the device rolls, and a sudden move makes it slosh (overshoot then settle). The physics lives in
- * the framework-free [WaterSloshSimulator]; this view only reads the accelerometer, feeds it in,
- * and renders the tilted surface. Sensors are registered/unregistered with the window lifecycle so
- * the view never listens while off-screen.
+ * The surface reacts to the phone's motion two ways: the whole body rolls to stay level with the
+ * ground and sloshes (overshoot-then-settle) via the framework-free [WaterSloshSimulator], and a
+ * 1-D shallow-water field ([WaterSurfaceWaves]) carries travelling ripples that pile toward the
+ * low edge, reflect off the walls, and interfere — genuinely wavy water rather than a flat tilted
+ * line. This view only reads the accelerometer, feeds both models, and renders the result. Sensors
+ * are registered/unregistered with the window lifecycle so the view never listens while off-screen.
  */
 class WaterTankView @JvmOverloads constructor(
     context: Context,
@@ -45,6 +47,7 @@ class WaterTankView @JvmOverloads constructor(
     private val tankRect = RectF()
     private val bodyPath = Path()
     private val wavePath = Path()
+    private val edgePath = Path()
     private val clipPath = Path()
 
     private val tankBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -63,6 +66,9 @@ class WaterTankView @JvmOverloads constructor(
     private val wavePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
         color = ContextCompat.getColor(context, R.color.tank_water_light)
+        // Translucent so the gradient body shows through as depth; this layer is a surface sheen
+        // riding the waves, not a flat flood-fill over the whole tank.
+        alpha = 105
     }
     private val shimmerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -102,11 +108,17 @@ class WaterTankView @JvmOverloads constructor(
     // Computed once in onSizeChanged; uses the same 20 dp value as card_corner_radius
     private var cornerRadius = 0f
 
-    // Surface ripple phase, advanced by real elapsed time (never a millisecond clock — see below).
-    private var wavePhase = 0f
+    // Ambient ripple phases, advanced by real elapsed time (never a millisecond clock — see below).
+    // These drive a few small procedural sine waves so the surface is always gently wavy, even when
+    // the phone is held still; the physical slosh waves below ride on top of them.
+    private var ambPhase1 = 0f
+    private var ambPhase2 = 0f
 
     // --- Motion / sloshing -------------------------------------------------------------------
     private val slosh = WaterSloshSimulator()
+
+    // Travelling/reflecting surface waves — a simplified shallow-water field driven by phone motion.
+    private val waves = WaterSurfaceWaves()
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
     private val accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -139,7 +151,8 @@ class WaterTankView @JvmOverloads constructor(
                 .coerceIn(0f, MAX_FRAME_DELTA)
             lastFrameTimeNanos = frameTimeNanos
 
-            wavePhase = (wavePhase + deltaSeconds * WAVE_SPEED) % TWO_PI
+            ambPhase1 = (ambPhase1 + deltaSeconds * AMBIENT_SPEED_1) % TWO_PI
+            ambPhase2 = (ambPhase2 + deltaSeconds * AMBIENT_SPEED_2) % TWO_PI
             stepPhysics(deltaSeconds)
             advanceBubbles(deltaSeconds)
 
@@ -194,9 +207,18 @@ class WaterTankView @JvmOverloads constructor(
             }
             val lateralAccel = rx - gravityX
             slosh.update(gravityX, gravityY, gravityZ, lateralAccel, deltaSeconds)
+            // Feed the same lateral motion into the wave field, and let a fast bulk rock stir the
+            // surface near the edge the water is piling toward.
+            waves.driveLateral(lateralAccel, deltaSeconds)
+            if (abs(slosh.angularVelocity) > ROCK_STIR_THRESHOLD) {
+                val edge = if (slosh.tiltRadians >= 0f) 0.9f else 0.1f
+                waves.disturb(edge, slosh.angularVelocity * ROCK_STIR_GAIN)
+            }
+            waves.update(deltaSeconds)
         } else {
-            // No sensor / no sample yet: keep the surface level and still.
+            // No sensor / no sample yet: keep the bulk surface level; ambient ripples still animate.
             slosh.update(0f, SensorManager.GRAVITY_EARTH, 0f, 0f, deltaSeconds)
+            waves.update(deltaSeconds)
         }
     }
 
@@ -306,7 +328,8 @@ class WaterTankView @JvmOverloads constructor(
         // is bounded because the simulator clamps the tilt angle.
         val cx = w / 2f
         val slope = tan(TILT_RENDER_SIGN * slosh.tiltRadians)
-        val waveAmplitude = BASE_WAVE_AMPLITUDE * (1f + SLOSH_WAVE_GAIN * slosh.sloshIntensity)
+        // Ambient ripple grows choppier mid-slosh; a floor keeps the surface always faintly wavy.
+        val ambientAmp = BASE_AMBIENT_AMP * (1f + AMBIENT_SLOSH_GAIN * slosh.sloshIntensity)
 
         // Clip to tank shape — water, wave, AND overlay text all stay inside the rounded border
         canvas.save()
@@ -314,27 +337,27 @@ class WaterTankView @JvmOverloads constructor(
         clipPath.addRoundRect(tankRect, cornerRadius, cornerRadius, Path.Direction.CW)
         canvas.clipPath(clipPath)
 
-        // Draw water body with gradient, under the tilted (un-rippled) surface
-        buildSurfacePath(bodyPath, cx, waterTop, slope, amplitude = 0f, w = w)
+        // Draw the water body up to the full wavy surface (tilt + travelling waves + ambient ripple)
+        buildSurfacePath(bodyPath, cx, waterTop, slope, w, ambientAmp, highlight = false)
         canvas.drawPath(bodyPath, waterPaint)
 
         // Draw rising bubbles within the submerged region for a subtle living effect
         for (b in bubbles) {
-            val surface = waterTop + (b.x - cx) * slope
+            val surface =
+                surfaceAt(b.x, cx, waterTop, slope, w, ambientAmp, highlight = false, bottom = tankRect.bottom)
             if (b.y > surface) {
                 canvas.drawCircle(b.x, b.y, b.radius, bubblePaint)
             }
         }
 
-        // Draw the animated ripple wave on top, following the tilt
-        buildSurfacePath(wavePath, cx, waterTop, slope, amplitude = waveAmplitude, w = w)
+        // Lighter translucent layer hugging just under the surface for a sense of depth
+        buildSurfacePath(wavePath, cx, waterTop, slope, w, ambientAmp, highlight = true)
         canvas.drawPath(wavePath, wavePaint)
 
-        // Draw shimmer line along the tilted water surface for a refined look
-        if (displayFill > 5f) {
-            val leftY = waterTop + (tankRect.left + 10f - cx) * slope
-            val rightY = waterTop + (tankRect.right - 10f - cx) * slope
-            canvas.drawLine(tankRect.left + 10f, leftY, tankRect.right - 10f, rightY, shimmerPaint)
+        // Stroke a shimmer along the very top edge so the highlight follows every wave crest
+        if (displayFill > 3f) {
+            buildTopEdge(edgePath, cx, waterTop, slope, w, ambientAmp)
+            canvas.drawPath(edgePath, shimmerPaint)
         }
 
         // Subtle level markers on the right edge — a fixed scale, so they stay horizontal
@@ -362,49 +385,88 @@ class WaterTankView @JvmOverloads constructor(
     }
 
     /**
-     * Builds a closed polygon: the tilted, optionally-rippled water surface across the top down to
-     * the tank floor. Every surface sample is clamped to the floor so a steep tilt can never push
-     * one edge below the bottom and self-intersect the polygon.
+     * Builds a closed polygon: the wavy water surface across the top down to the tank floor. Every
+     * surface sample is clamped to the floor so a steep tilt or deep trough can never push a point
+     * below the bottom and self-intersect the polygon. [highlight] shifts the surface down a touch
+     * and adds a fine ripple, for the lighter sheen layer drawn over the body.
      */
     private fun buildSurfacePath(
         path: Path,
         cx: Float,
-        baseSurfaceY: Float,
+        waterTop: Float,
         slope: Float,
-        amplitude: Float,
-        w: Float
+        w: Float,
+        ambientAmp: Float,
+        highlight: Boolean
     ) {
         path.reset()
         val bottom = tankRect.bottom
-        path.moveTo(0f, surfaceAt(0f, cx, baseSurfaceY, slope, amplitude, w, bottom))
+        path.moveTo(0f, surfaceAt(0f, cx, waterTop, slope, w, ambientAmp, highlight, bottom))
         var x = SURFACE_STEP
         while (x <= w) {
-            path.lineTo(x, surfaceAt(x, cx, baseSurfaceY, slope, amplitude, w, bottom))
+            path.lineTo(x, surfaceAt(x, cx, waterTop, slope, w, ambientAmp, highlight, bottom))
             x += SURFACE_STEP
         }
         // Pin the exact right edge in case the width isn't a whole number of steps.
-        path.lineTo(w, surfaceAt(w, cx, baseSurfaceY, slope, amplitude, w, bottom))
+        path.lineTo(w, surfaceAt(w, cx, waterTop, slope, w, ambientAmp, highlight, bottom))
         path.lineTo(w, bottom)
         path.lineTo(0f, bottom)
         path.close()
     }
 
+    /** Open polyline tracing just the top (wavy) edge of the water, for the shimmer stroke. */
+    private fun buildTopEdge(
+        path: Path,
+        cx: Float,
+        waterTop: Float,
+        slope: Float,
+        w: Float,
+        ambientAmp: Float
+    ) {
+        path.reset()
+        val bottom = tankRect.bottom
+        path.moveTo(0f, surfaceAt(0f, cx, waterTop, slope, w, ambientAmp, false, bottom))
+        var x = SURFACE_STEP
+        while (x <= w) {
+            path.lineTo(x, surfaceAt(x, cx, waterTop, slope, w, ambientAmp, false, bottom))
+            x += SURFACE_STEP
+        }
+        path.lineTo(w, surfaceAt(w, cx, waterTop, slope, w, ambientAmp, false, bottom))
+    }
+
+    /**
+     * Y of the water surface at pixel [x]: the tilted rest line, minus the physical wave height from
+     * [waves], minus a few small procedural sines ([ambientAt]) so it is always gently wavy. Screen
+     * y grows downward, so a positive height sits higher up (smaller y).
+     */
     private fun surfaceAt(
         x: Float,
         cx: Float,
-        baseSurfaceY: Float,
+        waterTop: Float,
         slope: Float,
-        amplitude: Float,
         w: Float,
+        ambientAmp: Float,
+        highlight: Boolean,
         bottom: Float
     ): Float {
-        val tilted = baseSurfaceY + (x - cx) * slope
-        val ripple = if (amplitude != 0f) {
-            amplitude * sin((x / w * 2 * Math.PI * 2 + wavePhase).toDouble()).toFloat()
-        } else {
-            0f
+        val tilted = waterTop + (x - cx) * slope
+        val frac = if (w > 0f) (x / w).coerceIn(0f, 1f) else 0.5f
+        val physical = waves.heightAt(frac) * WAVE_RENDER_SCALE
+        var y = tilted - physical - ambientAt(frac, ambientAmp)
+        if (highlight) {
+            y += SURFACE_LAYER_PX
+            y -= HIGHLIGHT_RIPPLE * sin((frac * TWO_PI * 6f + ambPhase2).toDouble()).toFloat()
         }
-        return (tilted - ripple).coerceAtMost(bottom)
+        return y.coerceAtMost(bottom)
+    }
+
+    /** A few small sines of differing wavelength/speed summed into an organic, always-moving ripple. */
+    private fun ambientAt(frac: Float, ambientAmp: Float): Float {
+        return ambientAmp * (
+            0.6f * sin((frac * TWO_PI * 2.5f + ambPhase1).toDouble()).toFloat() +
+                0.3f * sin((frac * TWO_PI * 4.3f - ambPhase2).toDouble()).toFloat() +
+                0.2f * sin((frac * TWO_PI * 7.1f + ambPhase1 * 1.7f).toDouble()).toFloat()
+            )
     }
 
     override fun onDetachedFromWindow() {
@@ -433,6 +495,7 @@ class WaterTankView @JvmOverloads constructor(
     private fun resumeIfVisible() {
         if (isAttachedToWindow && windowVisibility == View.VISIBLE) {
             slosh.reset()
+            waves.reset()
             gravityInitialised = false
             hasSensorSample = false
             startAnimation()
@@ -444,13 +507,26 @@ class WaterTankView @JvmOverloads constructor(
     companion object {
         private val TWO_PI = (2.0 * Math.PI).toFloat()
 
-        /** Ripple angular speed, preserving the original ~2.5 s surface-wave loop. */
-        private val WAVE_SPEED = TWO_PI / 2.5f
+        /** Angular speeds of the two ambient ripple layers (slow swell + faster chop). */
+        private val AMBIENT_SPEED_1 = TWO_PI / 3.0f
+        private val AMBIENT_SPEED_2 = TWO_PI / 1.7f
 
-        private const val BASE_WAVE_AMPLITUDE = 10f
+        /** Always-on ambient ripple height (px); the surface is never a dead-flat line. */
+        private const val BASE_AMBIENT_AMP = 7f
 
-        /** Ripple amplitude scales up to ~3× at peak agitation for a much choppier surface. */
-        private const val SLOSH_WAVE_GAIN = 2.0f
+        /** Ambient ripple grows up to ~2.8× taller at peak agitation for a choppier surface. */
+        private const val AMBIENT_SLOSH_GAIN = 1.8f
+
+        /** Pixels per unit of [WaterSurfaceWaves] height — how tall the physical slosh waves render. */
+        private const val WAVE_RENDER_SCALE = 13f
+
+        /** Offset + fine ripple for the lighter surface sheen layer. */
+        private const val SURFACE_LAYER_PX = 7f
+        private const val HIGHLIGHT_RIPPLE = 3f
+
+        /** Bulk rock (rad/s) above which the rocking stirs extra surface chop, and how hard. */
+        private const val ROCK_STIR_THRESHOLD = 0.15f
+        private const val ROCK_STIR_GAIN = 0.20f
 
         private const val SURFACE_STEP = 6f
 
