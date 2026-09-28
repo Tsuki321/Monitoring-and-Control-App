@@ -39,6 +39,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Sign debug builds with the release keystore whenever CI supplies it, so the debug
+            // APK's certificate SHA-1 matches the fingerprint registered in Firebase
+            // (google-services.json) and Google Sign-In works on sideloaded debug builds. Without
+            // this, CI generates a throwaway debug keystore per run and Credential Manager reports
+            // "no credentials available". Locally (no signing env vars) this is skipped and the
+            // default Android debug keystore is used, so on-device Android Studio builds still work.
+            if (hasSigningConfig) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
