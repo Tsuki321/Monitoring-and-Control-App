@@ -136,7 +136,9 @@ class LegalDialogTest {
 
     @Test
     fun standaloneDocumentsFitAndRemainScrollableInSmallWindows() {
-        for (showDocument in listOf(LegalDialog::showTerms, LegalDialog::showPrivacyPolicy)) {
+        for (showDocument in listOf(
+            LegalDialog::showTerms, LegalDialog::showPrivacyPolicy, LegalDialog::showLicense
+        )) {
             showDocument(activity)
             val dialog = latestDialog()
             // AppCompat also has a hidden scroller for its default message panel.

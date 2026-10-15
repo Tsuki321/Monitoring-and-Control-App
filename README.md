@@ -6,7 +6,7 @@
 ![Min SDK](https://img.shields.io/badge/Min%20SDK-26%20(Android%208.0)-orange)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.1.0-7F52FF?logo=kotlin&logoColor=white)
 
-A native **Android application** for real-time water quality monitoring and system control. WaterMonitor provides an ocean-themed, animated UI to visualise sensor data (pH, TDS, Turbidity), track tank levels, and toggle pumps and valves — all powered by a clean MVVM architecture.
+A native **Android application** accompanying **Group 1's water filtration thesis project**. HydroSense provides an ocean-themed, animated UI to visualise sensor data (pH, TDS, turbidity), track tank levels, and control connected pumps. Sensor range labels do not establish that the water is safe to drink.
 
 ---
 
@@ -209,5 +209,10 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 ## 👤 Author
 
-**Tsuki321**  
-GitHub: [@Tsuki321](https://github.com/Tsuki321)
+**Group 1**
+
+The student thesis team developing the water filtration system and HydroSense, its companion monitoring and control software.
+
+Contact: ciriloenriquez123@gmail.com
+
+The software is provided under the MIT License. The in-app Terms and Conditions govern use of the project-operated service and connected equipment without restricting rights granted by the MIT License.

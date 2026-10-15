@@ -22,7 +22,7 @@
             android:paddingTop="24dp"
             android:paddingBottom="48dp">
 
-            <!-- Synthesized Water Safety Card -->
+            <!-- Sensor range summary; this does not establish potability. -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardWaterSafety"
                 style="@style/Style.WaterMonitor.GlassCard"
@@ -117,6 +117,14 @@
                         android:text="@string/water_safety_basis"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/water_quality_disclaimer"
+                        android:textColor="@color/text_medium"
+                        android:textSize="13sp" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

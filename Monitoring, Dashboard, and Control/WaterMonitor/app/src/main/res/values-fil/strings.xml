@@ -66,16 +66,16 @@
     <string name="leak_status_detected">⚠ MAY TAGAS — Nakapatay ang mga pump</string>
     <string name="leak_banner_message">May natukoy na tagas. Parehong pump ay nakapatay hanggang matuyo ang sensor.</string>
     <string name="sensor_status_format">%1$s: %2$s</string>
-    <string name="water_safety_title">Kaligtasan ng Tubig</string>
+    <string name="water_safety_title">Kalagayan ng mga Sukat</string>
     <string name="water_safety_checking">SINUSURI</string>
-    <string name="water_safety_safe">LIGTAS</string>
-    <string name="water_safety_caution">MAG-INGAT</string>
-    <string name="water_safety_unsafe">HINDI LIGTAS</string>
-    <string name="water_safety_checking_summary">Naghihintay ng live monitoring readings bago suriin ang kaligtasan.</string>
-    <string name="water_safety_safe_summary">Lahat ng minomonitor na reading ay nasa kanais-nais na range.</string>
-    <string name="water_safety_caution_summary">May reading na nangangailangan ng pansin. Tingnan ang Pagmamasid screen.</string>
-    <string name="water_safety_unsafe_summary">May reading na lumampas sa tinatanggap na safety limit.</string>
-    <string name="water_safety_basis">Pinagsamang resulta mula sa live na pH, TDS, at turbidity readings.</string>
+    <string name="water_safety_safe">NASA SAKLAW</string>
+    <string name="water_safety_caution">SURIIN ANG SUKAT</string>
+    <string name="water_safety_unsafe">LABAS SA SAKLAW</string>
+    <string name="water_safety_checking_summary">Naghihintay ng mga kasalukuyang sukat mula sa sensor upang maihambing sa mga itinakdang saklaw.</string>
+    <string name="water_safety_safe_summary">Ang lahat ng sinusubaybayang sukat ay nasa mga itinakdang kanais-nais na saklaw.</string>
+    <string name="water_safety_caution_summary">May sukat na wala sa kanais-nais na saklaw. Suriin ang screen ng Pagmamasid.</string>
+    <string name="water_safety_unsafe_summary">May sukat na lumampas sa mga itinakdang hangganan.</string>
+    <string name="water_safety_basis">Batay lamang sa mga available na sukat ng pH, TDS, at turbidity.</string>
     <string name="water_safety_ph_format">pH: %1$.2f</string>
     <string name="water_safety_tds_format">TDS: %1$d ppm</string>
     <string name="water_safety_turbidity_format">Turbidity: %1$.1f NTU</string>
@@ -113,12 +113,13 @@
     <!-- About -->
     <string name="about_version">Bersyon 1.0</string>
     <string name="about_description_title">Tungkol</string>
-    <string name="about_description">Ang HydroSense ay isang matalinong aplikasyon para sa pagmamasid at kontrol ng tubig na nagbibigay ng real-time na datos ng sensor, pagmamasid sa antas ng tangke, at remote na kontrol ng mga pump at balbula.</string>
-    <string name="about_developers_title">Mga Developer</string>
-    <string name="about_dev1_name">Tsuki321</string>
-    <string name="about_dev1_role">Punong Developer</string>
-    <string name="about_group_name">Grupo 1</string>
-    <string name="about_group_role">Koponan ng Pagpapaunlad</string>
+    <string name="about_description">Ang HydroSense ang kasamang software para sa pagmamasid at kontrol ng sistema ng pagsasala ng tubig sa tesis ng Group 1. Ipinapakita nito ang mga kasalukuyang sukat ng sensor at impormasyon ng tangke, at nagbibigay ng kontrol sa mga nakakonektang pump sa mga awtorisadong gumagamit.</string>
+    <string name="about_developers_title">Koponan ng Tesis</string>
+    <string name="about_group_name">Group 1</string>
+    <string name="about_group_role">Sistema ng Pagsasala ng Tubig at Kasamang Software</string>
+
+    <!-- Sensor ranges do not establish drinking-water safety. -->
+    <string name="water_quality_disclaimer">Hindi pinatutunayan ng mga sukat na ito na ligtas inumin ang tubig. Gumamit ng angkop na pagsusuri at payo ng kwalipikadong propesyonal bago magpasya kung paano gagamitin ang tubig.</string>
 
     <!-- Language array strings -->
     <string name="lang_english">Ingles</string>

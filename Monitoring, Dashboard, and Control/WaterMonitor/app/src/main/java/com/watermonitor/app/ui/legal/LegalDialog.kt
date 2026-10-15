@@ -30,6 +30,14 @@ object LegalDialog {
         )
     }
 
+    fun showLicense(context: Context) {
+        showDocument(
+            context = context,
+            title = R.string.legal_license_title,
+            body = R.string.legal_license_body
+        )
+    }
+
     fun showRegistrationConsent(
         context: Context,
         onAccepted: () -> Unit
@@ -128,6 +136,8 @@ object LegalDialog {
         val documents = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
+        documents.addHeading(context, R.string.legal_changes_title)
+        documents.addBody(context, R.string.legal_changes_summary)
         documents.addHeading(context, R.string.legal_terms_title)
         documents.addBody(context, R.string.legal_terms_body)
         documents.addHeading(context, R.string.legal_privacy_title)

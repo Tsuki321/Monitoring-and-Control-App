@@ -25,6 +25,9 @@ class AboutFragment : Fragment() {
         binding.btnViewPrivacy.setOnClickListener {
             LegalDialog.showPrivacyPolicy(requireContext())
         }
+        binding.btnViewLicense.setOnClickListener {
+            LegalDialog.showLicense(requireContext())
+        }
         return binding.root
     }
 
