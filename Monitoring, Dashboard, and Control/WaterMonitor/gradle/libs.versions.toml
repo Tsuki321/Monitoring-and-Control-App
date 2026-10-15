@@ -20,6 +20,7 @@ glide = "4.16.0"
 gson = "2.10.1"
 facebookLogin = "18.2.3"
 junit = "4.13.2"
+robolectric = "4.14.1"
 
 [libraries]
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
@@ -44,6 +45,7 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 facebook-login = { group = "com.facebook.android", name = "facebook-login", version.ref = "facebookLogin" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }

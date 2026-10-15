@@ -7,8 +7,8 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import com.google.android.material.alertdialog.MaterialAlertDialogBuilder
 import com.google.android.material.checkbox.MaterialCheckBox
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.watermonitor.app.R
 
 /** Displays the bundled legal documents and the registration consent gate. */
@@ -66,6 +66,7 @@ object LegalDialog {
         val dialog = MaterialAlertDialogBuilder(context)
             .setTitle(R.string.legal_existing_user_title)
             .setView(content.root)
+            .setCancelable(false)
             .setNegativeButton(R.string.legal_decline_logout, null)
             .setPositiveButton(R.string.legal_accept, null)
             .create()
@@ -103,7 +104,9 @@ object LegalDialog {
         val root = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(context, 24), 0, dp(context, 24), 0)
-            addView(scrollView, ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 480))
+            addView(scrollView, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 480), 1f
+            ))
         }
 
         MaterialAlertDialogBuilder(context)
@@ -130,7 +133,11 @@ object LegalDialog {
         documents.addHeading(context, R.string.legal_privacy_title)
         documents.addBody(context, R.string.legal_privacy_body)
         scrollView.addView(documents)
-        root.addView(scrollView, ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 400))
+        // Let the document viewport shrink when the dialog is height-constrained,
+        // keeping the acknowledgement checkbox reachable in landscape/multi-window.
+        root.addView(scrollView, LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, dp(context, 400), 1f
+        ))
 
         val checkbox = MaterialCheckBox(context).apply {
             text = context.getString(R.string.legal_consent_checkbox)

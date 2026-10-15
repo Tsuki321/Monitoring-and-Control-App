@@ -75,6 +75,10 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -101,4 +105,5 @@ dependencies {
     implementation(libs.facebook.login)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
 }
