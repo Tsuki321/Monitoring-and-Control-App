@@ -139,8 +139,9 @@ class LegalDialogTest {
         for (showDocument in listOf(LegalDialog::showTerms, LegalDialog::showPrivacyPolicy)) {
             showDocument(activity)
             val dialog = latestDialog()
-            val scroll = (dialog.window!!.decorView as ViewGroup)
-                .descendants.filterIsInstance<ScrollView>().single()
+            // AppCompat also has a hidden scroller for its default message panel.
+            val customContent = dialog.findViewById<ViewGroup>(androidx.appcompat.R.id.custom)!!
+            val scroll = customContent.descendants.filterIsInstance<ScrollView>().single()
             val root = scroll.parent as ViewGroup
 
             measureAndLayout(root, 240)
