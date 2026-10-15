@@ -32,7 +32,9 @@ import com.google.android.material.card.MaterialCardView
 import com.watermonitor.app.R
 import com.watermonitor.app.data.model.AuthProvider
 import com.watermonitor.app.databinding.FragmentLoginBinding
+import com.watermonitor.app.ui.legal.LegalDialog
 import com.watermonitor.app.utils.AccountManager
+import com.watermonitor.app.utils.LegalConsentManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -105,8 +107,7 @@ class LoginFragment : Fragment() {
                                 user.sendEmailVerification()
                             }.show()
                     } else if (user != null) {
-                        AccountManager.saveAccount(requireContext(), user, AuthProvider.EMAIL)
-                        findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+                        continueAfterAuthentication(user, AuthProvider.EMAIL)
                     }
                 }
                 .addOnFailureListener { e ->
@@ -194,7 +195,7 @@ class LoginFragment : Fragment() {
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser?.uid == uid) {
             // Already logged in
-            findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+            continueAfterAuthentication(currentUser, savedAccount.provider)
             return
         }
 
@@ -261,9 +262,10 @@ class LoginFragment : Fragment() {
                 if (task.isSuccessful) {
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null && isAdded) {
-                        AccountManager.saveAccount(requireContext(), user, AuthProvider.GOOGLE)
+                        continueAfterAuthentication(user, AuthProvider.GOOGLE)
+                    } else {
+                        showError("Google account was not returned")
                     }
-                    navigateToDashboard()
                 } else {
                     showError("Google authentication failed: ${task.exception?.message}")
                 }
@@ -277,18 +279,40 @@ class LoginFragment : Fragment() {
                 if (task.isSuccessful) {
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null && isAdded) {
-                        AccountManager.saveAccount(requireContext(), user, AuthProvider.FACEBOOK)
+                        continueAfterAuthentication(user, AuthProvider.FACEBOOK)
+                    } else {
+                        showError("Facebook account was not returned")
                     }
-                    navigateToDashboard()
                 } else {
                     showError("Facebook authentication failed: ${task.exception?.message}")
                 }
             }
     }
 
-    private fun navigateToDashboard() {
-        if (isAdded && view != null) {
-            findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+    private fun continueAfterAuthentication(
+        user: com.google.firebase.auth.FirebaseUser,
+        provider: AuthProvider
+    ) {
+        if (!isAdded) return
+
+        AccountManager.saveAccount(requireContext(), user, provider)
+        val navigate = {
+            if (isAdded && view != null) {
+                findNavController().navigate(R.id.action_loginFragment_to_dashboardFragment)
+            }
+        }
+
+        if (LegalConsentManager.hasCurrentConsent(requireContext(), user.uid)) {
+            navigate()
+        } else {
+            LegalDialog.showExistingUserConsent(
+                context = requireContext(),
+                onAccepted = {
+                    LegalConsentManager.recordConsent(requireContext(), user.uid)
+                    navigate()
+                },
+                onDeclined = { FirebaseAuth.getInstance().signOut() }
+            )
         }
     }
 

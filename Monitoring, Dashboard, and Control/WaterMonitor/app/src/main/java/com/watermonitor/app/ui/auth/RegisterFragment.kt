@@ -27,7 +27,9 @@ import android.content.Intent
 import com.watermonitor.app.R
 import com.watermonitor.app.data.model.AuthProvider
 import com.watermonitor.app.databinding.FragmentRegisterBinding
+import com.watermonitor.app.ui.legal.LegalDialog
 import com.watermonitor.app.utils.AccountManager
+import com.watermonitor.app.utils.LegalConsentManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -83,43 +85,46 @@ class RegisterFragment : Fragment() {
                 return@setOnClickListener
             }
 
-            binding.btnRegister.isEnabled = false
+            requestRegistrationConsent {
+                binding.btnRegister.isEnabled = false
 
-            val auth = FirebaseAuth.getInstance()
-            auth.createUserWithEmailAndPassword(email, pass)
-                .addOnSuccessListener { authResult ->
-                    val firebaseUser = authResult.user
-                    if (firebaseUser != null) {
-                        val profileUpdates = UserProfileChangeRequest.Builder()
-                            .setDisplayName(user)
-                            .build()
+                val auth = FirebaseAuth.getInstance()
+                auth.createUserWithEmailAndPassword(email, pass)
+                    .addOnSuccessListener { authResult ->
+                        val firebaseUser = authResult.user
+                        if (firebaseUser != null) {
+                            val profileUpdates = UserProfileChangeRequest.Builder()
+                                .setDisplayName(user)
+                                .build()
 
-                        firebaseUser.updateProfile(profileUpdates)
-                            .addOnCompleteListener { profileTask ->
-                                val currentBinding = bindingSafe ?: return@addOnCompleteListener
-                                currentBinding.btnRegister.isEnabled = true
+                            firebaseUser.updateProfile(profileUpdates)
+                                .addOnCompleteListener { profileTask ->
+                                    val currentBinding = bindingSafe ?: return@addOnCompleteListener
+                                    currentBinding.btnRegister.isEnabled = true
 
-                                if (profileTask.isSuccessful) {
-                                    firebaseUser.sendEmailVerification()
-                                    FirebaseAuth.getInstance().signOut()
-                                    showError(getString(R.string.auth_verify_email_sent))
-                                    findNavController().popBackStack()
-                                } else {
-                                    showError("Error setting username: ${profileTask.exception?.message}")
+                                    if (profileTask.isSuccessful) {
+                                        LegalConsentManager.recordConsent(requireContext(), firebaseUser.uid)
+                                        firebaseUser.sendEmailVerification()
+                                        FirebaseAuth.getInstance().signOut()
+                                        showError(getString(R.string.auth_verify_email_sent))
+                                        findNavController().popBackStack()
+                                    } else {
+                                        showError("Error setting username: ${profileTask.exception?.message}")
+                                    }
                                 }
-                            }
-                    } else {
-                        val currentBinding = bindingSafe ?: return@addOnSuccessListener
-                        currentBinding.btnRegister.isEnabled = true
-                        showError("Registration successful!")
-                        findNavController().popBackStack()
+                        } else {
+                            val currentBinding = bindingSafe ?: return@addOnSuccessListener
+                            currentBinding.btnRegister.isEnabled = true
+                            showError("Registration successful!")
+                            findNavController().popBackStack()
+                        }
                     }
-                }
-                .addOnFailureListener { e ->
-                    val currentBinding = bindingSafe ?: return@addOnFailureListener
-                    currentBinding.btnRegister.isEnabled = true
-                    showError("Error: ${e.message}")
-                }
+                    .addOnFailureListener { e ->
+                        val currentBinding = bindingSafe ?: return@addOnFailureListener
+                        currentBinding.btnRegister.isEnabled = true
+                        showError("Error: ${e.message}")
+                    }
+            }
         }
 
         binding.tvGoToLogin.setOnClickListener {
@@ -128,13 +133,22 @@ class RegisterFragment : Fragment() {
 
         // Google Sign In using CredentialManager
         binding.btnGoogleRegister.setOnClickListener {
-            signInWithGoogle()
+            requestRegistrationConsent {
+                signInWithGoogle()
+            }
         }
 
         // Facebook Sign In using Firebase OAuthProvider
         binding.btnFacebookRegister.setOnClickListener {
-            signInWithFacebook()
+            requestRegistrationConsent {
+                signInWithFacebook()
+            }
         }
+    }
+
+    private fun requestRegistrationConsent(onAccepted: () -> Unit) {
+        if (!isAdded) return
+        LegalDialog.showRegistrationConsent(requireContext(), onAccepted)
     }
 
     private fun signInWithGoogle() {
@@ -178,6 +192,7 @@ class RegisterFragment : Fragment() {
                 if (task.isSuccessful) {
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null && isAdded) {
+                        LegalConsentManager.recordConsent(requireContext(), user.uid)
                         AccountManager.saveAccount(requireContext(), user, AuthProvider.GOOGLE)
                     }
                     navigateToDashboard()
@@ -194,6 +209,7 @@ class RegisterFragment : Fragment() {
                 if (task.isSuccessful) {
                     val user = FirebaseAuth.getInstance().currentUser
                     if (user != null && isAdded) {
+                        LegalConsentManager.recordConsent(requireContext(), user.uid)
                         AccountManager.saveAccount(requireContext(), user, AuthProvider.FACEBOOK)
                     }
                     navigateToDashboard()

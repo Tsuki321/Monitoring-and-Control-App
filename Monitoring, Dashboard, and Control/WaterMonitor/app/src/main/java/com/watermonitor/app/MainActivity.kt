@@ -12,11 +12,14 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.NavOptions
 import androidx.navigation.ui.setupWithNavController
 import com.google.firebase.auth.FirebaseAuth
 import com.watermonitor.app.data.repository.FilterHealthRepository
 import com.watermonitor.app.databinding.ActivityMainBinding
 import com.watermonitor.app.utils.LocaleHelper
+import com.watermonitor.app.ui.legal.LegalDialog
+import com.watermonitor.app.utils.LegalConsentManager
 import com.watermonitor.app.utils.ThemeHelper
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,6 +38,7 @@ class MainActivity : AppCompatActivity() {
 
     private var backPressedOnce = false
     private val backPressHandler = Handler(Looper.getMainLooper())
+    private var legalDialogShowing = false
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
@@ -76,6 +80,12 @@ class MainActivity : AppCompatActivity() {
         setupBackPressHandler()
         updateClock()
         clockHandler.postDelayed(clockRunnable, 30_000)
+        window.decorView.post { enforceLegalConsent() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        enforceLegalConsent()
     }
 
     private fun setupNavigation() {
@@ -144,6 +154,40 @@ class MainActivity : AppCompatActivity() {
                 navController.navigate(R.id.settingsFragment)
             }
         }
+    }
+
+    private fun enforceLegalConsent() {
+        if (!::binding.isInitialized || legalDialogShowing) return
+
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.navHostFragment) as? NavHostFragment ?: return
+        val navController = navHostFragment.navController
+        val destination = navController.currentDestination?.id ?: return
+
+        // Authentication screens own their own registration/login consent flow.
+        if (destination == R.id.loginFragment || destination == R.id.registerFragment) return
+        if (LegalConsentManager.hasCurrentConsent(this, user.uid)) return
+
+        legalDialogShowing = true
+        LegalDialog.showExistingUserConsent(
+            context = this,
+            onAccepted = {
+                LegalConsentManager.recordConsent(this, user.uid)
+                legalDialogShowing = false
+            },
+            onDeclined = {
+                legalDialogShowing = false
+                FirebaseAuth.getInstance().signOut()
+                navController.navigate(
+                    R.id.loginFragment,
+                    null,
+                    NavOptions.Builder()
+                        .setPopUpTo(R.id.nav_graph, true)
+                        .build()
+                )
+            }
+        )
     }
 
     private fun setupBackPressHandler() {
