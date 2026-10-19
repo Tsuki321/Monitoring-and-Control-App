@@ -19,7 +19,7 @@ object FilterFormatter {
         "pebbles" -> R.string.filter_stage_pebbles
         "lava_rock" -> R.string.filter_stage_lava_rock
         "carbon" -> R.string.filter_stage_activated_carbon
-        "sand" -> R.string.filter_stage_sand
+        "multilayer_foam" -> R.string.filter_stage_multilayer_foam
         else -> R.string.filter_stages_title
     }
 

@@ -29,7 +29,7 @@
         android:strokeWidth="2.5"
         android:strokeLineCap="round" />
 
-    <!-- Sand bed -->
+    <!-- Multilayer foam bed -->
     <path
         android:pathData="M9,13.5 L23,13.5"
         android:strokeColor="#0D7A8A"

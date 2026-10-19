@@ -27,9 +27,12 @@ data class TrainingSet(
  * stages wear by a Carman–Kozeny-style pore-blockage law (superlinear — a clogging bed
  * clogs faster as it clogs), adsorption stages by Freundlich capacity saturation
  * (sublinear — doubling the contaminant less than doubles the wear rate, because capacity
- * rises with concentration too). The linear model in [FilterLifeModel] is therefore a
- * genuine surrogate fit to a curved process, not a circular recovery of constants that
- * were fed straight in.
+ * rises with concentration too), and the multilayer foam by a graded depth-loading term
+ * blended with cake filtration (coarse outer layers load solids through their depth while
+ * the fine inner polishing layer builds a surface cake). The linear model in
+ * [FilterLifeModel] is therefore a genuine surrogate fit to a curved process, not a
+ * circular recovery of constants that were fed straight in. The model is fit to
+ * water-quality-driven non-linear wear, with runtime supplied by measured five-stage pump hours.
  *
  * Water conditions are sampled over the range this system actually sees, skewed toward
  * typical values with a tail for excursions. Because features are normalised on the
@@ -70,19 +73,11 @@ object SyntheticWearData {
     private const val PH_MIN = 5.0
     private const val PH_MAX = 9.5
 
-    // Hydraulic ranges as ratios of nominal. Tight and skewed toward 1.0 — normal water
-    // is the common case; the tails exist so the fit can identify the sensitivities.
-    private const val PRESSURE_RATIO_MIN = 0.75
-    private const val PRESSURE_RATIO_MAX = 1.25
-    private const val PRESSURE_RATIO_SKEW = 1.5
-    private const val RPM_RATIO_MIN = 0.8
-    private const val RPM_RATIO_MAX = 1.2
-    private const val RPM_RATIO_SKEW = 1.5
-
-    // Hydraulic wear exponents: pump speed drives flow (and throughput) roughly linearly;
-    // the square-root pressure term is the extra push a partially clogged bed needs.
-    private const val PRESSURE_EXPONENT = 0.5
-    private const val RPM_EXPONENT = 1.0
+    // Multilayer foam combines depth loading in the coarse outer layers with cake
+    // filtration at the fine inner polishing layer. The two terms are blended because the
+    // capture front migrates through the graded structure.
+    private const val FOAM_DEPTH_SHARE = 0.65
+    private const val FOAM_DEPTH_EXPONENT = 0.8
 
     /** Per-stage seed base, so every stage gets a different but fixed sample sequence. */
     private const val SEED_BASE = 0x5EED_0000L
@@ -111,22 +106,13 @@ object SyntheticWearData {
             } else {
                 (7.0 + rng.nextGaussian() * PH_SIGMA).coerceIn(PH_MIN, PH_MAX)
             }
-            val pressurePsi = FilterSpecs.NOMINAL_PRESSURE_PSI *
-                rng.skewed(PRESSURE_RATIO_MIN, PRESSURE_RATIO_MAX, PRESSURE_RATIO_SKEW)
-            val pumpRpm = FilterSpecs.NOMINAL_PUMP_RPM *
-                rng.skewed(RPM_RATIO_MIN, RPM_RATIO_MAX, RPM_RATIO_SKEW)
-
-            val truth = trueWearRate(spec, ph, tdsPpm, turbidityNtu) *
-                hydraulicFactor(
-                    pressurePsi / FilterSpecs.NOMINAL_PRESSURE_PSI,
-                    pumpRpm / FilterSpecs.NOMINAL_PUMP_RPM
-                )
+            val truth = trueWearRate(spec, ph, tdsPpm, turbidityNtu)
             val noise = rng.nextGaussian() * (NOISE_BASE + NOISE_SLOPE * truth)
             val observed = (truth + noise)
                 .finiteOr(FilterLifeModel.NEUTRAL_LOAD_FACTOR)
                 .coerceIn(FilterLifeModel.MIN_LOAD_FACTOR, FilterLifeModel.MAX_LOAD_FACTOR)
 
-            design.add(FilterLifeModel.features(tdsPpm, turbidityNtu, ph, pressurePsi, pumpRpm))
+            design.add(FilterLifeModel.features(tdsPpm, turbidityNtu, ph))
             targets.add(observed)
         }
 
@@ -161,21 +147,21 @@ object SyntheticWearData {
             // so bed life falls as C^(1 - 1/n), not as C.
             WearProfile.ADSORPTION ->
                 relativeLoad.coerceAtLeast(1e-3).pow(1.0 - 1.0 / FREUNDLICH_N)
+
+            // Graded foam: coarse outer layers load solids through their depth (sublinear,
+            // as the capture front migrates inward) while the fine inner layer builds a
+            // surface cake (superlinear, the Carman–Kozeny shape). The blend is exactly 1.0
+            // at relativeLoad = 1.0 and stays finite, so the nominal anchor is preserved.
+            WearProfile.MULTILAYER_FOAM -> {
+                val depth = relativeLoad.coerceAtLeast(0.0).pow(FOAM_DEPTH_EXPONENT)
+                val cake = kozenyResistance(relativeLoad) / kozenyResistance(1.0)
+                FOAM_DEPTH_SHARE * depth + (1.0 - FOAM_DEPTH_SHARE) * cake
+            }
         }
 
         val phFactor = 1.0 + PH_COEFFICIENT * abs(ph - 7.0).pow(PH_EXPONENT)
         return (base * phFactor).finiteOr(FilterLifeModel.NEUTRAL_LOAD_FACTOR)
     }
-
-    /**
-     * Hydraulic contribution to the wear multiplier: how much faster the media ages when
-     * the feed is pushed harder or faster than nominal. Exactly 1.0 at nominal pressure
-     * and nominal pump speed, by construction, so the overall anchor is unchanged.
-     */
-    private fun hydraulicFactor(pressureRatio: Double, rpmRatio: Double): Double =
-        (pressureRatio.coerceAtLeast(0.0).pow(PRESSURE_EXPONENT) *
-            rpmRatio.coerceAtLeast(0.0).pow(RPM_EXPONENT))
-            .finiteOr(1.0)
 
     /**
      * Carman–Kozeny bed resistance, `(1-ε)² / ε³`, with porosity ε falling as deposit

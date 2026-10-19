@@ -8,6 +8,7 @@ import com.watermonitor.app.data.ml.finiteOr
 import com.watermonitor.app.data.model.FilterHealthState
 import com.watermonitor.app.data.model.FilterSpecs
 import com.watermonitor.app.data.model.FilterStageSpec
+import com.watermonitor.app.data.model.PumpControlState
 import com.watermonitor.app.data.model.RuntimeSource
 import com.watermonitor.app.data.model.SensorData
 import com.watermonitor.app.data.model.ServiceAction
@@ -21,13 +22,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.math.PI
-import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.sin
 
 /**
  * Owns filter wear state: accrues it from sensor samples, persists it, and publishes the
@@ -38,10 +37,16 @@ import kotlin.math.sin
  * actions arrive from the UI.
  *
  * ### Runtime sources
- * When `/sensors` carries `runtimeA`/`runtimeB` (firmware V17+) wear is driven by the real
- * cumulative counters. Until then a wall-clock simulation stands in, scaled by
- * [FilterSpecs.DEMO_TIME_SCALE], and [FilterHealthState.runtimeSource] reports `SIMULATED`
- * so the UI can say so plainly rather than presenting invented numbers as measurements.
+ * Wear is driven by the **five-stage pump** (Pump B): in AUTO the ESP32 runs it from the
+ * tank level, and in MANUAL the user commands it. Pump A is intake-only in both modes, so
+ * an interval with Pump A alone never accrues filter wear.
+ *
+ * When `/sensors` carries `runtimeB` (firmware V17+) wear uses that real cumulative counter.
+ * Until then the repository follows the actual `/status` Pump B relay state, scaled by
+ * [FilterSpecs.DEMO_TIME_SCALE]. If no pump telemetry has arrived yet it falls back to
+ * [FilterSpecs.SIMULATED_DUTY_CYCLE], and [FilterHealthState.runtimeSource] reports
+ * `SIMULATED` so the UI can say so plainly rather than presenting invented numbers as
+ * measurements.
  */
 object FilterHealthRepository {
 
@@ -59,10 +64,6 @@ object FilterHealthRepository {
      * of the interval, so wear accrues at a neutral load factor instead.
      */
     private const val NEUTRAL_LOAD_ABOVE_HOURS = 1.0
-
-    /** Amplitude and period of the simulated pressure/RPM wobble around nominal. */
-    private const val TELEMETRY_WOBBLE = 0.03
-    private const val TELEMETRY_WOBBLE_PERIOD_MS = 420_000.0
 
     /** Minimum gap between prefs writes. Protects against per-tick XML rewrites. */
     private const val SAVE_INTERVAL_MILLIS = 60_000L
@@ -99,16 +100,27 @@ object FilterHealthRepository {
     private var lastSaveMillis = 0L
 
     /**
-     * Whether the most recent sample carried firmware runtime counters. Tracked per sample
-     * rather than read from the persisted counters, so a firmware downgrade re-labels the UI
-     * as simulated instead of continuing to claim hardware.
+     * Whether the most recent sample carried the firmware's five-stage pump runtime counter.
+     * Tracked per sample rather than read from the persisted counter, so a firmware downgrade
+     * re-labels the UI as simulated instead of continuing to claim hardware.
      */
     private var hardwareRuntimeSeen = false
 
-    /** Last feed pressure / pump speed for the telemetry line; simulated until real. */
-    private var lastPressurePsi = FilterSpecs.NOMINAL_PRESSURE_PSI
-    private var lastPumpRpm = FilterSpecs.NOMINAL_PUMP_RPM
-    private var telemetryFromHardware = false
+    /**
+     * Latest `/status` + `/control/auto` snapshot. Filter runtime follows Pump B only:
+     * AUTO is ESP32-driven and MANUAL is user-commanded, but both pass water through the
+     * same five-stage media. Pump A never contributes.
+     */
+    private var pumpControl = PumpControlState()
+
+    @Volatile
+    private var pumpControlSeen = false
+
+    /** Wall-clock anchor for integrating Pump B on-time between sensor samples. */
+    private var lastPumpControlWallMillis = 0L
+
+    /** Completed Pump B on-time since the last sensor sample, in hours. */
+    private var pendingPumpBHours = 0.0
 
     /**
      * Loads state and fits the models. Safe to call more than once; only the first call does
@@ -126,6 +138,21 @@ object FilterHealthRepository {
             initialized = true
         }
 
+        // Keep the filter pump state live even while no screen is subscribed to pump
+        // control. Simulated wear follows the actual five-stage pump instead of a fixed
+        // duty cycle; hardware counters remain authoritative once they appear.
+        scope.launch {
+            FirebaseRealtimeSensorRepository.pumpControlFlow
+                .catch { error ->
+                    Log.w(TAG, "Pump control flow failed; using duty-cycle fallback", error)
+                    pumpControlSeen = false
+                }
+                .collect { state ->
+                    runCatching { onPumpControlState(state) }
+                        .onFailure { Log.w(TAG, "Failed to ingest pump state", it) }
+                }
+        }
+
         // Prefs read and 5 × 400-row fits are far too much for the main thread.
         scope.launch {
             mutex.withLock {
@@ -135,13 +162,45 @@ object FilterHealthRepository {
                     FilterPrefs.default()
                 }
                 models = fitModels()
-                hardwareRuntimeSeen = persisted.lastRuntimeSecondsA != null ||
-                    persisted.lastRuntimeSecondsB != null
+                hardwareRuntimeSeen = persisted.lastRuntimeSecondsB != null
                 // Anchor the save throttle so the first sample cannot trip it instantly.
                 lastSaveMillis = System.currentTimeMillis()
+                pendingPumpBHours = 0.0
+                lastPumpControlWallMillis = System.currentTimeMillis()
                 stateLoaded = true
                 publish()
             }
+        }
+    }
+
+    /**
+     * Tracks the actual five-stage pump (Pump B) relay. In AUTO the ESP32 drives it from
+     * the tank level; in MANUAL the user commands it. Pump A is intake-only, so only
+     * Pump B on-time is integrated here.
+     */
+    private suspend fun onPumpControlState(state: PumpControlState) {
+        mutex.withLock {
+            val now = System.currentTimeMillis()
+            if (pumpControlSeen) {
+                if (pumpControl.actualPumpB) {
+                    pendingPumpBHours = (pendingPumpBHours + elapsedHours(
+                        lastPumpControlWallMillis,
+                        now
+                    )).finiteOr(pendingPumpBHours)
+                }
+                if (pumpControl.autoMode != state.autoMode ||
+                    pumpControl.actualPumpB != state.actualPumpB
+                ) {
+                    Log.d(
+                        TAG,
+                        "Filter pump: mode=${if (state.autoMode) "AUTO" else "MANUAL"} " +
+                            "pumpB=${state.actualPumpB}"
+                    )
+                }
+            }
+            pumpControl = state
+            pumpControlSeen = true
+            lastPumpControlWallMillis = now
         }
     }
 
@@ -244,9 +303,8 @@ object FilterHealthRepository {
                 persisted = FilterPrefs.default()
                 models = fitModels()
                 hardwareRuntimeSeen = false
-                lastPressurePsi = FilterSpecs.NOMINAL_PRESSURE_PSI
-                lastPumpRpm = FilterSpecs.NOMINAL_PUMP_RPM
-                telemetryFromHardware = false
+                pendingPumpBHours = 0.0
+                lastPumpControlWallMillis = System.currentTimeMillis()
                 FilterPrefs.clear(ctx)
                 lastSaveMillis = System.currentTimeMillis()
                 stateLoaded = true
@@ -300,10 +358,9 @@ object FilterHealthRepository {
             0.0
         }
 
-        val hardware = data.runtimeASeconds != null || data.runtimeBSeconds != null
+        val hardware = data.runtimeBSeconds != null
         hardwareRuntimeSeen = hardware
-        val previouslySawHardware =
-            persisted.lastRuntimeSecondsA != null || persisted.lastRuntimeSecondsB != null
+        val previouslySawHardware = persisted.lastRuntimeSecondsB != null
 
         val runtimeHours: Double
         val wallHoursForDuty: Double
@@ -314,6 +371,7 @@ object FilterHealthRepository {
                 // [resetSimulatedAccrual]) so it cannot masquerade as measured history.
                 resetSimulatedAccrual()
             }
+            pendingPumpBHours = 0.0
             runtimeHours = hardwareRuntimeHours(data, wallDeltaHours)
             wallHoursForDuty = wallDeltaHours
             advanceWallAnchor = true
@@ -325,25 +383,15 @@ object FilterHealthRepository {
             wallHoursForDuty = 0.0
             advanceWallAnchor = false
         } else {
-            runtimeHours = simulatedRuntimeHours(wallDeltaHours)
+            runtimeHours = simulatedRuntimeHours(wallDeltaHours, now)
             wallHoursForDuty = min(wallDeltaHours, MAX_SIMULATED_GAP_HOURS)
             advanceWallAnchor = true
         }
 
-        // Feed pressure and pump speed: real telemetry when the firmware publishes it (no
-        // build does yet), otherwise simulated around nominal for normal water conditions.
-        val hardwarePressure = data.pressurePsi?.takeIf { it.isFinite() }
-        val hardwareRpm = data.pumpRpm?.takeIf { it.isFinite() }
-        telemetryFromHardware = hardwarePressure != null || hardwareRpm != null
-        lastPressurePsi = hardwarePressure ?: simulatedPressurePsi(now)
-        lastPumpRpm = hardwareRpm ?: simulatedRpm(now)
-
         val features = FilterLifeModel.features(
             data.tds.toDouble(),
             data.turbidity,
-            data.ph,
-            lastPressurePsi,
-            lastPumpRpm
+            data.ph
         )
         val tdsNorm = features[1]
         val turbidityNorm = features[2]
@@ -409,17 +457,18 @@ object FilterHealthRepository {
             // return is validated against the whole elapsed gap rather than one tick.
             lastSampleWallMillis = if (advanceWallAnchor) now else previousWall,
             accumulatedWallHours = persisted.accumulatedWallHours + wallHoursForDuty,
-            lastRuntimeSecondsA = data.runtimeASeconds ?: persisted.lastRuntimeSecondsA,
             lastRuntimeSecondsB = data.runtimeBSeconds ?: persisted.lastRuntimeSecondsB
         )
     }
 
     /**
-     * Runtime hours from the ESP32's cumulative counters.
+     * Runtime hours from the ESP32's cumulative five-stage pump counter.
      *
-     * The counters are absolute, so a gap while the app was closed is captured in full and
-     * costs nothing: the counter kept ticking whether or not the app was listening. Three
-     * things are guarded:
+     * Pump B is the five-stage pump, so only its on-time moves water through the media.
+     * Pump A is intake-only and never contributes — in MANUAL, an A-only interval costs no
+     * filter life. The counter is absolute, so a gap while the app was closed is captured
+     * in full and costs nothing: the counter kept ticking whether or not the app was
+     * listening. Three things are guarded:
      *
      * - **No previous reading** (first hardware sample, or the simulated → hardware
      *   switchover): anchor and accrue zero, or the switchover injects a delta of the
@@ -432,27 +481,24 @@ object FilterHealthRepository {
      *   discarded every app-closed gap longer than ~6 hours of pump runtime.
      */
     private fun hardwareRuntimeHours(data: SensorData, wallDeltaHours: Double): Double {
-        val currentA = data.runtimeASeconds
         val currentB = data.runtimeBSeconds
-        val previousA = persisted.lastRuntimeSecondsA
         val previousB = persisted.lastRuntimeSecondsB
 
-        if (previousA == null && previousB == null) {
-            Log.d(TAG, "Anchoring to hardware runtime counters; accruing 0 for this sample")
+        if (previousB == null) {
+            Log.d(TAG, "Anchoring to Pump B runtime counter; accruing 0 for this sample")
             return 0.0
         }
 
-        val deltaA = pumpDelta(currentA, previousA)
         val deltaB = pumpDelta(currentB, previousB)
-        // Pumps A and B can run at once, and one hour of both running is one hour of water
-        // through the filter — not two. Wear is bounded by wall time, so take the max.
-        val deltaSeconds = max(deltaA, deltaB)
-        if (deltaSeconds <= 0L) return 0.0
+        if (deltaB <= 0L) return 0.0
 
-        val hours = deltaSeconds / 3600.0
+        val hours = deltaB / 3600.0
         val allowance = wallDeltaHours * 1.05 + (60.0 / 3600.0)
         if (hours > allowance) {
-            Log.w(TAG, "Rejecting runtime delta ${hours}h; exceeds wall clock ${wallDeltaHours}h")
+            Log.w(
+                TAG,
+                "Rejecting Pump B runtime delta ${hours}h; exceeds wall clock ${wallDeltaHours}h"
+            )
             return 0.0
         }
 
@@ -493,36 +539,56 @@ object FilterHealthRepository {
             accumulatedWallHours = 0.0,
             observations = emptyList()
         )
+        pendingPumpBHours = 0.0
+        lastPumpControlWallMillis = System.currentTimeMillis()
     }
 
     /**
-     * Stand-in runtime while the firmware predates V17. Models the pumps running while the
-     * app is open and receiving samples: the interval is capped at one publish period, so
-     * reopening the app after hours does not bill the closed gap. Scaled by
-     * [FilterSpecs.DEMO_TIME_SCALE]; the acceleration is intentional demo behaviour, not a
-     * physical runtime measurement.
+     * Stand-in runtime while the firmware predates V17.
+     *
+     * Once `/status` is available this follows the actual five-stage pump: Pump B on-time
+     * accumulated since the previous sensor sample, in both AUTO (ESP32-driven) and MANUAL
+     * (user-commanded) modes. Pump A is intake-only, so an A-only interval contributes zero.
+     * Without pump telemetry it falls back to [FilterSpecs.SIMULATED_DUTY_CYCLE].
+     *
+     * The interval is capped at one publish period, so reopening the app after hours does
+     * not bill the closed gap. Scaling by [FilterSpecs.DEMO_TIME_SCALE] is intentional demo
+     * behaviour, not a physical runtime measurement.
      */
-    private fun simulatedRuntimeHours(wallDeltaHours: Double): Double {
+    private fun simulatedRuntimeHours(wallDeltaHours: Double, now: Long): Double {
         val sessionHours = wallDeltaHours.finiteOr(0.0).coerceIn(0.0, MAX_SIMULATED_GAP_HOURS)
-        if (sessionHours <= 0.0) return 0.0
-        return (sessionHours * FilterSpecs.SIMULATED_DUTY_CYCLE * FilterSpecs.DEMO_TIME_SCALE)
+        if (sessionHours <= 0.0) {
+            pendingPumpBHours = 0.0
+            if (pumpControlSeen) lastPumpControlWallMillis = now
+            return 0.0
+        }
+
+        if (!pumpControlSeen) {
+            return (sessionHours * FilterSpecs.SIMULATED_DUTY_CYCLE * FilterSpecs.DEMO_TIME_SCALE)
+                .finiteOr(0.0).coerceAtLeast(0.0)
+        }
+
+        val openSegmentHours = if (pumpControl.actualPumpB) {
+            elapsedHours(lastPumpControlWallMillis, now)
+        } else {
+            0.0
+        }
+        val pumpBHours = (pendingPumpBHours + openSegmentHours)
+            .finiteOr(0.0)
+            .coerceIn(0.0, MAX_SIMULATED_GAP_HOURS)
+        pendingPumpBHours = 0.0
+        lastPumpControlWallMillis = now
+
+        return (pumpBHours * FilterSpecs.DEMO_TIME_SCALE)
             .finiteOr(0.0).coerceAtLeast(0.0)
     }
 
-    /**
-     * Pressure/RPM stand-ins while no firmware publishes them: nominal with a slow
-     * sinusoidal wobble, so the telemetry line reads like a live sensor without drifting
-     * away from the normal-water assumption the wear model is anchored on.
-     */
-    private fun simulatedPressurePsi(nowMillis: Long): Double =
-        (FilterSpecs.NOMINAL_PRESSURE_PSI *
-            (1.0 + TELEMETRY_WOBBLE * sin(nowMillis / TELEMETRY_WOBBLE_PERIOD_MS)))
-            .finiteOr(FilterSpecs.NOMINAL_PRESSURE_PSI)
-
-    private fun simulatedRpm(nowMillis: Long): Double =
-        (FilterSpecs.NOMINAL_PUMP_RPM *
-            (1.0 + TELEMETRY_WOBBLE * sin(nowMillis / TELEMETRY_WOBBLE_PERIOD_MS + PI / 3.0)))
-            .finiteOr(FilterSpecs.NOMINAL_PUMP_RPM)
+    private fun elapsedHours(previousMillis: Long, nowMillis: Long): Double =
+        if (previousMillis in 1 until nowMillis) {
+            (nowMillis - previousMillis) / 3_600_000.0
+        } else {
+            0.0
+        }
 
     // ── Publishing ─────────────────────────────────────────────────────────
 
@@ -556,9 +622,6 @@ object FilterHealthRepository {
             },
             totalRuntimeHours = persisted.totalRuntimeHours,
             dutyCycle = duty,
-            pressurePsi = lastPressurePsi,
-            pumpRpm = lastPumpRpm,
-            telemetrySimulated = !telemetryFromHardware,
             diagnostics = models.map { it.diagnostics },
             isWaitingForData = persisted.lastSampleWallMillis == 0L
         )
@@ -587,18 +650,14 @@ object FilterHealthRepository {
     /** Mean load factor over the stage's life so far; neutral before any runtime accrues. */
     private fun lastLoadFactor(key: String, stage: FilterStageState): Double {
         if (stage.rawHours <= 0.0) return FilterLifeModel.NEUTRAL_LOAD_FACTOR
+        // Only water-quality history is persisted; there is no pressure/RPM telemetry.
         return FilterLifeModel.loadFactor(
             coefficientsFor(key),
             doubleArrayOf(
                 1.0,
                 stage.sumTdsNorm / stage.rawHours,
                 stage.sumTurbidityNorm / stage.rawHours,
-                stage.sumPhDeviation / stage.rawHours,
-                // Hydraulic history is not persisted: simulated telemetry sat at nominal
-                // by definition, and observation rows carry nominal ratios until real
-                // pressure/RPM sensors land (TODO(hardware)).
-                1.0,
-                1.0
+                stage.sumPhDeviation / stage.rawHours
             )
         )
     }

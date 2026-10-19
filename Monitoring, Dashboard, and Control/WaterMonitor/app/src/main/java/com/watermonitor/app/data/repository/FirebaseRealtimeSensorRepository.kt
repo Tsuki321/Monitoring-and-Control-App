@@ -83,6 +83,9 @@ object FirebaseRealtimeSensorRepository {
      * (written by the ESP32) with the mode flag from `/control/auto` (written
      * by the app). Both are gated behind Firebase auth.
      *
+     * Also consumed by `FilterHealthRepository`, which attributes filter runtime to the
+     * five-stage pump (Pump B) in both AUTO and MANUAL modes.
+     *
      * SharedFlow so Dashboard + Control ViewModels share a single RTDB listener.
      */
     val pumpControlFlow: Flow<PumpControlState> = authStateFlow().flatMapLatest { signedIn ->
@@ -304,9 +307,7 @@ object FirebaseRealtimeSensorRepository {
                 leakDetected = map.parseBoolOrNull("rainDetected"),
                 timestamp = System.currentTimeMillis(),
                 runtimeASeconds = map.parseLongOrNull("runtimeA"),
-                runtimeBSeconds = map.parseLongOrNull("runtimeB"),
-                pressurePsi = map.parseDoubleOrNull("psi"),
-                pumpRpm = map.parseDoubleOrNull("rpm")
+                runtimeBSeconds = map.parseLongOrNull("runtimeB")
             )
         }
 
@@ -324,9 +325,7 @@ object FirebaseRealtimeSensorRepository {
             leakDetected = child("rainDetected").asBoolOrNull(),
             timestamp = System.currentTimeMillis(),
             runtimeASeconds = child("runtimeA").asLongOrNull(),
-            runtimeBSeconds = child("runtimeB").asLongOrNull(),
-            pressurePsi = child("psi").asDoubleOrNull(),
-            pumpRpm = child("rpm").asDoubleOrNull()
+            runtimeBSeconds = child("runtimeB").asLongOrNull()
         )
     }
 

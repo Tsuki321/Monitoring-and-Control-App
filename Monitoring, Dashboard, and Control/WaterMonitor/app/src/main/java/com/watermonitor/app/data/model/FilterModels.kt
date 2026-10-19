@@ -14,10 +14,10 @@ enum class FilterCondition(val severity: Int) {
 
 /** Where the runtime figures came from, so the UI can be honest about it. */
 enum class RuntimeSource {
-    /** No RTDB runtime field yet — figures come from the simulator. */
+    /** No RTDB runtime counter yet — figures come from Pump B state or a duty-cycle fallback. */
     SIMULATED,
 
-    /** Live cumulative counters published by ESP32 firmware V17+. */
+    /** Live cumulative five-stage pump counter published by ESP32 firmware V17+. */
     HARDWARE
 }
 
@@ -76,16 +76,10 @@ data class StageModelDiagnostics(
 data class FilterHealthState(
     val stages: List<FilterStageHealth> = emptyList(),
     val runtimeSource: RuntimeSource = RuntimeSource.SIMULATED,
-    /** Total cumulative pump-hours observed across both pumps. */
+    /** Total cumulative five-stage pump (Pump B) hours observed. */
     val totalRuntimeHours: Double = 0.0,
     /** Observed duty cycle (runtime / wall time), or null when not yet measurable. */
     val dutyCycle: Double? = null,
-    /** Last feed pressure (PSI). Simulated at nominal until firmware publishes `psi`. */
-    val pressurePsi: Double = FilterSpecs.NOMINAL_PRESSURE_PSI,
-    /** Last pump speed (RPM). Simulated at nominal until firmware publishes `rpm`. */
-    val pumpRpm: Double = FilterSpecs.NOMINAL_PUMP_RPM,
-    /** True while pressure/RPM come from the simulator rather than hardware. */
-    val telemetrySimulated: Boolean = true,
     val diagnostics: List<StageModelDiagnostics> = emptyList(),
     /** True before any sample has been ingested, so the UI can show a waiting state. */
     val isWaitingForData: Boolean = true

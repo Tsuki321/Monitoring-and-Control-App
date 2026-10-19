@@ -40,14 +40,15 @@ data class FilterPersistedState(
     val v: Int = CURRENT_VERSION,
     val stages: List<FilterStageState> = emptyList(),
     /**
-     * Last cumulative counters read from RTDB, or null while running on simulated runtime.
-     * Absolute values, not deltas — a gap while the app is closed costs no runtime.
+     * Last cumulative five-stage pump (Pump B) counter read from RTDB, or null while
+     * running on simulated runtime. Absolute value, not a delta — a gap while the app is
+     * closed costs no runtime. Pump A's counter is intentionally not stored: Pump A is
+     * intake-only and never moves water through the filter.
      */
-    val lastRuntimeSecondsA: Long? = null,
     val lastRuntimeSecondsB: Long? = null,
     /** Wall clock of the last accepted sample, used for duty cycle and rollback detection. */
     val lastSampleWallMillis: Long = 0L,
-    /** Cumulative pump-hours this install has observed. Numerator of the duty cycle. */
+    /** Cumulative five-stage pump-hours this install has observed. Numerator of the duty cycle. */
     val totalRuntimeHours: Double = 0.0,
     /** Cumulative wall-clock hours over the same intervals. Denominator of the duty cycle. */
     val accumulatedWallHours: Double = 0.0,

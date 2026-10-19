@@ -199,7 +199,7 @@
     <string name="filter_stage_pebbles">Pebbles</string>
     <string name="filter_stage_lava_rock">Lava Rock</string>
     <string name="filter_stage_activated_carbon">Activated Carbon</string>
-    <string name="filter_stage_sand">Sand</string>
+    <string name="filter_stage_multilayer_foam">Multilayer Foam</string>
 
     <!-- Conditions -->
     <string name="filter_condition_good">Good</string>
@@ -236,16 +236,14 @@
     <string name="filter_waiting_summary">Filter wear is estimated once readings arrive</string>
 
     <!-- Runtime provenance -->
-    <string name="filter_source_simulated">Estimated — using simulated run time</string>
-    <string name="filter_source_hardware">Based on measured pump run time</string>
-    <string name="filter_runtime_total_format">%1$.1f pump-hours total</string>
+    <string name="filter_source_simulated">Estimated — using simulated five-stage pump run time</string>
+    <string name="filter_source_hardware">Based on measured five-stage pump run time</string>
+    <string name="filter_runtime_total_format">%1$.1f five-stage pump-hours total</string>
     <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
-    <string name="filter_telemetry_format">Feed pressure %1$.0f PSI · Pump %2$.0f RPM</string>
-    <string name="filter_telemetry_simulated_suffix"> (simulated)</string>
 
     <!-- Model diagnostics -->
     <string name="filter_model_title">Prediction Model</string>
-    <string name="filter_model_explainer">A least-squares model learns how fast each stage wears from TDS, turbidity, pH, feed pressure and pump speed. It starts from simulated wear data and begins learning from your recorded services once enough have accumulated.</string>
+    <string name="filter_model_explainer">A least-squares model learns how fast each stage wears from TDS, turbidity and pH, applied to the measured five-stage pump run time. Pump A is intake-only and never counts toward filter wear. The model starts from simulated wear data and begins learning from your recorded services once enough have accumulated.</string>
     <string name="filter_model_row_format">%1$s — fit quality %2$d%%, %3$d real services logged</string>
     <string name="filter_model_synthetic_only">Trained on simulated data only</string>
     <string name="filter_model_reset">Reset Filter History</string>

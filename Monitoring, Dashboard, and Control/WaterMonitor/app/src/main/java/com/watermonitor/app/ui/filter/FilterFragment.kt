@@ -180,14 +180,6 @@ class FilterFragment : Fragment() {
         } else {
             total
         }
-
-        binding.tvTelemetry.text =
-            getString(R.string.filter_telemetry_format, state.pressurePsi, state.pumpRpm) +
-                if (state.telemetrySimulated) {
-                    getString(R.string.filter_telemetry_simulated_suffix)
-                } else {
-                    ""
-                }
     }
 
     private fun bindStage(row: ItemFilterStageBinding, stage: FilterStageHealth) {

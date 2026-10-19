@@ -96,12 +96,13 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 4. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Filter/Auth pages. Top bar dynamically switches between settings gear and back arrow. **The secondary-page list appears twice in `MainActivity.setupNavigation()`** — once for `isSecondaryPage` and once in the `btnSettings` click handler. Adding a destination to one and not the other yields a back arrow that navigates forward into Settings.
 
-5. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over pump runtime and water quality (TDS, turbidity, pH, feed pressure, pump speed), predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters — pressure and RPM have no sensor and are simulated at nominal. See phase 2e in the roadmap below. Key invariants:
+5. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over real water quality (TDS, turbidity, pH) and measured five-stage pump (Pump B) runtime, predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters — no pressure or RPM sensor is used. Pump A is intake-only in both AUTO and MANUAL; an A-only interval never accrues filter wear. See phase 2e in the roadmap below. Key invariants:
+   - The filter runtime is Pump B only. In AUTO the ESP32 drives it from tank level; in MANUAL the user commands it. The app follows actual `/status` Pump B state while simulated, and `runtimeB` deltas once V17 counters appear. `runtimeA` is deliberately ignored.
    - `Double.NaN.coerceIn(a, b)` returns **NaN**, not a bound — Kotlin implements it with `<`/`>` comparisons that are both false for NaN. Always call `finiteOr(fallback)` *before* `coerceIn`, or a NaN reaches the UI, rounds to 0, and renders as a plausible empty progress bar instead of an obvious crash.
    - RTDB hands back integers as `java.lang.Long`; parse runtime with `parseLongOrNull`/`asLongOrNull`, never `parseIntOrNull` (uint32 seconds overflow `Int` after ~68 years, but a corrupt value truncates immediately).
    - The wear hook is upstream of `shareIn` and **must** stay wrapped in `runCatching`: an exception there cancels the sharing coroutine, and `WhileSubscribed` does not restart after upstream failure — one bad sample would kill sensor data app-wide until the process died.
    - A ridge solve that goes singular returns `null` and the caller keeps its prior. Never substitute zeros: an all-zero coefficient vector silently reports every stage as wearing at the minimum rate.
-   - Hardware runtime deltas are validated against the **uncapped** wall clock and accrued in full (neutral load above 1 h). The first real counter retires all simulated history; counters vanishing after being seen pauses accrual — never simulate on top of measured data.
+   - Pump B runtime deltas are validated against the **uncapped** wall clock and accrued in full (neutral load above 1 h). The first real counter retires all simulated history; counters vanishing after being seen pauses accrual — never simulate on top of measured data.
 
 ### Data Flow
 
@@ -114,6 +115,7 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
   - ESP32 reads `/control` every 500ms, drives relays, writes actual states back to `/status` — creating a live feedback loop
   - Safety: tank full (100%) and leak (`rainDetected=1`) force-stop both pumps on the ESP32; float switch (Pump A only) is firmware-local and not published
   - Speed/voltage simulation: `MockSensorRepository.setPumpA/B()` syncs actual states → mock → `pumpState` flow → UI speed/voltage labels
+  - Filter runtime: `FilterHealthRepository` observes the same `pumpControlFlow`. Filter wear follows actual Pump B only — AUTO and MANUAL both count its on-time, and a MANUAL Pump A-only interval counts nothing. Hardware `runtimeB` supersedes the simulated Pump B state when present.
 
 ### Realtime Database schema (current)
 
@@ -154,8 +156,7 @@ Database URL: `https://database-for-hydrosense-default-rtdb.asia-southeast1.fire
 | `tankLevel` | float | Fill % (0–100) from ToF; float-switch estimate if ToF offline |
 | `tankWarning` | int | `0` normal, `1` ≥80%, `2` ≥90%, `3` ≥100% full |
 | `rainDetected` | 0/1 | **Leak / moisture sensor** (not weather). `1` = wet → ESP32 stops both pumps |
-| `runtimeA` / `runtimeB` | uint32 | **Cumulative seconds** each pump has been energized, all-time (V17+). Persisted in NVS; survives reboot. Absent on V16 and earlier |
-| `psi` / `rpm` | number | Feed pressure (PSI) + pump speed (RPM). **Planned — not published by any firmware build.** The app simulates them at nominal (`FilterSpecs.NOMINAL_PRESSURE_PSI`/`NOMINAL_PUMP_RPM`) until the keys appear |
+| `runtimeA` / `runtimeB` | uint32 | **Cumulative seconds** each pump has been energized, all-time (V17+). Persisted in NVS; survives reboot. Absent on V16 and earlier. Only `runtimeB` (five-stage pump) drives filter wear; `runtimeA` is intake-only |
 
 **Turbidity scale:** firmware publishes **0–3000 NTU** and emits exactly `3000` as a *fault
 sentinel* when `trueSensorVolt < 2.5` (probe unpowered, dry or disconnected). The filter model
@@ -218,9 +219,10 @@ after being seen pause accrual rather than simulating on top of measured data.
 - ESP32 publishing → Monitoring screen matches hardware readings without Console edits. Verify via Serial Monitor (`[OK] Publish successful`) + app logcat (`HydroSenseRTDB` tag, `onDataChange`).
 - Pump control round-trip: Toggle a pump in the app → Serial Monitor shows `[CTRL]` → `/status` updates → app switch reflects actual state. Toggle Auto/Manual and verify pump switches enable/disable.
 - Leak: wet the moisture sensor → Serial shows rain/leak override → `/sensors/rainDetected=1` → app leak UI + pumps stop.
-- Runtime counters (V17): run a pump ~1 min → Serial `[RUNTIME] Saved to NVS` → `/sensors/runtimeA`
-  increases → Filter screen flips from "Estimated — using simulated run time" to "Based on measured
-  pump run time". Reboot the ESP32 and confirm the counter resumes rather than restarting at 0.
+- Runtime counters (V17): run Pump B ~1 min → Serial `[RUNTIME] Saved to NVS` → `/sensors/runtimeB`
+  increases → Filter screen flips from "Estimated — using simulated five-stage pump run time" to
+  "Based on measured five-stage pump run time". Reboot the ESP32 and confirm the counter resumes
+  rather than restarting at 0. Run Pump A alone in MANUAL and confirm filter wear does not move.
 
 **Done (phase 2e — filter life prediction, on-device ML):**
 - **Firmware V17** — `Sketch Arduino/UPDATED_CODE_V17.ino` adds cumulative pump runtime counters
@@ -232,35 +234,37 @@ after being seen pause accrual rather than simulating on top of measured data.
 - **App model** — `data/ml/`: `RidgeRegression` (normal equations `(XᵀX + λI)b = Xᵀy`, λ=1e-2,
   Gaussian elimination with partial pivoting, nullable on singular); `SyntheticWearData` (seeded
   LCG, 400 rows/stage, **non-linear** ground truth — Carman–Kozeny clogging for particulate media,
-  Freundlich saturation for adsorption media, plus a hydraulic factor (pressure^0.5 × RPM^1.0) —
-  so the linear fit is a real surrogate, not a recovery of its own constants); `FilterLifeModel`
-  (six-feature load factor: TDS, turbidity, |pH−7|, and pressure/RPM ratios against nominal;
-  wear accrual, condition bands, forecast, training). Pressure/RPM have no sensor — the
-  repository simulates them at nominal ±3% wobble (normal water), so those features sit at 1.0
-  and predictions stay anchored until real firmware publishes `psi`/`rpm` (`TODO(hardware)`).
+  Freundlich saturation for adsorption media, graded depth-loading + cake-filtration ground truth
+  for the multilayer foam stage — so the linear fit is a real surrogate, not a recovery of its own
+  constants); `FilterLifeModel` (four-feature load factor: TDS, turbidity, |pH−7|; wear accrual,
+  condition bands, forecast, training). No pressure or RPM sensor is used.
 - **Five-stage biofilter** — `data/model/FilterSpecs.kt` holds the confirmed physical order:
-  pumice, pebbles, lava rock, activated carbon, sand. Each has rated hours, rated days, wear
-  profile and per-medium TDS/turbidity sensitivities. **Lifetimes, service actions and
-  sensitivities are `TODO(hardware)` estimates.** REPLACE resets runtime wear and calendar age;
-  RINSE restores 70% of runtime wear only.
+  pumice, pebbles, lava rock, activated carbon, multilayer foam. Each has rated hours, rated days,
+  wear profile and per-medium TDS/turbidity sensitivities. Lifetimes are averages of common
+  manufacturer/hobbyist guidance (hour ratings assume the 35% fallback duty); service actions and
+  sensitivities remain `TODO(hardware)`. REPLACE resets runtime wear and calendar age; RINSE
+  restores 70% of runtime wear only.
 - **Repository** — `FilterHealthRepository` accrues wear from each `/sensors` snapshot (hooked via
   `onEach { runCatching { … } }` upstream of `shareIn`), persists through `utils/FilterPrefs.kt`
-  at most once a minute, and publishes `FilterHealthState`. Started from `HydroSenseApp`
-  (`Application`), **not** an Activity — `MainActivity.onCreate` re-runs on every `recreate()`,
-  which Settings triggers on theme/locale change, and each re-run would multiply wear.
+  at most once a minute, and publishes `FilterHealthState`. It also observes `pumpControlFlow`:
+  filter runtime follows the actual five-stage pump (Pump B) in both AUTO and MANUAL, while
+  Pump A is intake-only and never contributes. Started from `HydroSenseApp` (`Application`),
+  **not** an Activity — `MainActivity.onCreate` re-runs on every `recreate()`, which Settings
+  triggers on theme/locale change, and each re-run would multiply wear.
 - **UI** — Dashboard `cardFilterHealth` (worst stage + five compact bars) taps through to
   `ui/filter/FilterFragment`: per-stage bars, forecasts, service buttons and model diagnostics
   (fitted R², real observations logged, plus whether real data has displaced the synthetic
-  prior). Runtime provenance and simulated pressure/RPM telemetry are labelled on the Filter
-  screen. Mark Replaced and Reset Filter History ask for confirmation — both permanently
-  rewrite wear history, and a replaced stage records a training observation.
-- **Simulated until hardware lands** — with no `runtimeA` in RTDB the repository simulates runtime
-  at `FilterSpecs.SIMULATED_DUTY_CYCLE`, accelerated by `DEMO_TIME_SCALE` (currently **60×** —
-  `TODO(demo)`: set to 1.0 before submission). Simulated wear bills only in-session time (the
-  interval is capped at one publish period, so reopening the app after hours does not bill the
-  closed gap). The first real counter wipes all simulated wear, duty and observations; a counter
-  disappearing after being seen pauses accrual. Both screens say "Estimated — using simulated run
-  time" whenever this path is active.
+  prior). Runtime provenance is labelled on the Filter screen. Mark Replaced and Reset Filter
+  History ask for confirmation — both permanently rewrite wear history, and a replaced stage
+  records a training observation.
+- **Simulated until hardware lands** — with no `runtimeB` in RTDB the repository simulates runtime
+  from actual Pump B on-time in `/status`, accelerated by `DEMO_TIME_SCALE` (currently **60×** —
+  `TODO(demo)`: set to 1.0 before submission). If no pump state has arrived yet it falls back to
+  `FilterSpecs.SIMULATED_DUTY_CYCLE`. Simulated wear bills only in-session time (the interval is
+  capped at one publish period, so reopening the app after hours does not bill the closed gap).
+  The first real counter wipes all simulated wear, duty and observations; a counter disappearing
+  after being seen pauses accrual. Both screens say "Estimated — using simulated five-stage pump
+  run time" whenever this path is active.
 
 **Later (phase 3 — app parity):**
 - ~~Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold~~ — superseded: the Dashboard Water Safety card shows Monitoring-style per-sensor quality labels (Neutral/Acidic/Alkaline, Ideal/Slightly High/Too High/Very Low Solids for TDS, Clear/Slightly Turbid/Turbid) computed by `WaterQualityEvaluator` over live RTDB data and colored by safety level, while the Sensor Status card shows per-sensor Online/Offline driven by live RTDB snapshot presence (all three readings arrive in one atomic `/sensors` update, so there is no per-sensor granularity upstream). The mock `SensorStatus` model and `MockSensorRepository.sensorStatus` flow were removed
@@ -406,8 +410,8 @@ To update dependencies, edit `libs.versions.toml` and push for CI validation (no
   probe-fault sentinel). Filter Logcat for `HydroSenseFilter`.
 - Health advances on *elapsed time*, so it will not move in a screenshot. Raise
   `FilterSpecs.DEMO_TIME_SCALE` to watch a stage walk the condition bands quickly.
-- "Estimated — using simulated run time" means `/sensors/runtimeA` is absent — the ESP32 is still
-  on V16 or earlier.
+- "Estimated — using simulated five-stage pump run time" means `/sensors/runtimeB` is absent —
+  the ESP32 is still on V16 or earlier.
 
 ### Known issue: turbidity scale mismatch (pre-existing, unrelated to the filter model)
 

@@ -42,16 +42,14 @@ class StageModel(
  *
  * ### The maths
  * ```
- * L        = b0 + b1·tdsNorm + b2·turbNorm + b3·|pH − 7|
- *            + b4·(psi/psiNominal) + b5·(rpm/rpmNominal)   (fitted, clamped 0.25..4.0)
+ * L        = b0 + b1·tdsNorm + b2·turbNorm + b3·|pH − 7|   (fitted, clamped 0.25..4.0)
  * usageRun += (runtimeHoursDelta × L) / ratedHours
  * usageCal  = daysSinceService / ratedDays
  * u         = max(usageRun, usageCal)                        whichever limit binds first
  * health%   = 100 × (1 − u)
  * ```
- * Pressure and pump speed are simulated at nominal until firmware publishes them, so
- * under normal water conditions those two ratios sit at 1.0 and contribute nothing —
- * predictions stay anchored to the rated-life reference until real telemetry lands.
+ * The load factor uses only measured water quality; wear is multiplied by actual five-stage
+ * pump run time, so no pressure or RPM sensor is required.
  * Health is deliberately linear in `u`. Any strictly decreasing curve is just a relabelling
  * of the same information, and an exponential would show a filter at one third of its rated
  * life as 58% — which reads as "broken", not "two thirds left".
@@ -59,22 +57,23 @@ class StageModel(
  * ### Surrogate baseline
  * The synthetic ground truth is anchored at `L = 1.0` for nominal water, but the fitted line
  * is an unconstrained surrogate for that curved process and does not pass exactly through the
- * anchor. With the current synthetic prior it lands near 1.35 for particulate stages (pumice,
- * pebbles, lava rock and sand) and 0.85 for the adsorption stage (activated carbon), with R²
- * between 0.68 and 0.85. The model therefore predicts an effective runtime of approximately
- * `ratedHours / L` at that point. [FilterStageSpec.ratedHours] remains the configured reference
- * used to scale wear and training targets; real service observations update the fitted response,
- * not the configured value itself.
+ * anchor. Depending on the stage's profile the fitted prior can therefore land somewhat above
+ * or below 1.0 at nominal — higher for the particulate and foam stages, lower for the
+ * adsorption stage — with a moderate R² rather than a perfect fit. The model therefore
+ * predicts an effective runtime of approximately `ratedHours / L` at that point.
+ * [FilterStageSpec.ratedHours] remains the configured reference used to scale wear and
+ * training targets; real service observations update the fitted response, not the configured
+ * value itself.
  */
 object FilterLifeModel {
 
     /**
-     * Feature vector width: intercept, tdsNorm, turbNorm, |pH − 7|, pressure ratio,
-     * pump-speed ratio. Training and inference must build rows of exactly this width —
-     * [loadFactor] falls back to neutral on a size mismatch, so a stale-width coefficient
-     * vector would silently neutralise the load factor, not crash.
+     * Feature vector width: intercept, tdsNorm, turbNorm, |pH − 7|.
+     * Training and inference must build rows of exactly this width — [loadFactor] falls
+     * back to neutral on a size mismatch, so a stale-width coefficient vector would
+     * silently neutralise the load factor, not crash.
      */
-    const val FEATURE_COUNT = 6
+    const val FEATURE_COUNT = 4
 
     const val MIN_LOAD_FACTOR = 0.25
     const val MAX_LOAD_FACTOR = 4.0
@@ -95,51 +94,27 @@ object FilterLifeModel {
 
     // ── Features ───────────────────────────────────────────────────────────
 
-    fun features(data: SensorData): DoubleArray = features(
-        data.tds.toDouble(),
-        data.turbidity,
-        data.ph,
-        data.pressurePsi ?: FilterSpecs.NOMINAL_PRESSURE_PSI,
-        data.pumpRpm ?: FilterSpecs.NOMINAL_PUMP_RPM
-    )
+    fun features(data: SensorData): DoubleArray =
+        features(data.tds.toDouble(), data.turbidity, data.ph)
 
     /**
      * Builds the feature row. Normalisation uses the **firmware's** published scales:
      * turbidity is 0–3000 NTU (`UPDATED_CODE_V16.ino:270-271`), not 0–5. Getting this wrong
-     * by 600× would pin every reading at full scale and burn a cartridge in days. Pressure
-     * and pump speed normalise against [FilterSpecs.NOMINAL_PRESSURE_PSI] /
-     * [FilterSpecs.NOMINAL_PUMP_RPM] so that nominal telemetry contributes 1.0.
+     * by 600× would pin every reading at full scale and burn a cartridge in days.
      */
-    fun features(
-        tdsPpm: Double,
-        turbidityNtu: Double,
-        ph: Double,
-        pressurePsi: Double = FilterSpecs.NOMINAL_PRESSURE_PSI,
-        pumpRpm: Double = FilterSpecs.NOMINAL_PUMP_RPM
-    ): DoubleArray {
+    fun features(tdsPpm: Double, turbidityNtu: Double, ph: Double): DoubleArray {
         val tdsNorm = (tdsPpm / FilterSpecs.TDS_FULL_SCALE_PPM).finiteOr(0.0).coerceIn(0.0, 1.0)
         val turbidityNorm = (turbidityNtu / FilterSpecs.TURBIDITY_FULL_SCALE_NTU)
             .finiteOr(0.0).coerceIn(0.0, 1.0)
         val phDeviation = abs(ph - 7.0).finiteOr(0.0).coerceIn(0.0, 7.0)
-        val pressureRatio = (pressurePsi / FilterSpecs.NOMINAL_PRESSURE_PSI)
-            .finiteOr(1.0).coerceIn(0.0, 4.0)
-        val rpmRatio = (pumpRpm / FilterSpecs.NOMINAL_PUMP_RPM)
-            .finiteOr(1.0).coerceIn(0.0, 4.0)
-        return doubleArrayOf(1.0, tdsNorm, turbidityNorm, phDeviation, pressureRatio, rpmRatio)
+        return doubleArrayOf(1.0, tdsNorm, turbidityNorm, phDeviation)
     }
 
-    /**
-     * Observation rows predate hydraulic telemetry (and all simulated history sat at
-     * nominal by definition), so their pressure/RPM features are nominal — a ratio of 1.0,
-     * same as a neutral pH contributes 0.
-     */
     private fun features(observation: WearObservation): DoubleArray = doubleArrayOf(
         1.0,
         observation.tdsNorm.finiteOr(0.0).coerceIn(0.0, 1.0),
         observation.turbidityNorm.finiteOr(0.0).coerceIn(0.0, 1.0),
-        observation.phDeviation.finiteOr(0.0).coerceIn(0.0, 7.0),
-        1.0,
-        1.0
+        observation.phDeviation.finiteOr(0.0).coerceIn(0.0, 7.0)
     )
 
     // ── Inference ──────────────────────────────────────────────────────────
@@ -401,8 +376,8 @@ object FilterLifeModel {
             0.0
         }
 
-        // Pressure/RPM coefficients are zero so the fallback keeps its exact L = 1.0 anchor
-        // at nominal: nominal hydraulic ratios are 1.0 and must not shift the prediction.
-        return doubleArrayOf(intercept, tdsCoefficient, turbidityCoefficient, 0.25, 0.0, 0.0)
+        // The pH-deviation coefficient is a small positive anchor: neutral pH contributes
+        // nothing, so the fallback keeps its exact L = 1.0 anchor at nominal water quality.
+        return doubleArrayOf(intercept, tdsCoefficient, turbidityCoefficient, 0.25)
     }
 }
