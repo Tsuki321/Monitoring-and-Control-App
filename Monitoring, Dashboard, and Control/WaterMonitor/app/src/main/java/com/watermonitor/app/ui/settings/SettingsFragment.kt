@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.watermonitor.app.MainActivity
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentSettingsBinding
 import com.watermonitor.app.utils.LocaleHelper
@@ -35,6 +36,7 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupDarkModeToggle()
         setupLanguageSpinner()
+        setupReplayTutorialButton()
         setupAboutButton()
         setupSwitchAccountButton()
         setupLogoutButton()
@@ -87,6 +89,15 @@ class SettingsFragment : Fragment() {
 
                 override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             }
+    }
+
+    private fun setupReplayTutorialButton() {
+        binding.cardReplayTutorial.setOnClickListener {
+            // The tour is owned by the activity (it holds the overlay, binding and nav
+            // controller), so ask the host to run it. The completion flag is left alone: the
+            // user has already seen the tour, and replaying does not change that.
+            (activity as? MainActivity)?.replayTutorial()
+        }
     }
 
     private fun setupAboutButton() {

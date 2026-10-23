@@ -166,7 +166,7 @@ class DashboardFragment : Fragment() {
                     AnimationUtils.animateCardEntrance(
                         listOf(
                             binding.cardWaterSafety,
-                            binding.cardSystemStatus,
+                            binding.dashboardCardSystemStatus,
                             binding.cardSensorStatus,
                             binding.cardFilterHealth
                         ),

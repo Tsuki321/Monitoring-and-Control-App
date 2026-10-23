@@ -19,8 +19,10 @@ import com.watermonitor.app.data.repository.FilterHealthRepository
 import com.watermonitor.app.databinding.ActivityMainBinding
 import com.watermonitor.app.utils.LocaleHelper
 import com.watermonitor.app.ui.legal.LegalDialog
+import com.watermonitor.app.ui.tutorial.TutorialController
 import com.watermonitor.app.utils.LegalConsentManager
 import com.watermonitor.app.utils.ThemeHelper
+import com.watermonitor.app.utils.TutorialPrefs
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -40,6 +42,33 @@ class MainActivity : AppCompatActivity() {
     private val backPressHandler = Handler(Looper.getMainLooper())
     private var legalDialogShowing = false
 
+    /** Guided tour; created once the nav controller exists, from setupNavigation(). */
+    private var tutorial: TutorialController? = null
+
+    companion object {
+        /**
+         * Set on the activity's intent just before Register navigates to the Dashboard, so
+         * an account that has just been created gets the tour on the first Dashboard it
+         * sees. Consumed (and removed) once in onCreate; later recreations rely on the
+         * saved instance state instead.
+         */
+        const val EXTRA_START_TUTORIAL = "extra_start_tutorial"
+        private const val STATE_PENDING_TUTORIAL = "pending_tutorial"
+        private const val STATE_TOUR_COMPLETED_ON_LAUNCH = "tour_completed_on_launch"
+        private const val STATE_TOUR_SHOWING = "tour_showing"
+    }
+
+    private var pendingTutorialStart = false
+
+    /**
+     * Whether the tour had already been finished when this activity was first created.
+     * A replay is an explicit request, so it survives a recreate; but a request that was
+     * never acted on (the user left Settings straight away) is not restored on a later
+     * launch, which is what keeps the tour once-per-account for someone who completed it.
+     */
+    private var completedTourOnLaunch = false
+
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
     }
@@ -48,6 +77,20 @@ class MainActivity : AppCompatActivity() {
         ThemeHelper.applyTheme(ThemeHelper.getSavedThemeMode(this))
         super.onCreate(savedInstanceState)
 
+        // A fresh start reads the request from Register; a recreate keeps its own flag so a
+        // theme/locale change mid-tour does not silently cancel it. Only the fresh-start read
+        // consumes the extra — clearing it on a recreate as well would wipe the request
+        // before setupNavigation() looks at it.
+        completedTourOnLaunch = savedInstanceState?.getBoolean(STATE_TOUR_COMPLETED_ON_LAUNCH, false)
+            ?: FirebaseAuth.getInstance().currentUser?.uid
+                ?.let { TutorialPrefs.hasCompleted(this, it) } == true
+        pendingTutorialStart = if (savedInstanceState != null) {
+            savedInstanceState.getBoolean(STATE_PENDING_TUTORIAL, false)
+        } else {
+            val requested = intent?.getBooleanExtra(EXTRA_START_TUTORIAL, false) == true
+            intent?.removeExtra(EXTRA_START_TUTORIAL)
+            requested
+        }
         // Edge-to-edge rendering
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -88,6 +131,32 @@ class MainActivity : AppCompatActivity() {
         enforceLegalConsent()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // Carry the tour across a recreate so a theme/locale change or process death midway
+        // does not silently drop it. Only for an account that has never finished it: after
+        // "Skip"/"Done" the flag is written and the tour is not resurrected; for a returning
+        // user replaying from Settings and then leaving, it is simply not restored, which
+        // keeps the once-only promise intact.
+        outState.putBoolean(STATE_PENDING_TUTORIAL, pendingTutorialStart)
+        outState.putBoolean(STATE_TOUR_COMPLETED_ON_LAUNCH, completedTourOnLaunch)
+        outState.putBoolean(STATE_TOUR_SHOWING, tutorial?.isShowing == true)
+    }
+
+    /**
+     * Settings → "Replay tour". The tour is driven from the activity (it owns the overlay,
+     * the binding and the nav controller), so the fragment reaches it through its host.
+     */
+    fun replayTutorial() {
+        val controller = tutorial ?: return
+        pendingTutorialStart = true
+        // The tour's first step needs the Dashboard on screen, and its controller already
+        // knows how to get there (same popUpTo logic as any tab switch) — no navigation here.
+        // Settings and the Dashboard are siblings in this graph, so popping back to the
+        // Dashboard would rebuild it; letting the tour navigate keeps one code path.
+        controller.start()
+    }
+
     private fun setupNavigation() {
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.navHostFragment) as NavHostFragment
@@ -105,8 +174,32 @@ class MainActivity : AppCompatActivity() {
 
         binding.bottomNav.setupWithNavController(navController)
 
+        val controller = TutorialController(this, binding, navController)
+        tutorial = controller
+        // Offer the tour once per account. A newly registered account asks for it from the
+        // Register screen (the intent extra); anyone else who has never finished it —
+        // including accounts that existed before this feature — sees it on their next launch.
+        val explicitlyRequested = pendingTutorialStart
+        val neverCompleted = currentUser != null && !TutorialPrefs.hasCompleted(this, currentUser.uid)
+        // On a recreate, only resume a tour that was actually on screen when the state was
+        // saved. A request that was never acted on (the user tapped Replay and immediately
+        // left Settings) is dropped, so it cannot reappear on a later launch.
+        val resumeShowingTour = savedInstanceState != null &&
+            savedInstanceState.getBoolean(STATE_TOUR_SHOWING, false)
+        if (resumeShowingTour || explicitlyRequested || neverCompleted) {
+            pendingTutorialStart = true
+            // After layout: the first step needs the nav host and top bar measured. If the
+            // legal-consent dialog is due on this launch it is enforced from onResume and
+            // draws above the tour's dim layer, so the tour can start underneath it.
+            binding.root.post {
+                if (!isFinishing && !isDestroyed) controller.start()
+            }
+        }
+
         // Update title, bottom nav visibility, and top-bar button based on destination
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            tutorial?.onDestinationChanged(destination.id)
+
             binding.tvTitle.text = when (destination.id) {
                 R.id.dashboardFragment -> getString(R.string.title_dashboard)
                 R.id.monitoringFragment -> getString(R.string.title_monitoring)

@@ -24,6 +24,7 @@ import com.facebook.FacebookException
 import com.facebook.login.LoginManager
 import com.facebook.login.LoginResult
 import android.content.Intent
+import com.watermonitor.app.MainActivity
 import com.watermonitor.app.R
 import com.watermonitor.app.data.model.AuthProvider
 import com.watermonitor.app.databinding.FragmentRegisterBinding
@@ -221,6 +222,10 @@ class RegisterFragment : Fragment() {
 
     private fun navigateToDashboard() {
         if (isAdded && view != null) {
+            // MainActivity reads this extra in setupNavigation(), which its first
+            // onDestinationChanged listener call reaches immediately after this navigate().
+            // Set it before navigating so the tour starts together with the first Dashboard.
+            requireActivity().intent?.putExtra(MainActivity.EXTRA_START_TUTORIAL, true)
             findNavController().navigate(R.id.action_registerFragment_to_dashboardFragment)
         }
     }

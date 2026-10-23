@@ -193,4 +193,41 @@
     <string name="filter_confirm_replace_message">Mabubura ang kasaysayan ng pagkasira ng %1$s at maitatala ang serbisyo.</string>
     <string name="filter_confirm_reset_title">I-reset ang buong kasaysayan ng filter?</string>
     <string name="filter_confirm_reset_message">Babalik ang bawat bahagi sa bago at mabubura ang lahat ng naitalang serbisyo. Hindi na ito maibabalik.</string>
+
+    <!-- Guided tour (shown once per account) -->
+    <string name="tutorial_next">Susunod</string>
+    <string name="tutorial_done">Tapos na</string>
+    <string name="tutorial_skip">Laktawan ang tour</string>
+    <string name="tutorial_step_counter">HAKBANG %1$d NG %2$d</string>
+    <string name="tutorial_finish_counter">TAPOS NA LAHAT</string>
+    <string name="tutorial_welcome_title">Maligayang pagdating sa HydroSense</string>
+    <string name="tutorial_welcome_body">Gawin natin ang isang mabilisang paglibot. Ipapakita ng tour na ito ang bawat screen para malaman mo kung nasaan ang mga sukat ng tubig, tangke, pump at filter.</string>
+    <string name="tutorial_nav_title">Ang ibabang bar</string>
+    <string name="tutorial_nav_body">Ito ang tatlong pangunahing bahagi: Home para sa pangkalahatang tanaw, Monitoring para sa mga live na sukat ng sensor, at Control para sa pagpapatakbo ng pump. Maaari kang lumipat kahit kailan.</string>
+    <string name="tutorial_safety_title">Kalagayan ng mga sukat</string>
+    <string name="tutorial_safety_body">Mabilisang pagtingin kung nasa kanais-nais na saklaw ang pH, TDS at turbidity ngayon. Tungkol lamang ito sa mga sukat — hindi nito pinatutunayan na ligtas inumin ang tubig.</string>
+    <string name="tutorial_system_title">Katayuan ng pump at tagas</string>
+    <string name="tutorial_system_body">Ipinapakita kung tumatakbo ang bawat pump at kung basang-basa ang sensor ng tagas. Kapag may tagas, awtomatikong pinapatay ng sistema ang dalawang pump para sa kaligtasan.</string>
+    <string name="tutorial_sensors_title">Katayuan ng sensor</string>
+    <string name="tutorial_sensors_body">Online o offline ang bawat sensor. Sabay dumadating ang tatlong sukat mula sa device, kaya karaniwang sabay silang nagbabago.</string>
+    <string name="tutorial_filter_title">Kalusugan ng filter</string>
+    <string name="tutorial_filter_body">Buod ng limang-bahaging biofilter. Pindutin ito para makita ang natitirang buhay, hula at serbisyo ng bawat bahagi.</string>
+    <string name="tutorial_monitoring_title">Monitoring</string>
+    <string name="tutorial_monitoring_body">Susunod ang Monitoring — ang detalyadong tanaw ng tangke at ng bawat sukat ng sensor.</string>
+    <string name="tutorial_tank_title">Tangke ng tubig</string>
+    <string name="tutorial_tank_body">Ipinapakita ng animated na tangke kung gaano ito kapuno. May babala sa 80%, 90% at 100%, at sa 100% awtomatikong humihinto ang mga pump.</string>
+    <string name="tutorial_readings_title">pH, TDS at turbidity</string>
+    <string name="tutorial_readings_body">Ipinapakita ng bawat card ang live na sukat, unit at simpleng paglalarawan. Kusang nagbabago ang mga halaga kapag may bagong datos ang device.</string>
+    <string name="tutorial_control_title">Control</string>
+    <string name="tutorial_control_body">Panghuli, ang Control — dito mo binubukas ni binababa ang mga pump at pinipili kung paano tumakbo ang mga ito.</string>
+    <string name="tutorial_mode_title">Auto at Manual</string>
+    <string name="tutorial_mode_body">Sa Auto, pinapatakbo ng device ang mga pump batay sa antas ng tangke. Patayin ito para sa Manual, at sinusunod ng bawat pump ang sarili nitong switch. Nakalock ang pump sa Auto mode.</string>
+    <string name="tutorial_pumps_title">Ang mga pump</string>
+    <string name="tutorial_pumps_body">Pinupuno ng Intake Pump (A) ang tangke; itinutulak ng Five Stage Pump (B) ang tubig sa filter. Ipinapakita ng bawat card ang on/off, bilis at boltahe, at sinusunod nito ang tunay na relay ng device.</string>
+    <string name="tutorial_settings_title">Mga Setting</string>
+    <string name="tutorial_settings_body">Binubuksan ng gear ang Settings para sa dark mode, wika, About at mga account option — kasama ang muling paglalaro ng tour na ito kahit kailan.</string>
+    <string name="tutorial_finish_title">Handa ka na</string>
+    <string name="tutorial_finish_body">Iyon ang buong tour. Buksan ang Settings kahit kailan para ulitin ito. Kusang nag-aupdate ang mga sukat, kaya bantayan lang ang Dashboard.</string>
+    <string name="tutorial_replay">Ulitin ang tour</string>
+    <string name="tutorial_replay_summary">Gawin muli ang paglibot sa app</string>
 </resources>

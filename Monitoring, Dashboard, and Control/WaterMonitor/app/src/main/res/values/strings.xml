@@ -252,4 +252,41 @@
     <string name="filter_confirm_replace_message">%1$s wear history will be cleared and the service recorded.</string>
     <string name="filter_confirm_reset_title">Reset all filter history?</string>
     <string name="filter_confirm_reset_message">Every stage returns to new and all recorded services are erased. This cannot be undone.</string>
+
+    <!-- Guided tour (shown once per account) -->
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_done">Done</string>
+    <string name="tutorial_skip">Skip tour</string>
+    <string name="tutorial_step_counter">STEP %1$d OF %2$d</string>
+    <string name="tutorial_finish_counter">ALL DONE</string>
+    <string name="tutorial_welcome_title">Welcome to HydroSense</string>
+    <string name="tutorial_welcome_body">Let\'s take a quick look around. This tour walks you through every screen, so you know where your water readings, tank, pumps and filters live.</string>
+    <string name="tutorial_nav_title">The bottom bar</string>
+    <string name="tutorial_nav_body">These three tabs are the main areas: Home for an overview, Monitoring for live sensor readings, and Control to operate the pumps. You can switch between them at any time.</string>
+    <string name="tutorial_safety_title">Sensor range status</string>
+    <string name="tutorial_safety_body">A quick check of how today\'s pH, TDS and turbidity compare with their preferred ranges. It describes the readings only — it does not certify the water as safe to drink.</string>
+    <string name="tutorial_system_title">Pump status and leaks</string>
+    <string name="tutorial_system_body">Shows whether each pump is running and whether the leak sensor is wet. On a leak, the system stops both pumps automatically for safety.</string>
+    <string name="tutorial_sensors_title">Sensor status</string>
+    <string name="tutorial_sensors_body">Online or offline for each sensor. All three readings arrive together from the device, so they normally change together.</string>
+    <string name="tutorial_filter_title">Filter health</string>
+    <string name="tutorial_filter_body">A summary of the five-stage biofilter. Tap it to see each stage\'s remaining life, forecasts and service actions.</string>
+    <string name="tutorial_monitoring_title">Monitoring</string>
+    <string name="tutorial_monitoring_body">Next is Monitoring — the detailed view of the tank and every sensor reading.</string>
+    <string name="tutorial_tank_title">Water tank</string>
+    <string name="tutorial_tank_body">The animated tank shows how full it is. Near 80%, 90% and 100% you\'ll see warnings, and at 100% the pumps are stopped automatically.</string>
+    <string name="tutorial_readings_title">pH, TDS and turbidity</string>
+    <string name="tutorial_readings_body">Each card shows a live reading, its unit and a plain-language label. Values update automatically as the device publishes new data.</string>
+    <string name="tutorial_control_title">Control</string>
+    <string name="tutorial_control_body">Finally, Control — this is where you switch the pumps and choose how they run.</string>
+    <string name="tutorial_mode_title">Auto and Manual</string>
+    <string name="tutorial_mode_body">In Auto the device runs the pumps from the tank level. Turn it off for Manual, and each pump follows its own switch. Pump switches are locked in Auto mode.</string>
+    <string name="tutorial_pumps_title">The pumps</string>
+    <string name="tutorial_pumps_body">The Intake Pump (A) fills the tank; the Five Stage Pump (B) pushes water through the filter. Each card shows on/off state, speed and voltage, and follows the real relay state from the device.</string>
+    <string name="tutorial_settings_title">Settings</string>
+    <string name="tutorial_settings_body">The gear opens Settings for dark mode, language, the About page and account options — including replaying this tour whenever you like.</string>
+    <string name="tutorial_finish_title">You\'re all set</string>
+    <string name="tutorial_finish_body">That\'s the tour. Open Settings any time to replay it. Readings refresh on their own, so just keep an eye on the Dashboard.</string>
+    <string name="tutorial_replay">Replay tour</string>
+    <string name="tutorial_replay_summary">Walk through the app again</string>
 </resources>
