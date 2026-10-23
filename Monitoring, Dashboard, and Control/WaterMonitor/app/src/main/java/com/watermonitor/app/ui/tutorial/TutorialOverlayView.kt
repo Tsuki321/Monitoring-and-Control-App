@@ -178,7 +178,7 @@ class TutorialOverlayView @JvmOverloads constructor(
 
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(18), dp(20), dp(12))
+            setPadding(dp(20f).toInt(), dp(18f).toInt(), dp(20f).toInt(), dp(12f).toInt())
         }
 
         // Header: a tinted circle holding the step's icon, then "Step 3 of 14".
@@ -207,7 +207,7 @@ class TutorialOverlayView @JvmOverloads constructor(
             setTextColor(0xB3A8E6EF.toInt())
             letterSpacing = 0.12f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setPadding(dp(11), 0, 0, 0)
+            setPadding(dp(11f).toInt(), 0, 0, 0)
         }
         headerRow.addView(
             stepCounter,
@@ -240,7 +240,7 @@ class TutorialOverlayView @JvmOverloads constructor(
             backgroundTintList = null
             minWidth = 0
             minimumWidth = 0
-            setPadding(dp(4), dp(10), dp(16), dp(10))
+            setPadding(dp(4f).toInt(), dp(10f).toInt(), dp(16f).toInt(), dp(10f).toInt())
             insetTop = 0
             insetBottom = 0
             setOnClickListener { skipListener?.onBalloonClick() }
@@ -252,7 +252,7 @@ class TutorialOverlayView @JvmOverloads constructor(
             insetBottom = 0
             minWidth = dp(92).toInt()
             minimumWidth = dp(92).toInt()
-            setPadding(dp(20), dp(10), dp(20), dp(10))
+            setPadding(dp(20f).toInt(), dp(10f).toInt(), dp(20f).toInt(), dp(10f).toInt())
             setOnClickListener { actionListener?.onBalloonClick() }
             // The action button never keeps input focus, so any key — including Back —
             // bubbles back up to this overlay instead of being handled by the button.
@@ -263,9 +263,9 @@ class TutorialOverlayView @JvmOverloads constructor(
         actions.addView(actionButton)
 
         content.addView(headerRow, LinearLayout.LayoutParams.MATCH_PARENT, dp(36f).toInt())
-        content.addView(titleView, matchWidth(topMargin = dp(12f)))
-        content.addView(bodyView, matchWidth(topMargin = dp(6f)))
-        content.addView(actions, matchWidth(topMargin = dp(12f)))
+        content.addView(titleView, matchWidth(topMargin = dp(12f).toInt()))
+        content.addView(bodyView, matchWidth(topMargin = dp(6f).toInt()))
+        content.addView(actions, matchWidth(topMargin = dp(12f).toInt()))
 
         balloon.addView(content)
     }

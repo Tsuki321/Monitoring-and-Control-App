@@ -68,6 +68,9 @@ class MainActivity : AppCompatActivity() {
      */
     private var completedTourOnLaunch = false
 
+    /** Whether the tour overlay was up when the view state was last saved. */
+    private var tourWasShowingOnSave = false
+
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
@@ -91,6 +94,8 @@ class MainActivity : AppCompatActivity() {
             intent?.removeExtra(EXTRA_START_TUTORIAL)
             requested
         }
+        tourWasShowingOnSave = savedInstanceState?.getBoolean(STATE_TOUR_SHOWING, false) == true
+
         // Edge-to-edge rendering
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -174,7 +179,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.bottomNav.setupWithNavController(navController)
 
-        val controller = TutorialController(this, binding, navController)
+        val controller = TutorialController(this, binding, navController) {
+            // Nothing to tear down here: the controller removes its own overlay. Recorded so
+            // a later save no longer treats the tour as pending.
+            tourWasShowingOnSave = false
+        }
         tutorial = controller
         // Offer the tour once per account. A newly registered account asks for it from the
         // Register screen (the intent extra); anyone else who has never finished it —
@@ -182,10 +191,10 @@ class MainActivity : AppCompatActivity() {
         val explicitlyRequested = pendingTutorialStart
         val neverCompleted = currentUser != null && !TutorialPrefs.hasCompleted(this, currentUser.uid)
         // On a recreate, only resume a tour that was actually on screen when the state was
-        // saved. A request that was never acted on (the user tapped Replay and immediately
-        // left Settings) is dropped, so it cannot reappear on a later launch.
-        val resumeShowingTour = savedInstanceState != null &&
-            savedInstanceState.getBoolean(STATE_TOUR_SHOWING, false)
+        // saved (the overlay itself is not recreated by the framework). A request that was
+        // never acted on — the user tapped Replay and immediately left Settings — is
+        // dropped, so it cannot reappear on a later launch.
+        val resumeShowingTour = tourWasShowingOnSave
         if (resumeShowingTour || explicitlyRequested || neverCompleted) {
             pendingTutorialStart = true
             // After layout: the first step needs the nav host and top bar measured. If the

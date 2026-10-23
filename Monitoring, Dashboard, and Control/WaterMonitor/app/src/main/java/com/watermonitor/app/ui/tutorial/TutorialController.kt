@@ -336,11 +336,8 @@ class TutorialController(
             TutorialTarget.DASHBOARD_FILTER_CARD -> navView(R.id.cardFilterHealth)
             TutorialTarget.MONITORING_TANK_CARD -> navView(R.id.cardTank)
             TutorialTarget.MONITORING_PH_CARD -> navView(R.id.cardPh)
-            TutorialTarget.MONITORING_TDS_CARD -> navView(R.id.cardTds)
-            TutorialTarget.MONITORING_TURBIDITY_CARD -> navView(R.id.cardTurbidity)
             TutorialTarget.CONTROL_MODE_CARD -> navView(R.id.cardMode)
             TutorialTarget.CONTROL_PUMP_A_CARD -> navView(R.id.cardPumpA)
-            TutorialTarget.CONTROL_PUMP_B_CARD -> navView(R.id.cardPumpB)
         }
         return view?.takeIf { v -> v.isShown && v.width > 0 && v.height > 0 }
     }
