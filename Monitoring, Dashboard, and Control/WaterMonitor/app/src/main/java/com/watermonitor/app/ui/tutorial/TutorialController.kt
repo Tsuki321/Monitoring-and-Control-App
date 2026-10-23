@@ -5,6 +5,7 @@ import android.graphics.RectF
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.annotation.IdRes
 import androidx.core.view.children
@@ -365,18 +366,23 @@ class TutorialController(
 
     /** The BottomNavigationView renders each item without an item ID — match on its label. */
     private fun tabView(@IdRes menuItemId: Int): View? {
-        val title = binding.bottomNav.menu.findItem(menuItemId)?.title?.toString() ?: return null
-        return binding.bottomNav.children.firstOrNull { itemView ->
-            itemView.children.any { child ->
-                val text = (child as? android.widget.TextView)?.text?.toString()
-                    ?: (child as? ViewGroup)?.let { group ->
-                        group.children.filterIsInstance<android.widget.TextView>()
-                            .joinToString("") { it.text ?: "" }
-                            .takeIf { it.isNotEmpty() }
-                    }
-                text == title
-            }
+        val menuItem = binding.bottomNav.menu.findItem(menuItemId) ?: return null
+        val title: CharSequence = menuItem.title ?: return null
+        val wanted: String = title.toString()
+        for (i in 0 until binding.bottomNav.childCount) {
+            val itemView: View = binding.bottomNav.getChildAt(i)
+            if (labelOf(itemView) == wanted) return itemView
         }
+        return null
+    }
+
+    /** Concatenated text of every TextView inside [view], or "" when there is none. */
+    private fun labelOf(view: View): String {
+        if (view is TextView) return view.text.toString()
+        if (view !is ViewGroup) return ""
+        val builder = StringBuilder()
+        for (i in 0 until view.childCount) builder.append(labelOf(view.getChildAt(i)))
+        return builder.toString()
     }
 
     // ---------------------------------------------------------------- geometry
