@@ -92,12 +92,12 @@ class TutorialOverlayView @JvmOverloads constructor(
     }
     private val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = dp(1.5f)
+        strokeWidth = dpf(1.5f)
         color = Color.WHITE
     }
     private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
-        strokeWidth = dp(2f)
+        strokeWidth = dpf(2f)
         color = ContextCompat.getColor(context, R.color.teal_mid)
     }
     private val arrowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -157,7 +157,7 @@ class TutorialOverlayView @JvmOverloads constructor(
         )
         balloonContainer.addView(
             arrow,
-            LayoutParams(dp(28f).toInt(), dp(14f).toInt())
+            LayoutParams(dp(28), dp(14))
         )
         balloonContainer.addView(
             balloon,
@@ -169,16 +169,16 @@ class TutorialOverlayView @JvmOverloads constructor(
     // ---------------------------------------------------------------- balloon content
 
     private fun buildBalloon() {
-        balloon.strokeWidth = dp(1.5f).toInt()
-        balloon.radius = dp(20f)
-        balloon.cardElevation = dp(12f)
+        balloon.strokeWidth = dpf(1.5f).toInt()
+        balloon.radius = dpf(20f)
+        balloon.cardElevation = dpf(12f)
         balloon.setCardBackgroundColor(Color.parseColor("#F20B2233"))
         balloon.strokeColor = Color.parseColor("#664DB8C8")
         balloon.setOnClickListener { balloonClickListener?.onBalloonClick() }
 
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20f).toInt(), dp(18f).toInt(), dp(20f).toInt(), dp(12f).toInt())
+            setPadding(dp(20), dp(18), dp(20), dp(12))
         }
 
         // Header: a tinted circle holding the step's icon, then "Step 3 of 14".
@@ -196,22 +196,22 @@ class TutorialOverlayView @JvmOverloads constructor(
         iconView.setColorFilter(Color.WHITE)
         iconCircle.addView(
             iconView,
-            LayoutParams(dp(19f).toInt(), dp(19f).toInt(), Gravity.CENTER)
+            LayoutParams(dp(19), dp(19), Gravity.CENTER)
         )
         headerRow.addView(
             iconCircle,
-            LinearLayout.LayoutParams(dp(36f).toInt(), dp(36f).toInt())
+            LinearLayout.LayoutParams(dp(36), dp(36))
         )
         stepCounter.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
             setTextColor(0xB3A8E6EF.toInt())
             letterSpacing = 0.12f
             typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
-            setPadding(dp(11f).toInt(), 0, 0, 0)
+            setPadding(dp(11), 0, 0, 0)
         }
         headerRow.addView(
             stepCounter,
-            LinearLayout.LayoutParams(0, dp(36f).toInt(), 1f).apply {
+            LinearLayout.LayoutParams(0, dp(36), 1f).apply {
                 gravity = Gravity.CENTER_VERTICAL
             }
         )
@@ -226,7 +226,7 @@ class TutorialOverlayView @JvmOverloads constructor(
         bodyView.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             setTextColor(0xD9FFFFFF.toInt())
-            setLineSpacing(dp(3f), 1f)
+            setLineSpacing(dpf(3f), 1f)
         }
 
         val actions = LinearLayout(context).apply {
@@ -240,19 +240,19 @@ class TutorialOverlayView @JvmOverloads constructor(
             backgroundTintList = null
             minWidth = 0
             minimumWidth = 0
-            setPadding(dp(4f).toInt(), dp(10f).toInt(), dp(16f).toInt(), dp(10f).toInt())
+            setPadding(dp(4), dp(10), dp(16), dp(10))
             insetTop = 0
             insetBottom = 0
             setOnClickListener { skipListener?.onBalloonClick() }
         }
         actionButton.apply {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-            cornerRadius = dp(22).toInt()
+            cornerRadius = dp(22)
             insetTop = 0
             insetBottom = 0
-            minWidth = dp(92).toInt()
-            minimumWidth = dp(92).toInt()
-            setPadding(dp(20f).toInt(), dp(10f).toInt(), dp(20f).toInt(), dp(10f).toInt())
+            minWidth = dp(92)
+            minimumWidth = dp(92)
+            setPadding(dp(20), dp(10), dp(20), dp(10))
             setOnClickListener { actionListener?.onBalloonClick() }
             // The action button never keeps input focus, so any key — including Back —
             // bubbles back up to this overlay instead of being handled by the button.
@@ -262,10 +262,10 @@ class TutorialOverlayView @JvmOverloads constructor(
         actions.addView(View(context), LinearLayout.LayoutParams(0, 1, 1f))
         actions.addView(actionButton)
 
-        content.addView(headerRow, LinearLayout.LayoutParams.MATCH_PARENT, dp(36f).toInt())
-        content.addView(titleView, matchWidth(topMargin = dp(12f).toInt()))
-        content.addView(bodyView, matchWidth(topMargin = dp(6f).toInt()))
-        content.addView(actions, matchWidth(topMargin = dp(12f).toInt()))
+        content.addView(headerRow, LinearLayout.LayoutParams.MATCH_PARENT, dp(36))
+        content.addView(titleView, matchWidth(topMargin = dp(12)))
+        content.addView(bodyView, matchWidth(topMargin = dp(6)))
+        content.addView(actions, matchWidth(topMargin = dp(12)))
 
         balloon.addView(content)
     }
@@ -292,7 +292,7 @@ class TutorialOverlayView @JvmOverloads constructor(
     ) {
         hasSpotlight = spotlight != null
         spotlightRect.set(spotlight ?: RectF())
-        spotlightInset = if (step.anchor == SpotlightAnchor.STEP) dp(6f) else dp(3f)
+        spotlightInset = if (step.anchor == SpotlightAnchor.STEP) dpf(6f) else dpf(3f)
 
         accentColor = ContextCompat.getColor(
             context,
@@ -366,18 +366,18 @@ class TutorialOverlayView @JvmOverloads constructor(
     // ---------------------------------------------------------------- placement
 
     private fun placeBalloon(placement: BalloonPlacement) {
-        val margin = dp(16f)
-        val gap = dp(14f)
-        val arrowHeight = dp(14f)
+        val margin = dpf(16f)
+        val gap = dpf(14f)
+        val arrowHeight = dpf(14f)
 
-        val availableWidth = (width - 2 * margin).toInt().coerceAtLeast(dp(1f).toInt())
-        val maxBalloonWidth = minOf(dp(340f).toInt(), availableWidth)
+        val availableWidth = (width - 2 * margin).toInt().coerceAtLeast(dp(1))
+        val maxBalloonWidth = minOf(dp(340), availableWidth)
         // Cap the balloon's height at what is available between the reserved bands, so a long
         // step on a short screen scrolls inside the card rather than pushing "Next" under
         // the bottom navigation. (The un-spotlighted welcome card is centred in the overlay,
         // which already sits between the bars.)
         val usableHeight = (height - bandTop - bandBottom - 2 * margin).toInt()
-            .coerceAtLeast(dp(1f).toInt())
+            .coerceAtLeast(dp(1))
         balloon.measure(
             MeasureSpec.makeMeasureSpec(maxBalloonWidth, MeasureSpec.AT_MOST),
             MeasureSpec.makeMeasureSpec(usableHeight, MeasureSpec.AT_MOST)
@@ -415,8 +415,8 @@ class TutorialOverlayView @JvmOverloads constructor(
         val x = desiredX.coerceIn(margin, (width - margin - w).coerceAtLeast(margin))
 
         // Arrow: point at the spotlight centre, but stay within the balloon's soft corners.
-        arrowCenterX = spotlightRect.centerX().coerceIn(x + dp(34f), (x + w - dp(34f)).coerceAtLeast(x + dp(34f)))
-        arrowHalfWidth = dp(13f)
+        arrowCenterX = spotlightRect.centerX().coerceIn(x + dpf(34f), (x + w - dpf(34f)).coerceAtLeast(x + dpf(34f)))
+        arrowHalfWidth = dpf(13f)
         arrowTop = below
 
         // Both ends are clamped. If neither side had full room the balloon overlaps the
@@ -477,10 +477,10 @@ class TutorialOverlayView @JvmOverloads constructor(
             if (arrow.isVisible) {
                 // Keep a clean page under the arrow too.
                 scratchRect.set(
-                    arrow.left - dp(1f),
-                    arrow.top,
-                    arrow.right + dp(1f),
-                    arrow.bottom
+                    arrow.left - dpf(1f),
+                    arrow.top.toFloat(),
+                    arrow.right + dpf(1f),
+                    arrow.bottom.toFloat()
                 )
                 canvas.drawRect(scratchRect, clearPaint)
             }
@@ -494,7 +494,7 @@ class TutorialOverlayView @JvmOverloads constructor(
             framePaint.alpha = (255 * enterProgress).toInt().coerceIn(0, 255)
             canvas.drawRoundRect(scratchRect, radius, radius, framePaint)
 
-            val expand = dp(16f) * ringPhase
+            val expand = dpf(16f) * ringPhase
             ringPaint.alpha = ((1f - ringPhase) * 140).toInt().coerceIn(0, 255)
             canvas.drawRoundRect(
                 scratchRect.left - expand,
@@ -519,7 +519,7 @@ class TutorialOverlayView @JvmOverloads constructor(
      * so the frame hugs a round-ish control instead of turning it into a pill.
      */
     private fun cutoutRadius(rect: RectF): Float =
-        if (rect.width() < rect.height() * 1.5f) dp(14f) else dp(18f)
+        if (rect.width() < rect.height() * 1.5f) dpf(14f) else dpf(18f)
 
     /** Small triangle tying the balloon to the spotlight. */
     private inner class ArrowView(context: Context) : View(context) {
@@ -572,5 +572,7 @@ class TutorialOverlayView @JvmOverloads constructor(
         super.onDetachedFromWindow()
     }
 
-    private fun dp(value: Float): Float = value * resources.displayMetrics.density
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun dpf(value: Float): Float = value * resources.displayMetrics.density
 }

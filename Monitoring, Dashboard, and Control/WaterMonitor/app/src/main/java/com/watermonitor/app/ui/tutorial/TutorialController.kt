@@ -351,10 +351,15 @@ class TutorialController(
      */
     private fun navView(@IdRes id: Int): View? {
         val host = binding.navHostFragment
-        val destinationRoot = (0 until host.childCount)
-            .map { host.getChildAt(it) }
-            .firstOrNull { it.id == navController.currentDestination?.id }
-            ?: host
+        val currentId = navController.currentDestination?.id
+        var destinationRoot: View = host
+        for (i in 0 until host.childCount) {
+            val child = host.getChildAt(i)
+            if (currentId != null && child.id == currentId) {
+                destinationRoot = child
+                break
+            }
+        }
         return destinationRoot.findViewById(id)
     }
 
