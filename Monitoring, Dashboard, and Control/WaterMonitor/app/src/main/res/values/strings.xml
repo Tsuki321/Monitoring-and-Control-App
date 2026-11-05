@@ -96,8 +96,6 @@
     <string name="state_on">ON</string>
     <string name="state_off">OFF</string>
     <string name="system_label">System:</string>
-    <string name="pump_speed_format">Speed: %d RPM</string>
-    <string name="pump_voltage_format">Voltage: %.1fV</string>
 
     <!-- Dashboard -->
     <string name="pump_status_title">Pump Status</string>
@@ -232,12 +230,12 @@
     <!-- Dashboard summary lines -->
     <string name="filter_summary_all_good">All five stages within service life</string>
     <string name="filter_summary_worst_format">%1$s: %2$s</string>
-    <string name="filter_waiting_for_data">Waiting for sensor data…</string>
-    <string name="filter_waiting_summary">Filter wear is estimated once readings arrive</string>
+    <string name="filter_waiting_for_data">Waiting for measured runtime and sensor data…</string>
+    <string name="filter_waiting_summary">Filter-life estimates require measured five-stage pump runtime and sensor readings</string>
 
     <!-- Runtime provenance -->
-    <string name="filter_source_simulated">Estimated — using simulated five-stage pump run time</string>
-    <string name="filter_source_hardware">Based on measured five-stage pump run time</string>
+    <string name="filter_source_unavailable">Measured five-stage pump runtime or sensor data unavailable</string>
+    <string name="filter_source_hardware">Estimated filter life based on measured five-stage pump runtime</string>
     <string name="filter_runtime_total_format">%1$.1f five-stage pump-hours total</string>
     <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
 

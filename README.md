@@ -42,8 +42,8 @@ UI Layer (Fragment / Activity)
   ViewModel (business logic + UI state)
         │  collects Flow
         ▼
- Repository (MockSensorRepository)
-        │  emits simulated sensor data via Kotlin Flow
+ Repository (FirebaseRealtimeSensorRepository)
+        │  emits measured Firebase sensor data via Kotlin Flow
         ▼
    Data Models (SensorData, TankStatus, PumpState, …)
 ```
@@ -174,16 +174,19 @@ GitHub Actions automatically builds and signs the app on every push to `main`/`m
 
 ## 📡 Sensor Data
 
-Currently the app uses **MockSensorRepository** which simulates realistic sensor readings using sine-wave oscillation with random jitter, updated every 3 seconds:
+Live readings come from **FirebaseRealtimeSensorRepository**: pH, TDS, turbidity,
+tank level and leak status. Pump controls show commanded switch positions and actual relay
+states reported by the ESP32. Pump speed and voltage are not displayed.
 
-| Sensor | Range | Unit |
-|---|---|---|
-| pH | 6.8 – 7.8 | — |
-| TDS (Total Dissolved Solids) | 120 – 200 | ppm |
-| Turbidity | 0.5 – 3.5 | NTU |
-| Tank Fill Level | 10 – 100 | % |
+Filter life is estimated by the existing model trained on generated data. Its live inputs
+are measured sensor values and the ESP32's cumulative five-stage Pump B runtime counter
+(`/sensors/runtimeB`). Missing or unusable readings pause wear updates and show a waiting
+state; no runtime is simulated or accelerated. Measured counter deltas also cover operation
+while the app was closed. Legacy history without a measured counter is cleared on upgrade;
+measured history is preserved.
 
-The repository layer is designed to be swapped out for a real backend (REST API, MQTT broker, or Bluetooth LE) with minimal changes to the ViewModel layer.
+The separate [application and system flowcharts](docs/flowcharts/README.md) include printable
+PDFs, PNG/SVG images and editable diagrams.net files.
 
 ---
 

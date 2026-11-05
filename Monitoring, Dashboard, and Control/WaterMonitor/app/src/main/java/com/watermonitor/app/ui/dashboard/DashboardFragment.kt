@@ -127,10 +127,9 @@ class DashboardFragment : Fragment() {
             previousFilterCondition = worst.condition
         }
 
-        // Rows carry no meaning until the repository has published; showing five empty bars
-        // reads as "all stages at zero" rather than "not loaded yet".
+        // Hide estimates until usable sensor readings and measured runtime are available.
         binding.filterStageSummary.visibility =
-            if (state.stages.isEmpty()) View.GONE else View.VISIBLE
+            if (state.isWaitingForData || state.stages.isEmpty()) View.GONE else View.VISIBLE
 
         state.stages.forEachIndexed { index, stage ->
             val row = filterSummaryRows.getOrNull(index) ?: return@forEachIndexed
@@ -153,7 +152,7 @@ class DashboardFragment : Fragment() {
         binding.tvFilterSource.setText(
             when (state.runtimeSource) {
                 RuntimeSource.HARDWARE -> R.string.filter_source_hardware
-                RuntimeSource.SIMULATED -> R.string.filter_source_simulated
+                RuntimeSource.UNAVAILABLE -> R.string.filter_source_unavailable
             }
         )
     }

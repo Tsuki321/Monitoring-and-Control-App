@@ -36,46 +36,8 @@ enum class LimitedBy {
  */
 object FilterSpecs {
 
-    /**
-     * Multiplies simulated runtime so the feature can be demonstrated before the ESP32
-     * publishes real counters. 1.0 = real time. Never applied to hardware counters.
-     *
-     * In the no-pump-telemetry fallback (60× with [SIMULATED_DUTY_CYCLE] 0.35) the app
-     * accrues 21 pump-hours per wall-clock hour. Once `/status` is available it follows
-     * actual Pump B on-time, so a continuously running five-stage pump accrues 60
-     * pump-hours per wall-clock hour. The table below assumes the fallback rate and a
-     * neutral load factor (`L = 1.0`), so it is a pacing reference rather than a prediction
-     * for nominal or live readings:
-     *
-     * | stage            | rated pump-hours | fallback neutral-load wall-clock hours |
-     * |------------------|------------------|----------------------------------------|
-     * | pumice           | 15000h           | ~714                                    |
-     * | pebbles          | 30000h           | ~1429                                   |
-     * | lava rock        | 30000h           | ~1429                                   |
-     * | activated carbon |   350h           |  ~17                                    |
-     * | multilayer foam  |  1500h           |  ~71                                    |
-     *
-     * Wear only accrues while the app is open and receiving samples, so a few minutes of
-     * screen time moves a bar by well under a percent. To watch a stage walk GOOD → OVERDUE
-     * inside a short demo, raise this to ~10000. At scales above roughly 286×, simulated
-     * runtime exceeds the forecast's 100 pump-hours-per-wall-hour guard, so the condition bars
-     * remain useful for the demo but the displayed remaining-days estimate does not track the
-     * accelerated progression.
-     *
-     * TODO(demo): set back to 1.0 before final submission.
-     */
-    const val DEMO_TIME_SCALE: Double = 60.0
-
-    /** Below this fraction of accumulated runtime wear, a rinse is considered effective. */
+    /** Fraction of accumulated runtime wear recovered by a rinse. */
     const val RINSE_RECOVERY: Double = 0.70
-
-    /**
-     * Fallback fraction of wall-clock time the five-stage pump is assumed to run only when
-     * no `/status` pump state has been observed yet. Once pump telemetry arrives, simulated
-     * wear follows actual Pump B on-time instead. Combined with [DEMO_TIME_SCALE] this
-     * drives the simulated wear the UI labels as "Simulated".
-     */
-    const val SIMULATED_DUTY_CYCLE: Double = 0.35
 
     /**
      * A stage must be at least this worn when replaced for the interval to become a training

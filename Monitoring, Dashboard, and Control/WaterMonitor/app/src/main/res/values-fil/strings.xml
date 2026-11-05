@@ -173,12 +173,12 @@
     <!-- Dashboard summary lines -->
     <string name="filter_summary_all_good">Lahat ng limang bahagi ay nasa loob pa ng haba ng serbisyo</string>
     <string name="filter_summary_worst_format">%1$s: %2$s</string>
-    <string name="filter_waiting_for_data">Hinihintay ang datos ng sensor…</string>
-    <string name="filter_waiting_summary">Tatantiyahin ang pagkasira ng filter kapag dumating na ang mga sukat</string>
+    <string name="filter_waiting_for_data">Hinihintay ang sinukat na runtime at datos ng sensor…</string>
+    <string name="filter_waiting_summary">Kailangan ang sinukat na runtime ng five-stage pump at datos ng sensor para sa tantiya</string>
 
     <!-- Runtime provenance -->
-    <string name="filter_source_simulated">Tantiya — gumagamit ng simuladong oras ng pagtakbo ng five-stage pump</string>
-    <string name="filter_source_hardware">Batay sa sinukat na oras ng pagtakbo ng five-stage pump</string>
+    <string name="filter_source_unavailable">Wala pang sinukat na runtime ng five-stage pump o datos ng sensor</string>
+    <string name="filter_source_hardware">Tinatayang buhay ng filter batay sa sinukat na runtime ng five-stage pump</string>
     <string name="filter_runtime_total_format">%1$.1f na oras ng five-stage pump sa kabuuan</string>
     <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
 

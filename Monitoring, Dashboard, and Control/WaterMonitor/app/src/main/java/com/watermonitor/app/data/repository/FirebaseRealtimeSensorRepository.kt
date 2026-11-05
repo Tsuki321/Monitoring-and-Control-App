@@ -296,10 +296,14 @@ object FirebaseRealtimeSensorRepository {
                 Log.w(TAG, "/sensors snapshot missing ph/tds/turbidity; treating as no data")
                 return SensorData()
             }
+            // Invalid values must not become fabricated nominal readings for filter wear.
+            val ph = map.parseDoubleOrNull("ph") ?: return SensorData()
+            val tds = map.parseIntOrNull("tds") ?: return SensorData()
+            val turbidity = map.parseDoubleOrNull("turbidity") ?: return SensorData()
             return SensorData(
-                ph = map.parseDouble("ph", 7.0),
-                tds = map.parseInt("tds", 150),
-                turbidity = map.parseDouble("turbidity", 1.5),
+                ph = ph,
+                tds = tds,
+                turbidity = turbidity,
                 tankDistanceMm = map.parseIntOrNull("tankDistanceMm"),
                 tankLevel = map.parseDoubleOrNull("tankLevel")?.toFloat(),
                 tankWarning = map.parseIntOrNull("tankWarning"),
@@ -315,10 +319,13 @@ object FirebaseRealtimeSensorRepository {
             Log.w(TAG, "/sensors snapshot missing ph/tds/turbidity; treating as no data")
             return SensorData()
         }
+        val ph = child("ph").asDoubleOrNull() ?: return SensorData()
+        val tds = child("tds").asIntOrNull() ?: return SensorData()
+        val turbidity = child("turbidity").asDoubleOrNull() ?: return SensorData()
         return SensorData(
-            ph = child("ph").asDouble(7.0),
-            tds = child("tds").asInt(150),
-            turbidity = child("turbidity").asDouble(1.5),
+            ph = ph,
+            tds = tds,
+            turbidity = turbidity,
             tankDistanceMm = child("tankDistanceMm").asIntOrNull(),
             tankLevel = child("tankLevel").asDoubleOrNull()?.toFloat(),
             tankWarning = child("tankWarning").asIntOrNull(),
