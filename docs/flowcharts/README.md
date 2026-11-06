@@ -51,7 +51,7 @@ Monitoring System** (185 PDF pages).
 Where the text and appendix disagree, the chart follows the executable conditions and
 constants in Appendix I: telemetry every **5 seconds**, LCD cycling every **2 seconds**,
 and the full-tank stop at **100% or higher**. The prose on p. 62 describes different telemetry
-timing and a strictly-greater-than full condition; a code comment also says LCD updates every
+timing and prints `<=100%` for the full condition; a code comment also says LCD updates every
 4 seconds despite its 2-second constant.
 
 The chart shows the continuous loop directly; it does not imply that each pass reboots the
