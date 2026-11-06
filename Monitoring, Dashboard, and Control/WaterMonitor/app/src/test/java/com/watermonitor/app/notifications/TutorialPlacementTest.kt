@@ -74,7 +74,7 @@ class TutorialPlacementTest {
         val shortHeight = balloon.height
         overlay.showStep(pumps, null, 1, 2, true)
         layout(360, 800)
-        assertTrue(balloon.height > shortHeight)
+        assertTrue("short=$shortHeight, longer=${balloon.height}", balloon.height > shortHeight)
         assertTrue(balloon.bottom <= 730)
     }
 

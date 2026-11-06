@@ -271,8 +271,10 @@ class TutorialOverlayView @JvmOverloads constructor(
         content.addView(actions, matchWidth(topMargin = dp(12)))
 
         balloonScroll.isFillViewport = false
-        balloonScroll.addView(content)
-        balloon.addView(balloonScroll)
+        balloonScroll.addView(content, ScrollView.LayoutParams(
+            LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        balloon.addView(balloonScroll, LayoutParams(
+            LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }
 
     private fun matchWidth(topMargin: Int) =
@@ -389,6 +391,8 @@ class TutorialOverlayView @JvmOverloads constructor(
             width = maxBalloonWidth
             height = LayoutParams.WRAP_CONTENT
         }
+        balloon.forceLayout()
+        balloonScroll.forceLayout()
         balloon.measure(
             MeasureSpec.makeMeasureSpec(maxBalloonWidth, MeasureSpec.AT_MOST),
             MeasureSpec.makeMeasureSpec(usableHeight, MeasureSpec.AT_MOST)
