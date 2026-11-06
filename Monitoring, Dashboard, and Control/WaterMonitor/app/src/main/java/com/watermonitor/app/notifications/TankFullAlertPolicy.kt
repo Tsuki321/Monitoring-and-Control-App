@@ -1,7 +1,7 @@
 package com.watermonitor.app.notifications
 
 /** Tank telemetry is independent of the availability of the water-quality probes. */
-internal data class TankReading(val level: Double?, val warning: Int?) {
+data class TankReading(val level: Double?, val warning: Int?) {
     val isFull: Boolean?
         get() = when {
             warning == 3 || level == 100.0 -> true
@@ -30,7 +30,7 @@ internal data class TankReading(val level: Double?, val warning: Int?) {
 }
 
 /** One alert per fill cycle, including across a service/process restart. */
-internal class TankFullAlertPolicy(var fullHandled: Boolean = false) {
+class TankFullAlertPolicy(var fullHandled: Boolean = false) {
     fun onReading(reading: TankReading, appVisible: Boolean, canNotify: Boolean): Boolean {
         if (reading.canRearm) fullHandled = false
         if (reading.isFull != true || fullHandled) return false

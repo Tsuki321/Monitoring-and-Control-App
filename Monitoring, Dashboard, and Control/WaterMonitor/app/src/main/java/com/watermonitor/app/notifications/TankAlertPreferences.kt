@@ -2,7 +2,7 @@ package com.watermonitor.app.notifications
 
 import android.content.Context
 
-internal class TankAlertPreferences(context: Context) {
+class TankAlertPreferences(context: Context) {
     private val prefs = context.getSharedPreferences("tank_alerts", Context.MODE_PRIVATE)
 
     var enabled: Boolean

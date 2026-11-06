@@ -16,7 +16,7 @@ import com.watermonitor.app.MainActivity
 import com.watermonitor.app.R
 import com.watermonitor.app.utils.LocaleHelper
 
-internal object TankNotifications {
+object TankNotifications {
     const val MONITOR_ID = 1001
     const val FULL_ID = 1002
     const val LEAK_ID = 1003

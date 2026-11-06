@@ -251,6 +251,13 @@ class TutorialController(
         }
 
         val rect = spotlightFor(target, step.anchor)
+        // Entrance animations translate and scale cards. Wait for their final bounds.
+        if (target.alpha < 0.99f || kotlin.math.abs(target.translationY) > 0.5f ||
+            kotlin.math.abs(target.scaleX - 1f) > 0.01f ||
+            kotlin.math.abs(target.scaleY - 1f) > 0.01f) {
+            retryOrSkip(root)
+            return
+        }
         if (rect == null && step.anchor != SpotlightAnchor.NONE) {
             // The view exists but is not laid out yet (zero-size column on first layout)
             // or could not be scrolled into view: retry within the same frame budget.

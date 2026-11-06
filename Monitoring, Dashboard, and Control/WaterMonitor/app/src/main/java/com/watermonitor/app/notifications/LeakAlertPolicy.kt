@@ -1,7 +1,7 @@
 package com.watermonitor.app.notifications
 
 /** One alert per wet episode; an unknown reading must never rearm it. */
-internal class LeakAlertPolicy(var leakHandled: Boolean = false) {
+class LeakAlertPolicy(var leakHandled: Boolean = false) {
     fun onReading(detected: Boolean?, appVisible: Boolean, canNotify: Boolean): Boolean {
         if (detected == false) leakHandled = false
         if (detected != true || leakHandled) return false
