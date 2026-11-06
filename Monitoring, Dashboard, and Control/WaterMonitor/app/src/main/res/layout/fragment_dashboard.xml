@@ -131,7 +131,7 @@
 
             <!-- System Status Card (Leak, Pumps) -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardSystemStatus"
+                android:id="@+id/dashboard_cardSystemStatus"
                 style="@style/Style.WaterMonitor.GlassCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -407,7 +407,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
-                        android:text="@string/filter_source_simulated"
+                        android:text="@string/filter_source_unavailable"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
 

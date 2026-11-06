@@ -125,7 +125,7 @@ class FilterFragment : Fragment() {
         // inflated rows then renders five blank cards with live service buttons; hide the
         // container until real state exists, as the Dashboard card does.
         binding.stageContainer.visibility =
-            if (state.stages.isEmpty()) View.GONE else View.VISIBLE
+            if (state.isWaitingForData || state.stages.isEmpty()) View.GONE else View.VISIBLE
         state.stages.forEachIndexed { index, stage ->
             stageRows.getOrNull(index)?.let { bindStage(it, stage) }
         }
@@ -157,7 +157,7 @@ class FilterFragment : Fragment() {
         binding.tvRuntimeSource.setText(
             when (state.runtimeSource) {
                 RuntimeSource.HARDWARE -> R.string.filter_source_hardware
-                RuntimeSource.SIMULATED -> R.string.filter_source_simulated
+                RuntimeSource.UNAVAILABLE -> R.string.filter_source_unavailable
             }
         )
         binding.tvRuntimeSource.setTextColor(

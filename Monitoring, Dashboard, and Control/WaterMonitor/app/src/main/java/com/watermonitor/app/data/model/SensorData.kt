@@ -20,7 +20,7 @@ data class SensorData(
      * persisted in NVS so it survives reboots (firmware V17+).
      *
      * Absolute counters, not deltas: a gap while the app is closed costs no runtime.
-     * null = firmware predates V17, so the filter model falls back to simulation.
+     * null = no measured runtime available, so filter wear accrual waits for telemetry.
      *
      * Pump A is intake-only and never feeds the five-stage filter, so its counter does not
      * drive filter wear. Only [runtimeBSeconds] (the five-stage pump) does.

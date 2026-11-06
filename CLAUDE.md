@@ -87,22 +87,29 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
 
 1. **FirebaseRealtimeSensorRepository** (`data/repository/`) — Listens to Firebase Realtime Database via `ValueEventListener` wrapped in `callbackFlow`. Exposes `sensorDataFlow` (reads `/sensors` → `SensorData`) and `pumpControlFlow` (reads `/status` + `/control/auto` → `PumpControlState`). Writers: `setPumpA()`, `setPumpB()`, `setAutoMode()` push commands to `/control`. Requires Firebase Auth (`auth != null` per RTDB rules). Connects to the regional database URL (`asia-southeast1.firebasedatabase.app`) and waits for a signed-in user before attaching listeners; logs under tag `HydroSenseRTDB`.
 
-2. **MockSensorRepository** (`data/repository/`) — Singleton object providing simulated data for **Dashboard** and **Control**. Emits pH/TDS/turbidity on a timer only if wired to Monitoring (currently not). Tank fill level updates independently. Pump/valve state is managed via `MutableStateFlow`. `setPumpA()` / `setPumpB()` sync actual relay states from RTDB into the mock so the speed/voltage simulation reflects hardware reality.
+2. **MockSensorRepository** (`data/repository/`) — Legacy local pump/valve state holder used by Dashboard. Pump/valve state is managed via `MutableStateFlow`; it has no simulated telemetry timer. `setPumpA()` / `setPumpB()` mirror actual relay states for Dashboard consumers; speed/voltage generation and displays have been removed.
 
 3. **Custom Views** (`ui/views/`)
    - `WaterTankView` — Animated water tank with fill level, surface wave animation (2.5s loop), and smooth fill transitions
    - `OceanWaveView` — Multi-layer parallax wave background using `Choreographer` for frame-perfect animation
    - Both use delta-time calculations to avoid Float precision loss (see "Animation System" below)
 
-4. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Filter/Auth pages. Top bar dynamically switches between settings gear and back arrow. **The secondary-page list appears twice in `MainActivity.setupNavigation()`** — once for `isSecondaryPage` and once in the `btnSettings` click handler. Adding a destination to one and not the other yields a back arrow that navigates forward into Settings.
+4. **Guided tour** (`ui/tutorial/`) — A spotlight coach-mark walkthrough (14 steps) shown to each account once. `TutorialController` (owned by `MainActivity`) switches bottom-nav tabs for real, resolves each step's target with `findViewById` under the nav host, and hands a window-space rect to `TutorialOverlayView`, which dims the screen with PorterDuff and cuts a spotlight + balloon. Key invariants:
+   - **Trigger:** only for accounts that have never finished it. Completing *or* skipping calls `TutorialPrefs.markCompleted(uid)`; the flag is per Firebase UID, so a new account on a shared device still sees it. Settings → "Replay tour" calls `MainActivity.replayTutorial()` directly (it does not clear the flag).
+   - **Registration path:** email registration signs out for verification, so the tour appears on the next successful login (uncovered account). Google/Facebook registration navigates straight to the Dashboard and sets `MainActivity.EXTRA_START_TUTORIAL` on the activity's intent before navigating — that extra is consumed only on a fresh `onCreate`, never on a recreate.
+   - **Timing:** after navigating, the controller polls once per frame (`postOnAnimation`, capped at ~1.5 s total) for the destination's views; a step whose target never appears is skipped, never spotlighted blindly.
+   - **Back during the tour** closes the tour (the overlay takes focus and consumes KEYCODE_BACK), not the app.
+   - **Tour targets live in the real layouts**, so renaming a target's view ID breaks the step silently (it is skipped). The Dashboard's status card is `dashboard_cardSystemStatus` to avoid colliding with Control's `cardSystemStatus`.
 
-5. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over real water quality (TDS, turbidity, pH) and measured five-stage pump (Pump B) runtime, predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters — no pressure or RPM sensor is used. Pump A is intake-only in both AUTO and MANUAL; an A-only interval never accrues filter wear. See phase 2e in the roadmap below. Key invariants:
-   - The filter runtime is Pump B only. In AUTO the ESP32 drives it from tank level; in MANUAL the user commands it. The app follows actual `/status` Pump B state while simulated, and `runtimeB` deltas once V17 counters appear. `runtimeA` is deliberately ignored.
+5. **Navigation** — Single-activity architecture with AndroidX Navigation Component. Bottom nav visible on main screens (Dashboard, Monitoring, Control), hidden on Settings/About/Filter/Auth pages. Top bar dynamically switches between settings gear and back arrow. **The secondary-page list appears twice in `MainActivity.setupNavigation()`** — once for `isSecondaryPage` and once in the `btnSettings` click handler. Adding a destination to one and not the other yields a back arrow that navigates forward into Settings.
+
+6. **Filter life prediction** (`data/ml/`, `data/repository/FilterHealthRepository.kt`, `ui/filter/`) — On-device ridge regression over real water quality (TDS, turbidity, pH) and measured five-stage pump (Pump B) runtime, predicting per-stage life for the five-stage biofilter. Runs entirely in the app; the ESP32 only supplies runtime counters — no pressure or RPM sensor is used. Pump A is intake-only in both AUTO and MANUAL; an A-only interval never accrues filter wear. See phase 2e in the roadmap below. Key invariants:
+   - The filter runtime is Pump B only. In AUTO the ESP32 drives it from tank level; in MANUAL the user commands it. Filter wear uses measured `runtimeB` deltas only. Missing runtime or unusable sensors pause accrual. `runtimeA` is deliberately ignored.
    - `Double.NaN.coerceIn(a, b)` returns **NaN**, not a bound — Kotlin implements it with `<`/`>` comparisons that are both false for NaN. Always call `finiteOr(fallback)` *before* `coerceIn`, or a NaN reaches the UI, rounds to 0, and renders as a plausible empty progress bar instead of an obvious crash.
    - RTDB hands back integers as `java.lang.Long`; parse runtime with `parseLongOrNull`/`asLongOrNull`, never `parseIntOrNull` (uint32 seconds overflow `Int` after ~68 years, but a corrupt value truncates immediately).
    - The wear hook is upstream of `shareIn` and **must** stay wrapped in `runCatching`: an exception there cancels the sharing coroutine, and `WhileSubscribed` does not restart after upstream failure — one bad sample would kill sensor data app-wide until the process died.
    - A ridge solve that goes singular returns `null` and the caller keeps its prior. Never substitute zeros: an all-zero coefficient vector silently reports every stage as wearing at the minimum rate.
-   - Pump B runtime deltas are validated against the **uncapped** wall clock and accrued in full (neutral load above 1 h). The first real counter retires all simulated history; counters vanishing after being seen pauses accrual — never simulate on top of measured data.
+   - Pump B runtime deltas are validated against the **uncapped** wall clock and accrued in full (neutral load above 1 h). Legacy simulated history is retired on load; the first real counter anchors the baseline. Missing counters pause accrual.
 
 ### Data Flow
 
@@ -114,8 +121,8 @@ Data Models (SensorData, TankStatus, PumpState, etc.)
   - Mode toggle: `ControlFragment` → `ControlViewModel.toggleAutoMode()` → `FirebaseRealtimeSensorRepository.setAutoMode()` (writes to `/control/auto`)
   - ESP32 reads `/control` every 500ms, drives relays, writes actual states back to `/status` — creating a live feedback loop
   - Safety: tank full (100%) and leak (`rainDetected=1`) force-stop both pumps on the ESP32; float switch (Pump A only) is firmware-local and not published
-  - Speed/voltage simulation: `MockSensorRepository.setPumpA/B()` syncs actual states → mock → `pumpState` flow → UI speed/voltage labels
-  - Filter runtime: `FilterHealthRepository` observes the same `pumpControlFlow`. Filter wear follows actual Pump B only — AUTO and MANUAL both count its on-time, and a MANUAL Pump A-only interval counts nothing. Hardware `runtimeB` supersedes the simulated Pump B state when present.
+  - Pump speed and voltage: removed from the UI and data model; actual relay status remains.
+  - Filter runtime: `FilterHealthRepository` requires measured `/sensors/runtimeB`. AUTO and MANUAL both count Pump B counter deltas; Pump A contributes no filter runtime. No simulated fallback is used.
 
 ### Realtime Database schema (current)
 
@@ -168,7 +175,7 @@ its own delta, so time with the app closed costs no runtime and a counter that d
 or NVS erase) is detected and accrues zero rather than a negative or huge jump. A gap delta is
 plausibility-checked against the **uncapped** wall clock (5% + 60 s slack) and then accrued in
 full at a neutral load factor — capping the wall side first used to silently discard every gap
-longer than ~6 pump-hours. The first real counter wipes simulated history; counters disappearing
+longer than ~6 pump-hours. Legacy history without a measured counter is retired on load; counters disappearing
 after being seen pause accrual rather than simulating on top of measured data.
 
 **Path ownership (prevents write conflicts):**
@@ -208,7 +215,7 @@ after being seen pause accrual rather than simulating on top of measured data.
 
 **Done (phase 2c — bidirectional pump control):**
 - **Firmware** — ESP32 polls `/control` every 500ms for `pumpA`, `pumpB`, and `auto` commands. In AUTO mode (`auto=1`, default), both pumps follow tank fill % with float-switch gate on Pump A. In MANUAL mode (`auto=0`), each pump follows `/control/pumpA` or `/control/pumpB` (Pump A still gated by float switch). Safety overrides: tank 100% full and leak sensor wet (`rainDetected`) force-stop both pumps. Actual relay states are written to `/status` as `{"pumpA":0|1,"pumpB":0|1}` whenever either changes.
-- **App** — `FirebaseRealtimeSensorRepository.pumpControlFlow` combines `/status` (actual states) + `/control/auto` (mode) into `PumpControlState`. `ControlViewModel` exposes this as a `StateFlow`; `ControlFragment` switches reflect actual relay states. Toggling a switch writes a command to `/control/pumpA` or `/control/pumpB`. An Auto/Manual mode switch writes to `/control/auto`; pump switches are disabled in AUTO mode and when a leak is active. `MockSensorRepository.setPumpA/B()` syncs real states → mock so speed/voltage simulation reflects hardware. Dashboard also syncs via `DashboardViewModel` init.
+- **App** — `FirebaseRealtimeSensorRepository.pumpControlFlow` combines `/status` (actual states) + `/control/auto` (mode) into `PumpControlState`. `ControlViewModel` exposes this as a `StateFlow`; `ControlFragment` switches reflect actual relay states. Toggling a switch writes a command to `/control/pumpA` or `/control/pumpB`. An Auto/Manual mode switch writes to `/control/auto`; pump switches are disabled in AUTO mode and when a leak is active. Pump speed and voltage displays are removed. Dashboard mirrors actual pump state via `DashboardViewModel` init.
 - **Feedback loop** — App writes command → ESP32 reads (≤500ms) → ESP32 drives relay → ESP32 writes `/status` → App listener updates UI. Total round-trip: ~1–2 seconds.
 
 **Done (phase 2d — tank level + leak sensor app integration):**
@@ -220,7 +227,7 @@ after being seen pause accrual rather than simulating on top of measured data.
 - Pump control round-trip: Toggle a pump in the app → Serial Monitor shows `[CTRL]` → `/status` updates → app switch reflects actual state. Toggle Auto/Manual and verify pump switches enable/disable.
 - Leak: wet the moisture sensor → Serial shows rain/leak override → `/sensors/rainDetected=1` → app leak UI + pumps stop.
 - Runtime counters (V17): run Pump B ~1 min → Serial `[RUNTIME] Saved to NVS` → `/sensors/runtimeB`
-  increases → Filter screen flips from "Estimated — using simulated five-stage pump run time" to
+  increases → Filter screen changes from the waiting state to
   "Based on measured five-stage pump run time". Reboot the ESP32 and confirm the counter resumes
   rather than restarting at 0. Run Pump A alone in MANUAL and confirm filter wear does not move.
 
@@ -257,19 +264,17 @@ after being seen pause accrual rather than simulating on top of measured data.
   prior). Runtime provenance is labelled on the Filter screen. Mark Replaced and Reset Filter
   History ask for confirmation — both permanently rewrite wear history, and a replaced stage
   records a training observation.
-- **Simulated until hardware lands** — with no `runtimeB` in RTDB the repository simulates runtime
-  from actual Pump B on-time in `/status`, accelerated by `DEMO_TIME_SCALE` (currently **60×** —
-  `TODO(demo)`: set to 1.0 before submission). If no pump state has arrived yet it falls back to
-  `FilterSpecs.SIMULATED_DUTY_CYCLE`. Simulated wear bills only in-session time (the interval is
-  capped at one publish period, so reopening the app after hours does not bill the closed gap).
-  The first real counter wipes all simulated wear, duty and observations; a counter disappearing
-  after being seen pauses accrual. Both screens say "Estimated — using simulated five-stage pump
-  run time" whenever this path is active.
+- **Measured runtime only** — filter wear requires `/sensors/runtimeB` plus usable quality
+  readings. Missing data pauses accrual and hides estimates. The first counter anchors the
+  baseline; later validated deltas accrue in full without demo acceleration. Existing
+  generated-data training and model fitting are unchanged. Legacy history with no measured
+  counter is retired on load; measured history is retained. Remaining life is an estimate.
+
 
 **Later (phase 3 — app parity):**
 - ~~Drive Dashboard `SensorStatus` online/offline from RTDB presence or `updatedAt` threshold~~ — superseded: the Dashboard Water Safety card shows Monitoring-style per-sensor quality labels (Neutral/Acidic/Alkaline, Ideal/Slightly High/Too High/Very Low Solids for TDS, Clear/Slightly Turbid/Turbid) computed by `WaterQualityEvaluator` over live RTDB data and colored by safety level, while the Sensor Status card shows per-sensor Online/Offline driven by live RTDB snapshot presence (all three readings arrive in one atomic `/sensors` update, so there is no per-sensor granularity upstream). The mock `SensorStatus` model and `MockSensorRepository.sensorStatus` flow were removed
 - Optional publish float-switch state for UI visibility
-- Replace remaining `MockSensorRepository` usage (valve toggles, simulated speed/voltage)
+- Replace remaining legacy `MockSensorRepository` pump/valve state holder
 - Optional `SensorRepository` interface + DI for mock vs production builds
 
 ### Swapping other backends
@@ -408,10 +413,9 @@ To update dependencies, edit `libs.versions.toml` and push for CI validation (no
   (the signed-out `SensorData()` placeholder, whose `ph=7.0/tds=150/turbidity=1.5` defaults would
   otherwise accrue wear as if they were readings) or when `turbidity >= 2999.0` (the firmware's
   probe-fault sentinel). Filter Logcat for `HydroSenseFilter`.
-- Health advances on *elapsed time*, so it will not move in a screenshot. Raise
-  `FilterSpecs.DEMO_TIME_SCALE` to watch a stage walk the condition bands quickly.
-- "Estimated — using simulated five-stage pump run time" means `/sensors/runtimeB` is absent —
-  the ESP32 is still on V16 or earlier.
+- Wear advances only when measured Pump B runtime increases. There is no demo acceleration.
+- A waiting state means measured `/sensors/runtimeB` or usable sensor readings are unavailable.
+  Firmware must publish the cumulative Pump B runtime counter; no simulation is used.
 
 ### Known issue: turbidity scale mismatch (pre-existing, unrelated to the filter model)
 

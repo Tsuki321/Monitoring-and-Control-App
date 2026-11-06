@@ -14,8 +14,8 @@ enum class FilterCondition(val severity: Int) {
 
 /** Where the runtime figures came from, so the UI can be honest about it. */
 enum class RuntimeSource {
-    /** No RTDB runtime counter yet — figures come from Pump B state or a duty-cycle fallback. */
-    SIMULATED,
+    /** Measured runtime or usable sensor readings are unavailable; wear accrual is paused. */
+    UNAVAILABLE,
 
     /** Live cumulative five-stage pump counter published by ESP32 firmware V17+. */
     HARDWARE
@@ -75,13 +75,13 @@ data class StageModelDiagnostics(
  */
 data class FilterHealthState(
     val stages: List<FilterStageHealth> = emptyList(),
-    val runtimeSource: RuntimeSource = RuntimeSource.SIMULATED,
+    val runtimeSource: RuntimeSource = RuntimeSource.UNAVAILABLE,
     /** Total cumulative five-stage pump (Pump B) hours observed. */
     val totalRuntimeHours: Double = 0.0,
     /** Observed duty cycle (runtime / wall time), or null when not yet measurable. */
     val dutyCycle: Double? = null,
     val diagnostics: List<StageModelDiagnostics> = emptyList(),
-    /** True before any sample has been ingested, so the UI can show a waiting state. */
+    /** True until a usable snapshot with measured runtime arrives, or when readings disappear. */
     val isWaitingForData: Boolean = true
 ) {
     /** The stage most in need of attention, or null before any data arrives. */

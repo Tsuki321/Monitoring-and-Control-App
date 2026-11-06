@@ -41,7 +41,7 @@ data class FilterPersistedState(
     val stages: List<FilterStageState> = emptyList(),
     /**
      * Last cumulative five-stage pump (Pump B) counter read from RTDB, or null while
-     * running on simulated runtime. Absolute value, not a delta — a gap while the app is
+     * waiting for measured runtime. Absolute value, not a delta — a gap while the app is
      * closed costs no runtime. Pump A's counter is intentionally not stored: Pump A is
      * intake-only and never moves water through the filter.
      */

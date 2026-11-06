@@ -96,8 +96,6 @@
     <string name="state_on">ON</string>
     <string name="state_off">OFF</string>
     <string name="system_label">System:</string>
-    <string name="pump_speed_format">Speed: %d RPM</string>
-    <string name="pump_voltage_format">Voltage: %.1fV</string>
 
     <!-- Dashboard -->
     <string name="pump_status_title">Pump Status</string>
@@ -232,12 +230,12 @@
     <!-- Dashboard summary lines -->
     <string name="filter_summary_all_good">All five stages within service life</string>
     <string name="filter_summary_worst_format">%1$s: %2$s</string>
-    <string name="filter_waiting_for_data">Waiting for sensor data…</string>
-    <string name="filter_waiting_summary">Filter wear is estimated once readings arrive</string>
+    <string name="filter_waiting_for_data">Waiting for measured runtime and sensor data…</string>
+    <string name="filter_waiting_summary">Filter-life estimates require measured five-stage pump runtime and sensor readings</string>
 
     <!-- Runtime provenance -->
-    <string name="filter_source_simulated">Estimated — using simulated five-stage pump run time</string>
-    <string name="filter_source_hardware">Based on measured five-stage pump run time</string>
+    <string name="filter_source_unavailable">Measured five-stage pump runtime or sensor data unavailable</string>
+    <string name="filter_source_hardware">Estimated filter life based on measured five-stage pump runtime</string>
     <string name="filter_runtime_total_format">%1$.1f five-stage pump-hours total</string>
     <string name="filter_duty_cycle_format">Duty cycle %1$d%%</string>
 
@@ -252,4 +250,61 @@
     <string name="filter_confirm_replace_message">%1$s wear history will be cleared and the service recorded.</string>
     <string name="filter_confirm_reset_title">Reset all filter history?</string>
     <string name="filter_confirm_reset_message">Every stage returns to new and all recorded services are erased. This cannot be undone.</string>
+
+    <!-- Guided tour (shown once per account) -->
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_done">Done</string>
+    <string name="tutorial_skip">Skip tour</string>
+    <string name="tutorial_step_counter">STEP %1$d OF %2$d</string>
+    <string name="tutorial_finish_counter">ALL DONE</string>
+    <string name="tutorial_welcome_title">Welcome to HydroSense</string>
+    <string name="tutorial_welcome_body">Let\'s take a quick look around. This tour walks you through every screen, so you know where your water readings, tank, pumps and filters live.</string>
+    <string name="tutorial_nav_title">The bottom bar</string>
+    <string name="tutorial_nav_body">These three tabs are the main areas: Home for an overview, Monitoring for live sensor readings, and Control to operate the pumps. You can switch between them at any time.</string>
+    <string name="tutorial_safety_title">Sensor range status</string>
+    <string name="tutorial_safety_body">A quick check of how today\'s pH, TDS and turbidity compare with their preferred ranges. It describes the readings only — it does not certify the water as safe to drink.</string>
+    <string name="tutorial_system_title">Pump status and leaks</string>
+    <string name="tutorial_system_body">Shows whether each pump is running and whether the leak sensor is wet. On a leak, the system stops both pumps automatically for safety.</string>
+    <string name="tutorial_sensors_title">Sensor status</string>
+    <string name="tutorial_sensors_body">Online or offline for each sensor. All three readings arrive together from the device, so they normally change together.</string>
+    <string name="tutorial_filter_title">Filter health</string>
+    <string name="tutorial_filter_body">This card summarizes the five-stage filter. Open it for estimated remaining life and replacement history. Estimates use measured water-quality readings and Pump B runtime.</string>
+    <string name="tutorial_monitoring_title">Monitoring</string>
+    <string name="tutorial_monitoring_body">Next is Monitoring — the detailed view of the tank and every sensor reading.</string>
+    <string name="tutorial_tank_title">Water tank</string>
+    <string name="tutorial_tank_body">The tank shows its current level, with warnings at 80%, 90% and 100%. Tank and leak alerts are on by default and can notify and vibrate while the app is closed, once notification permission is allowed.</string>
+    <string name="tutorial_readings_title">pH, TDS and turbidity</string>
+    <string name="tutorial_readings_body">Each card shows a live reading, its unit and a plain-language label. Values update automatically as the device publishes new data.</string>
+    <string name="tutorial_control_title">Control</string>
+    <string name="tutorial_control_body">Finally, Control — this is where you switch the pumps and choose how they run.</string>
+    <string name="tutorial_mode_title">Auto and Manual</string>
+    <string name="tutorial_mode_body">In Auto the device runs the pumps from the tank level. Turn it off for Manual, and each pump follows its own switch. Pump switches are locked in Auto mode.</string>
+    <string name="tutorial_pumps_title">The pumps</string>
+    <string name="tutorial_pumps_body">The Intake Pump (A) fills the tank; the Five Stage Pump (B) pushes water through the filter. Switches show your commands and status labels show actual relay feedback. Manual switches are locked in Auto mode or during a leak.</string>
+    <string name="tutorial_settings_title">Settings</string>
+    <string name="tutorial_settings_body">The gear opens Settings for theme, language, tank and leak alerts, notification permissions, About and account options. You can replay this tour there any time.</string>
+    <string name="tutorial_finish_title">You\'re all set</string>
+    <string name="tutorial_finish_body">That\'s the tour. Open Settings any time to replay it. Readings refresh on their own, so just keep an eye on the Dashboard.</string>
+    <string name="tutorial_replay">Replay tour</string>
+    <string name="tutorial_replay_summary">Walk through the app again</string>
+    <string name="tank_alerts_setting">Tank and leak alerts</string>
+    <string name="alert_setup_title">Enable tank and leak alerts</string>
+    <string name="alert_setup_message">This version can alert and vibrate when the tank is full or a leak is detected while HydroSense is closed or in the background. Allow notifications to enable monitoring. Android will keep a quiet monitoring notification visible. You can turn alerts off in Settings. Vibration follows your phone notification and Do Not Disturb settings.</string>
+    <string name="alert_setup_enable">Enable alerts</string>
+    <string name="alert_setup_later">Not now</string>
+    <string name="tank_alerts_description">Alert and vibrate when the tank is full or a leak is detected while HydroSense is closed or in the background. A quiet monitoring notification stays visible.</string>
+    <string name="tank_alerts_disabled">Background tank and leak monitoring is off.</string>
+    <string name="tank_alert_permission_denied">Some alerts are blocked. Allow HydroSense notifications and enable both Full-tank alerts and Leak alerts in Android settings.</string>
+    <string name="tank_notification_settings">Notification settings</string>
+    <string name="tank_monitor_channel">Background tank and leak monitoring</string>
+    <string name="tank_alert_channel">Full-tank alerts</string>
+    <string name="tank_alert_channel_description">Alerts when the water tank is full and HydroSense is not open.</string>
+    <string name="tank_monitor_title">Tank and leak monitoring active</string>
+    <string name="tank_monitor_message">Listening for tank and leak updates. Manage alerts in Settings.</string>
+    <string name="tank_full_title">Water tank is full</string>
+    <string name="tank_full_message">The tank has reached its full level. Open HydroSense to check the tank and pump status.</string>
+    <string name="leak_alert_channel">Leak alerts</string>
+    <string name="leak_alert_channel_description">Alerts when a leak is detected and HydroSense is not open.</string>
+    <string name="leak_alert_title">Water leak detected</string>
+    <string name="leak_alert_message">The leak sensor detected moisture. Check the equipment and surrounding area. Open HydroSense to check the pump status.</string>
 </resources>

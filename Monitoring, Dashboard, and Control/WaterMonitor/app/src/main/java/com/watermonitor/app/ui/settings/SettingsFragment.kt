@@ -10,8 +10,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.FirebaseAuth
+import com.watermonitor.app.MainActivity
 import com.watermonitor.app.R
 import com.watermonitor.app.databinding.FragmentSettingsBinding
+import com.watermonitor.app.notifications.TankAlertPreferences
+import com.watermonitor.app.notifications.TankNotifications
 import com.watermonitor.app.utils.LocaleHelper
 import com.watermonitor.app.utils.ThemeHelper
 
@@ -35,9 +38,39 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupDarkModeToggle()
         setupLanguageSpinner()
+        setupReplayTutorialButton()
         setupAboutButton()
         setupSwitchAccountButton()
         setupLogoutButton()
+        binding.switchTankAlerts.setOnCheckedChangeListener { _, checked ->
+            if (!isUpdatingSwitch) {
+                (activity as? MainActivity)?.setTankAlertsEnabled(checked)
+                updateTankAlertSettings()
+            }
+        }
+        binding.btnTankNotificationSettings.setOnClickListener {
+            (activity as? MainActivity)?.openTankNotificationSettings()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateTankAlertSettings()
+    }
+
+    private fun updateTankAlertSettings() {
+        if (_binding == null) return
+        val enabled = TankAlertPreferences(requireContext()).enabled
+        isUpdatingSwitch = true
+        binding.switchTankAlerts.isChecked = enabled
+        isUpdatingSwitch = false
+        binding.tvTankAlertStatus.setText(when {
+            !enabled -> R.string.tank_alerts_disabled
+            !TankNotifications.canNotify(requireContext(), TankNotifications.ALERT_CHANNEL) ||
+                !TankNotifications.canNotify(requireContext(), TankNotifications.LEAK_CHANNEL) ->
+                R.string.tank_alert_permission_denied
+            else -> R.string.tank_alerts_description
+        })
     }
 
     private fun setupDarkModeToggle() {
@@ -87,6 +120,15 @@ class SettingsFragment : Fragment() {
 
                 override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             }
+    }
+
+    private fun setupReplayTutorialButton() {
+        binding.cardReplayTutorial.setOnClickListener {
+            // The tour is owned by the activity (it holds the overlay, binding and nav
+            // controller), so ask the host to run it. The completion flag is left alone: the
+            // user has already seen the tour, and replaying does not change that.
+            (activity as? MainActivity)?.replayTutorial()
+        }
     }
 
     private fun setupAboutButton() {

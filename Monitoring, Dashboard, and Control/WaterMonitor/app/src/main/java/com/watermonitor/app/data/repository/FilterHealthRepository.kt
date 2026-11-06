@@ -6,9 +6,9 @@ import com.watermonitor.app.data.ml.FilterLifeModel
 import com.watermonitor.app.data.ml.StageModel
 import com.watermonitor.app.data.ml.finiteOr
 import com.watermonitor.app.data.model.FilterHealthState
+import com.watermonitor.app.data.model.MeasuredPumpRuntime
 import com.watermonitor.app.data.model.FilterSpecs
 import com.watermonitor.app.data.model.FilterStageSpec
-import com.watermonitor.app.data.model.PumpControlState
 import com.watermonitor.app.data.model.RuntimeSource
 import com.watermonitor.app.data.model.SensorData
 import com.watermonitor.app.data.model.ServiceAction
@@ -22,11 +22,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.math.min
 
 /**
  * Owns filter wear state: accrues it from sensor samples, persists it, and publishes the
@@ -41,23 +39,13 @@ import kotlin.math.min
  * tank level, and in MANUAL the user commands it. Pump A is intake-only in both modes, so
  * an interval with Pump A alone never accrues filter wear.
  *
- * When `/sensors` carries `runtimeB` (firmware V17+) wear uses that real cumulative counter.
- * Until then the repository follows the actual `/status` Pump B relay state, scaled by
- * [FilterSpecs.DEMO_TIME_SCALE]. If no pump telemetry has arrived yet it falls back to
- * [FilterSpecs.SIMULATED_DUTY_CYCLE], and [FilterHealthState.runtimeSource] reports
- * `SIMULATED` so the UI can say so plainly rather than presenting invented numbers as
- * measurements.
+ * Wear requires the cumulative `/sensors/runtimeB` counter and valid quality readings.
+ * Missing measurements suspend accrual; no wall-clock or relay-state simulation is used.
+ * Generated training data remains the model prior, independent of measured runtime input.
  */
 object FilterHealthRepository {
 
     private const val TAG = "HydroSenseFilter"
-
-    /**
-     * Longest interval the simulated path will bill, in hours — one firmware publish
-     * period. Simulated wear models the app being open and receiving samples; a closed
-     * gap is not screen time and must not inject a lump of fiction on reopen.
-     */
-    private const val MAX_SIMULATED_GAP_HOURS = 1.0 / 60.0
 
     /**
      * Above this delta the water quality at the moment of the sample is not representative
@@ -69,7 +57,7 @@ object FilterHealthRepository {
     private const val SAVE_INTERVAL_MILLIS = 60_000L
 
     /** Upper bound on the reported duty cycle; only a guard against absurd stored values. */
-    private const val MAX_PLAUSIBLE_DUTY_CYCLE = 100.0
+    private const val MAX_PLAUSIBLE_DUTY_CYCLE = 1.0
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutex = Mutex()
@@ -99,28 +87,8 @@ object FilterHealthRepository {
     private var models: List<StageModel> = emptyList()
     private var lastSaveMillis = 0L
 
-    /**
-     * Whether the most recent sample carried the firmware's five-stage pump runtime counter.
-     * Tracked per sample rather than read from the persisted counter, so a firmware downgrade
-     * re-labels the UI as simulated instead of continuing to claim hardware.
-     */
+    /** True only while the latest snapshot contains usable measured runtime and quality. */
     private var hardwareRuntimeSeen = false
-
-    /**
-     * Latest `/status` + `/control/auto` snapshot. Filter runtime follows Pump B only:
-     * AUTO is ESP32-driven and MANUAL is user-commanded, but both pass water through the
-     * same five-stage media. Pump A never contributes.
-     */
-    private var pumpControl = PumpControlState()
-
-    @Volatile
-    private var pumpControlSeen = false
-
-    /** Wall-clock anchor for integrating Pump B on-time between sensor samples. */
-    private var lastPumpControlWallMillis = 0L
-
-    /** Completed Pump B on-time since the last sensor sample, in hours. */
-    private var pendingPumpBHours = 0.0
 
     /**
      * Loads state and fits the models. Safe to call more than once; only the first call does
@@ -138,21 +106,6 @@ object FilterHealthRepository {
             initialized = true
         }
 
-        // Keep the filter pump state live even while no screen is subscribed to pump
-        // control. Simulated wear follows the actual five-stage pump instead of a fixed
-        // duty cycle; hardware counters remain authoritative once they appear.
-        scope.launch {
-            FirebaseRealtimeSensorRepository.pumpControlFlow
-                .catch { error ->
-                    Log.w(TAG, "Pump control flow failed; using duty-cycle fallback", error)
-                    pumpControlSeen = false
-                }
-                .collect { state ->
-                    runCatching { onPumpControlState(state) }
-                        .onFailure { Log.w(TAG, "Failed to ingest pump state", it) }
-                }
-        }
-
         // Prefs read and 5 × 400-row fits are far too much for the main thread.
         scope.launch {
             mutex.withLock {
@@ -161,46 +114,19 @@ object FilterHealthRepository {
                     Log.w(TAG, "Failed to load filter state; starting fresh", it)
                     FilterPrefs.default()
                 }
+                // Old versions could persist demo-scaled wear before receiving a counter.
+                // Retire only that history; preserve measured history and service dates.
+                if (persisted.lastRuntimeSecondsB == null) {
+                    clearLegacySimulatedAccrual()
+                    FilterPrefs.save(ctx, persisted)
+                }
                 models = fitModels()
-                hardwareRuntimeSeen = persisted.lastRuntimeSecondsB != null
+                hardwareRuntimeSeen = false
                 // Anchor the save throttle so the first sample cannot trip it instantly.
                 lastSaveMillis = System.currentTimeMillis()
-                pendingPumpBHours = 0.0
-                lastPumpControlWallMillis = System.currentTimeMillis()
                 stateLoaded = true
                 publish()
             }
-        }
-    }
-
-    /**
-     * Tracks the actual five-stage pump (Pump B) relay. In AUTO the ESP32 drives it from
-     * the tank level; in MANUAL the user commands it. Pump A is intake-only, so only
-     * Pump B on-time is integrated here.
-     */
-    private suspend fun onPumpControlState(state: PumpControlState) {
-        mutex.withLock {
-            val now = System.currentTimeMillis()
-            if (pumpControlSeen) {
-                if (pumpControl.actualPumpB) {
-                    pendingPumpBHours = (pendingPumpBHours + elapsedHours(
-                        lastPumpControlWallMillis,
-                        now
-                    )).finiteOr(pendingPumpBHours)
-                }
-                if (pumpControl.autoMode != state.autoMode ||
-                    pumpControl.actualPumpB != state.actualPumpB
-                ) {
-                    Log.d(
-                        TAG,
-                        "Filter pump: mode=${if (state.autoMode) "AUTO" else "MANUAL"} " +
-                            "pumpB=${state.actualPumpB}"
-                    )
-                }
-            }
-            pumpControl = state
-            pumpControlSeen = true
-            lastPumpControlWallMillis = now
         }
     }
 
@@ -214,10 +140,16 @@ object FilterHealthRepository {
      */
     suspend fun onSensorSample(data: SensorData) {
         if (!stateLoaded) return
-        if (!isUsable(data)) return
 
         mutex.withLock {
             if (appContext == null) return@withLock
+            hardwareRuntimeSeen = isUsable(data) && data.runtimeBSeconds?.let { it >= 0L } == true
+            if (!hardwareRuntimeSeen) {
+                // Keep counter and wall-clock anchors intact so returning telemetry can
+                // account for the whole measured gap, without fabricating runtime now.
+                publish()
+                return@withLock
+            }
             accrue(data)
             publish()
             maybeSave()
@@ -303,8 +235,6 @@ object FilterHealthRepository {
                 persisted = FilterPrefs.default()
                 models = fitModels()
                 hardwareRuntimeSeen = false
-                pendingPumpBHours = 0.0
-                lastPumpControlWallMillis = System.currentTimeMillis()
                 FilterPrefs.clear(ctx)
                 lastSaveMillis = System.currentTimeMillis()
                 stateLoaded = true
@@ -358,35 +288,10 @@ object FilterHealthRepository {
             0.0
         }
 
-        val hardware = data.runtimeBSeconds != null
-        hardwareRuntimeSeen = hardware
-        val previouslySawHardware = persisted.lastRuntimeSecondsB != null
-
-        val runtimeHours: Double
-        val wallHoursForDuty: Double
-        val advanceWallAnchor: Boolean
-        if (hardware) {
-            if (!previouslySawHardware) {
-                // First real counter after a simulated period: retire the fiction (see
-                // [resetSimulatedAccrual]) so it cannot masquerade as measured history.
-                resetSimulatedAccrual()
-            }
-            pendingPumpBHours = 0.0
-            runtimeHours = hardwareRuntimeHours(data, wallDeltaHours)
-            wallHoursForDuty = wallDeltaHours
-            advanceWallAnchor = true
-        } else if (previouslySawHardware) {
-            // Counters vanished: firmware downgraded below V17, or a snapshot that omits
-            // them. Runtime for the interval is unknown — simulating demo-scaled fiction
-            // on top of measured history would be worse than accruing nothing.
-            runtimeHours = 0.0
-            wallHoursForDuty = 0.0
-            advanceWallAnchor = false
-        } else {
-            runtimeHours = simulatedRuntimeHours(wallDeltaHours, now)
-            wallHoursForDuty = min(wallDeltaHours, MAX_SIMULATED_GAP_HOURS)
-            advanceWallAnchor = true
-        }
+        val runtimeHours = hardwareRuntimeHours(data, wallDeltaHours)
+        // The first counter only establishes a baseline, so its preceding gap contributes
+        // neither runtime nor wall time to the observed duty cycle.
+        val wallHoursForDuty = if (persisted.lastRuntimeSecondsB != null) wallDeltaHours else 0.0
 
         val features = FilterLifeModel.features(
             data.tds.toDouble(),
@@ -453,77 +358,30 @@ object FilterHealthRepository {
         }
 
         persisted = persisted.copy(
-            // While counters are absent the anchor stays frozen, so the delta when they
-            // return is validated against the whole elapsed gap rather than one tick.
-            lastSampleWallMillis = if (advanceWallAnchor) now else previousWall,
+            lastSampleWallMillis = now,
             accumulatedWallHours = persisted.accumulatedWallHours + wallHoursForDuty,
             lastRuntimeSecondsB = data.runtimeBSeconds ?: persisted.lastRuntimeSecondsB
         )
     }
 
-    /**
-     * Runtime hours from the ESP32's cumulative five-stage pump counter.
-     *
-     * Pump B is the five-stage pump, so only its on-time moves water through the media.
-     * Pump A is intake-only and never contributes — in MANUAL, an A-only interval costs no
-     * filter life. The counter is absolute, so a gap while the app was closed is captured
-     * in full and costs nothing: the counter kept ticking whether or not the app was
-     * listening. Three things are guarded:
-     *
-     * - **No previous reading** (first hardware sample, or the simulated → hardware
-     *   switchover): anchor and accrue zero, or the switchover injects a delta of the
-     *   device's entire lifetime.
-     * - **Counter decreased** (reflash, NVS erase): re-anchor and accrue zero.
-     * - **Delta exceeds wall time**: runtime cannot outrun the clock. Catches a
-     *   restored-from-garbage counter that the decrease check alone would miss. 5% + 60s
-     *   of slack absorbs clock skew. The comparison runs against the **uncapped** wall
-     *   delta and an accepted delta is accrued in full — capping either side silently
-     *   discarded every app-closed gap longer than ~6 hours of pump runtime.
-     */
-    private fun hardwareRuntimeHours(data: SensorData, wallDeltaHours: Double): Double {
-        val currentB = data.runtimeBSeconds
-        val previousB = persisted.lastRuntimeSecondsB
-
-        if (previousB == null) {
-            Log.d(TAG, "Anchoring to Pump B runtime counter; accruing 0 for this sample")
-            return 0.0
-        }
-
-        val deltaB = pumpDelta(currentB, previousB)
-        if (deltaB <= 0L) return 0.0
-
-        val hours = deltaB / 3600.0
-        val allowance = wallDeltaHours * 1.05 + (60.0 / 3600.0)
-        if (hours > allowance) {
-            Log.w(
-                TAG,
-                "Rejecting Pump B runtime delta ${hours}h; exceeds wall clock ${wallDeltaHours}h"
-            )
-            return 0.0
-        }
-
-        return hours.finiteOr(0.0)
-    }
-
-    private fun pumpDelta(current: Long?, previous: Long?): Long {
-        if (current == null || previous == null) return 0L
-        if (current < previous) {
-            Log.w(TAG, "Runtime counter decreased ($previous → $current); treating as a reset")
-            return 0L
-        }
-        return current - previous
-    }
+    /** Validates and converts measured Pump B counter deltas without accelerating them. */
+    private fun hardwareRuntimeHours(data: SensorData, wallDeltaHours: Double): Double =
+        MeasuredPumpRuntime.deltaHours(
+            currentSeconds = data.runtimeBSeconds,
+            previousSeconds = persisted.lastRuntimeSecondsB,
+            wallDeltaHours = wallDeltaHours
+        )
 
     /**
-     * Retires everything the simulator invented when the first real runtime counter
-     * arrives. Simulated runtime is demo-scaled fiction: keeping it would leave phantom
+     * Retires legacy simulated history when loading data with no measured counter.
+     * Simulated runtime was demo-scaled: keeping it would leave phantom
      * wear and an inflated duty cycle mixed into history that is then labelled
      * "measured". Calendar age survives — wall-clock time is real regardless of runtime
      * source — and so do rinse counts; observations recorded against simulated intervals
      * are dropped because their targets are scaled fiction too.
      */
-    private fun resetSimulatedAccrual() {
-        Log.i(TAG, "Hardware runtime counters appeared; retiring simulated wear history")
+    private fun clearLegacySimulatedAccrual() {
+        Log.i(TAG, "Discarding legacy simulated wear; waiting for measured runtime")
         persisted = persisted.copy(
             stages = persisted.stages.map { stage ->
                 stage.copy(
@@ -537,58 +395,10 @@ object FilterHealthRepository {
             },
             totalRuntimeHours = 0.0,
             accumulatedWallHours = 0.0,
+            lastSampleWallMillis = 0L,
             observations = emptyList()
         )
-        pendingPumpBHours = 0.0
-        lastPumpControlWallMillis = System.currentTimeMillis()
     }
-
-    /**
-     * Stand-in runtime while the firmware predates V17.
-     *
-     * Once `/status` is available this follows the actual five-stage pump: Pump B on-time
-     * accumulated since the previous sensor sample, in both AUTO (ESP32-driven) and MANUAL
-     * (user-commanded) modes. Pump A is intake-only, so an A-only interval contributes zero.
-     * Without pump telemetry it falls back to [FilterSpecs.SIMULATED_DUTY_CYCLE].
-     *
-     * The interval is capped at one publish period, so reopening the app after hours does
-     * not bill the closed gap. Scaling by [FilterSpecs.DEMO_TIME_SCALE] is intentional demo
-     * behaviour, not a physical runtime measurement.
-     */
-    private fun simulatedRuntimeHours(wallDeltaHours: Double, now: Long): Double {
-        val sessionHours = wallDeltaHours.finiteOr(0.0).coerceIn(0.0, MAX_SIMULATED_GAP_HOURS)
-        if (sessionHours <= 0.0) {
-            pendingPumpBHours = 0.0
-            if (pumpControlSeen) lastPumpControlWallMillis = now
-            return 0.0
-        }
-
-        if (!pumpControlSeen) {
-            return (sessionHours * FilterSpecs.SIMULATED_DUTY_CYCLE * FilterSpecs.DEMO_TIME_SCALE)
-                .finiteOr(0.0).coerceAtLeast(0.0)
-        }
-
-        val openSegmentHours = if (pumpControl.actualPumpB) {
-            elapsedHours(lastPumpControlWallMillis, now)
-        } else {
-            0.0
-        }
-        val pumpBHours = (pendingPumpBHours + openSegmentHours)
-            .finiteOr(0.0)
-            .coerceIn(0.0, MAX_SIMULATED_GAP_HOURS)
-        pendingPumpBHours = 0.0
-        lastPumpControlWallMillis = now
-
-        return (pumpBHours * FilterSpecs.DEMO_TIME_SCALE)
-            .finiteOr(0.0).coerceAtLeast(0.0)
-    }
-
-    private fun elapsedHours(previousMillis: Long, nowMillis: Long): Double =
-        if (previousMillis in 1 until nowMillis) {
-            (nowMillis - previousMillis) / 3_600_000.0
-        } else {
-            0.0
-        }
 
     // ── Publishing ─────────────────────────────────────────────────────────
 
@@ -618,12 +428,12 @@ object FilterHealthRepository {
             runtimeSource = if (hardwareRuntimeSeen) {
                 RuntimeSource.HARDWARE
             } else {
-                RuntimeSource.SIMULATED
+                RuntimeSource.UNAVAILABLE
             },
             totalRuntimeHours = persisted.totalRuntimeHours,
             dutyCycle = duty,
             diagnostics = models.map { it.diagnostics },
-            isWaitingForData = persisted.lastSampleWallMillis == 0L
+            isWaitingForData = !hardwareRuntimeSeen || persisted.lastSampleWallMillis == 0L
         )
     }
 
@@ -631,10 +441,7 @@ object FilterHealthRepository {
      * Runtime hours per wall-clock hour. Null until measurable, which makes the UI show
      * operating hours instead of fabricating a calendar date from an unknown duty cycle.
      *
-     * Deliberately **not** clamped to 1.0. Real hardware cannot exceed it — the delta is
-     * bounded by wall time in [hardwareRuntimeHours] — but the simulated path runs at
-     * [FilterSpecs.DEMO_TIME_SCALE]. The ceiling is an absurdity backstop; above roughly 286×
-     * demo scale it also means the date forecast no longer tracks accelerated health exactly.
+     * Measured pump runtime cannot exceed elapsed wall time; clamp sampling tolerance.
      */
     private fun observedDutyCycle(): Double? {
         val wall = persisted.accumulatedWallHours

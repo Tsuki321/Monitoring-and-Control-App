@@ -20,7 +20,6 @@ class ControlFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: ControlViewModel by viewModels()
-    private var hasAnimatedEntrance = false
 
     // Active-pump icon rotation animators (null when the pump is off)
     private var pumpARotation: Animator? = null
@@ -37,6 +36,10 @@ class ControlFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        AnimationUtils.animateCardEntrance(
+            listOf(binding.cardMode, binding.cardPumpA, binding.cardPumpB, binding.cardSystemStatus),
+            delayMs = 80
+        )
         setupSwitchListeners()
         observeState()
     }
@@ -130,28 +133,6 @@ class ControlFragment : Fragment() {
             }
         }
 
-        // Speed / voltage from the mock simulation (synced to actual states)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.pumpState.collect { state ->
-                if (!hasAnimatedEntrance) {
-                    hasAnimatedEntrance = true
-                    AnimationUtils.animateCardEntrance(
-                        listOf(
-                            binding.cardMode,
-                            binding.cardPumpA,
-                            binding.cardPumpB,
-                            binding.cardSystemStatus
-                        ),
-                        delayMs = 80
-                    )
-                }
-
-                binding.tvPumpASpeed.text = getString(R.string.pump_speed_format, state.pumpASpeed)
-                binding.tvPumpAVoltage.text = getString(R.string.pump_voltage_format, state.pumpAVoltage)
-                binding.tvPumpBSpeed.text = getString(R.string.pump_speed_format, state.pumpBSpeed)
-                binding.tvPumpBVoltage.text = getString(R.string.pump_voltage_format, state.pumpBVoltage)
-            }
-        }
     }
 
     private fun updateModeLabel(isAuto: Boolean) {
@@ -197,6 +178,5 @@ class ControlFragment : Fragment() {
         pumpARotation = null
         pumpBRotation = null
         _binding = null
-        hasAnimatedEntrance = false
     }
 }
