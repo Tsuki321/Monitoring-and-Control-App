@@ -5,8 +5,8 @@ import android.graphics.RectF
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
-import android.widget.TextView
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
+import androidx.navigation.fragment.NavHostFragment
 import androidx.annotation.IdRes
 import androidx.core.view.children
 import androidx.navigation.NavController
@@ -30,7 +30,7 @@ import com.watermonitor.app.utils.TutorialPrefs
  * up after [MAX_TARGET_ATTEMPTS] frames.
  */
 class TutorialController(
-    private val activity: ComponentActivity,
+    private val activity: FragmentActivity,
     private val binding: ActivityMainBinding,
     private val navController: NavController,
     private val onFinished: () -> Unit
@@ -64,6 +64,11 @@ class TutorialController(
 
     /** True while the pending target's ScrollView is still smooth-scrolling. */
     private var scrollAnimating = false
+    private val resizeListener = View.OnLayoutChangeListener { _, l, t, r, b, ol, ot, or, ob ->
+        if (overlayAttached && !finished && (r - l != or - ol || b - t != ob - ot)) {
+            binding.root.post { if (overlayAttached && !finished) showCurrentStep() }
+        }
+    }
 
     // ---------------------------------------------------------------- public API
 
@@ -74,6 +79,7 @@ class TutorialController(
         targetAttempts = 0
         scrollAnimating = false
         navigatingProgrammatically = false
+        inputLocked = true
         attachOverlay()
         showCurrentStep()
     }
@@ -87,6 +93,12 @@ class TutorialController(
             TutorialPrefs.markCompleted(activity, uid)
         }
         onFinished()
+    }
+
+    /** Tear down activity-owned views without recording a completed tour. */
+    fun dispose() {
+        finished = true
+        detachOverlay()
     }
 
     /**
@@ -145,6 +157,7 @@ class TutorialController(
         // A previous "Skip" disabled the balloon's children for its exit frame.
         overlay.children.forEach { it.isEnabled = true }
         overlayAttached = true
+        overlay.addOnLayoutChangeListener(resizeListener)
         // The tour's own buttons drive it; taps on the dimmed app underneath are swallowed
         // by the overlay's touch handling.
     }
@@ -152,6 +165,7 @@ class TutorialController(
     private fun detachOverlay() {
         if (!overlayAttached) return
         overlay.release()
+        overlay.removeOnLayoutChangeListener(resizeListener)
         (overlay.parent as? ViewGroup)?.removeView(overlay)
         overlayAttached = false
     }
@@ -244,9 +258,8 @@ class TutorialController(
             return
         }
         if (scrollAnimating) {
-            // Hold the balloon back until the smooth scroll settles, so it never points at
-            // a position the card is leaving.
-            root.postOnAnimation { if (!finished && overlayAttached) showCurrentStep() }
+            // Wait one layout after scrolling so the spotlight uses the final position.
+            retryOrSkip(root)
             return
         }
         targetAttempts = 0
@@ -267,11 +280,11 @@ class TutorialController(
      * this the balloon could sit on top of them.
      */
     private fun updateUsableBand() {
-        val barTop = binding.topBar.top - overlay.top
-        val barBottom = overlay.bottom - binding.bottomNav.top
+        val barTop = if (binding.topBar.isShown) binding.topBar.bottom - overlay.top else 0
+        val barBottom = if (binding.bottomNav.isShown) overlay.bottom - binding.bottomNav.top else 0
         overlay.setUsableBand(
-            barTop.coerceIn(0, overlay.height / 3),
-            barBottom.coerceIn(0, overlay.height / 3)
+            barTop.coerceAtLeast(0),
+            barBottom.coerceAtLeast(0)
         )
     }
 
@@ -351,38 +364,14 @@ class TutorialController(
      * spotlight a card on the screen the user is leaving.
      */
     private fun navView(@IdRes id: Int): View? {
-        val host = binding.navHostFragment
-        val currentId = navController.currentDestination?.id
-        var destinationRoot: View = host
-        for (i in 0 until host.childCount) {
-            val child = host.getChildAt(i)
-            if (currentId != null && child.id == currentId) {
-                destinationRoot = child
-                break
-            }
-        }
-        return destinationRoot.findViewById(id)
+        val host = activity.supportFragmentManager
+            .findFragmentById(R.id.navHostFragment) as? NavHostFragment ?: return null
+        return host.childFragmentManager.primaryNavigationFragment?.view?.findViewById(id)
     }
 
-    /** The BottomNavigationView renders each item without an item ID — match on its label. */
+    /** Material navigation items carry their menu IDs, regardless of locale or label mode. */
     private fun tabView(@IdRes menuItemId: Int): View? {
-        val menuItem = binding.bottomNav.menu.findItem(menuItemId) ?: return null
-        val title: CharSequence = menuItem.title ?: return null
-        val wanted: String = title.toString()
-        for (i in 0 until binding.bottomNav.childCount) {
-            val itemView: View = binding.bottomNav.getChildAt(i)
-            if (labelOf(itemView) == wanted) return itemView
-        }
-        return null
-    }
-
-    /** Concatenated text of every TextView inside [view], or "" when there is none. */
-    private fun labelOf(view: View): String {
-        if (view is TextView) return view.text.toString()
-        if (view !is ViewGroup) return ""
-        val builder = StringBuilder()
-        for (i in 0 until view.childCount) builder.append(labelOf(view.getChildAt(i)))
-        return builder.toString()
+        return binding.bottomNav.findViewById(menuItemId)
     }
 
     // ---------------------------------------------------------------- geometry
@@ -397,28 +386,13 @@ class TutorialController(
      */
     private fun spotlightFor(target: View, anchor: SpotlightAnchor): RectF? {
         if (anchor == SpotlightAnchor.NONE) return null
-        binding.root.getWindowVisibleDisplayFrame(SCREEN_FRAME)
-        scrollIntoView(target, SCREEN_FRAME.top, SCREEN_FRAME.bottom)
-
-        val framed = if (anchor == SpotlightAnchor.REGION) cardColumnOf(target) else target
-        val loc = IntArray(2)
-        framed.getLocationInWindow(loc)
-        return RectF(
-            loc[0].toFloat(),
-            loc[1].toFloat(),
-            (loc[0] + framed.width).toFloat(),
-            (loc[1] + framed.height).toFloat()
-        )
-    }
-
-    /** Climbs from a card to the column holding its sibling cards, just below the ScrollView. */
-    private fun cardColumnOf(target: View): View {
-        var current: View = target
-        while (true) {
-            val parent = current.parent as? View ?: return current
-            if (parent is ScrollView) return current
-            if (parent.parent is ScrollView) return parent
-            current = parent
+        scrollIntoView(target)
+        val visible = Rect()
+        if (!target.getGlobalVisibleRect(visible)) return null
+        val overlayLocation = IntArray(2)
+        overlay.getLocationOnScreen(overlayLocation)
+        return RectF(visible).apply {
+            offset(-overlayLocation[0].toFloat(), -overlayLocation[1].toFloat())
         }
     }
 
@@ -435,22 +409,27 @@ class TutorialController(
     }
 
     /** Scrolls the nearest ScrollView ancestor just enough to reveal [target]. */
-    private fun scrollIntoView(target: View, visibleTop: Int, visibleBottom: Int) {
+    private fun scrollIntoView(target: View) {
         scrollAnimating = false
-        val loc = IntArray(2)
-        target.getLocationInWindow(loc)
-        val clearance = dp(24)
-        val delta = when {
-            loc[1] + target.height > visibleBottom - clearance ->
-                loc[1] + target.height - (visibleBottom - clearance)
-            loc[1] < visibleTop + clearance -> loc[1] - (visibleTop + clearance)
-            else -> return
-        }
         var parent = target.parent
         while (parent != null) {
             if (parent is ScrollView) {
-                scrollAnimating = true
-                parent.smoothScrollBy(0, delta)
+                val rect = Rect(0, 0, target.width, target.height)
+                parent.offsetDescendantRectToMyCoords(target, rect)
+                val viewport = parent.height - parent.paddingTop - parent.paddingBottom
+                val top = parent.scrollY + parent.paddingTop
+                val bottom = top + viewport
+                val delta = when {
+                    rect.height() > viewport -> rect.top - top
+                    rect.top < top -> rect.top - top
+                    rect.bottom > bottom -> rect.bottom - bottom
+                    else -> 0
+                }
+                val oldY = parent.scrollY
+                // A single immediate scroll avoids repeatedly restarting smoothScrollBy on
+                // every frame, which previously could leave a step waiting indefinitely.
+                parent.scrollBy(0, delta)
+                scrollAnimating = parent.scrollY != oldY
                 return
             }
             parent = parent.parent

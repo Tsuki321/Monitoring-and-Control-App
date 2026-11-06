@@ -23,6 +23,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.ScrollView
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -75,6 +76,7 @@ class TutorialOverlayView @JvmOverloads constructor(
 
     private val balloonContainer = FrameLayout(context)
     private val balloon = MaterialCardView(context)
+    private val balloonScroll = ScrollView(context)
     private val arrow = ArrowView(context)
 
     private val iconView = ImageView(context)
@@ -144,6 +146,7 @@ class TutorialOverlayView @JvmOverloads constructor(
     private var accentColor: Int = ContextCompat.getColor(context, R.color.teal_deep)
 
     init {
+        setWillNotDraw(false)
         // The overlay owns every touch while it is up, so a stray tap on a switch behind
         // the dim cannot half-change the system state mid-tour.
         isClickable = true
@@ -267,7 +270,9 @@ class TutorialOverlayView @JvmOverloads constructor(
         content.addView(bodyView, matchWidth(topMargin = dp(6)))
         content.addView(actions, matchWidth(topMargin = dp(12)))
 
-        balloon.addView(content)
+        balloonScroll.isFillViewport = false
+        balloonScroll.addView(content)
+        balloon.addView(balloonScroll)
     }
 
     private fun matchWidth(topMargin: Int) =
@@ -279,7 +284,7 @@ class TutorialOverlayView @JvmOverloads constructor(
     // ---------------------------------------------------------------- public API
 
     /**
-     * Shows [step] over [spotlight] (window coordinates), or dims everything when it is null.
+     * Shows [step] over [spotlight] in overlay coordinates, or dims everything when it is null.
      *
      * @param isLast true when this is the final page — the action button then reads "Done".
      */
@@ -291,6 +296,8 @@ class TutorialOverlayView @JvmOverloads constructor(
         isLast: Boolean
     ) {
         hasSpotlight = spotlight != null
+        balloon.setOnClickListener { balloonClickListener?.onBalloonClick() }
+        balloonScroll.scrollTo(0, 0)
         spotlightRect.set(spotlight ?: RectF())
         spotlightInset = if (step.anchor == SpotlightAnchor.STEP) dpf(6f) else dpf(3f)
 
@@ -376,8 +383,12 @@ class TutorialOverlayView @JvmOverloads constructor(
         // step on a short screen scrolls inside the card rather than pushing "Next" under
         // the bottom navigation. (The un-spotlighted welcome card is centred in the overlay,
         // which already sits between the bars.)
-        val usableHeight = (height - bandTop - bandBottom - 2 * margin).toInt()
-            .coerceAtLeast(dp(1))
+        val usableHeight = (height - bandTop - bandBottom - 2 * margin).toInt().coerceAtLeast(1)
+        // A prior step may have been short; measure the new content without its old cap.
+        (balloon.layoutParams as LayoutParams).apply {
+            width = maxBalloonWidth
+            height = LayoutParams.WRAP_CONTENT
+        }
         balloon.measure(
             MeasureSpec.makeMeasureSpec(maxBalloonWidth, MeasureSpec.AT_MOST),
             MeasureSpec.makeMeasureSpec(usableHeight, MeasureSpec.AT_MOST)
@@ -386,12 +397,15 @@ class TutorialOverlayView @JvmOverloads constructor(
         val h = balloon.measuredHeight
         val balloonParams = balloon.layoutParams as LayoutParams
         val arrowParams = arrow.layoutParams as LayoutParams
+        balloonParams.width = w
+        balloonParams.height = h
 
         if (!hasSpotlight || width == 0 || height == 0) {
             arrow.isVisible = false
-            balloonParams.gravity = Gravity.CENTER
-            balloonParams.leftMargin = 0
-            balloonParams.topMargin = 0
+            balloonParams.gravity = Gravity.TOP or Gravity.START
+            balloonParams.leftMargin = ((width - w) / 2).coerceAtLeast(0)
+            balloonParams.topMargin = (bandTop + margin +
+                (usableHeight - h).coerceAtLeast(0) / 2f).toInt()
             balloon.layoutParams = balloonParams
             return
         }

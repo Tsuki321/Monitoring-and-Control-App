@@ -1,22 +1,33 @@
 package com.watermonitor.app
 
+import android.Manifest
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.NavOptions
 import androidx.navigation.ui.setupWithNavController
+import androidx.lifecycle.Lifecycle
 import com.google.firebase.auth.FirebaseAuth
 import com.watermonitor.app.data.repository.FilterHealthRepository
 import com.watermonitor.app.databinding.ActivityMainBinding
+import com.watermonitor.app.notifications.TankAlertPreferences
+import com.watermonitor.app.notifications.TankMonitoringService
+import com.watermonitor.app.notifications.TankNotifications
 import com.watermonitor.app.utils.LocaleHelper
 import com.watermonitor.app.ui.legal.LegalDialog
 import com.watermonitor.app.ui.tutorial.TutorialController
@@ -41,6 +52,19 @@ class MainActivity : AppCompatActivity() {
     private var backPressedOnce = false
     private val backPressHandler = Handler(Looper.getMainLooper())
     private var legalDialogShowing = false
+    private var alertSetupDialog: AlertDialog? = null
+    private var alertPermissionPending = false
+    private val tankAlertPrefs by lazy { TankAlertPreferences(this) }
+    private val notificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        alertPermissionPending = false
+        if (granted) {
+            binding.root.post { syncTankMonitoring() }
+        } else {
+            showBlockedNotifications()
+        }
+    }
 
     /** Guided tour; created once the nav controller exists, from setupNavigation(). */
     private var tutorial: TutorialController? = null
@@ -134,6 +158,111 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         enforceLegalConsent()
+        binding.root.post {
+            if (!isFinishing && !isDestroyed) syncTankMonitoring()
+        }
+    }
+
+    private fun syncTankMonitoring() {
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            TankMonitoringService.stop(this)
+            return
+        }
+        val navHost = supportFragmentManager.findFragmentById(R.id.navHostFragment) as? NavHostFragment
+        val destination = navHost?.navController?.currentDestination?.id
+        if (destination == null || destination == R.id.loginFragment ||
+            destination == R.id.registerFragment || legalDialogShowing ||
+            !LegalConsentManager.hasCurrentConsent(this, uid)) return
+        TankNotifications.createChannels(this)
+        if (alertSetupDialog?.isShowing == true || alertPermissionPending) return
+        if (tankAlertPrefs.setupVersion != BuildConfig.VERSION_CODE) {
+            showAlertSetup()
+            return
+        }
+        if (!tankAlertPrefs.enabled) {
+            TankMonitoringService.stop(this)
+            startTutorialWhenReady()
+            return
+        }
+        if (TankNotifications.canMonitor(this)) {
+            TankMonitoringService.start(this, fromVisibleActivity = true)
+        } else {
+            TankMonitoringService.stop(this)
+        }
+        startTutorialWhenReady()
+    }
+
+    private fun showAlertSetup() {
+        if (alertSetupDialog?.isShowing == true) return
+        alertSetupDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.alert_setup_title)
+            .setMessage(R.string.alert_setup_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.alert_setup_enable) { _, _ ->
+                tankAlertPrefs.setupVersion = BuildConfig.VERSION_CODE
+                tankAlertPrefs.enabled = true
+                requestAlertPermission()
+            }
+            .setNegativeButton(R.string.alert_setup_later) { _, _ ->
+                tankAlertPrefs.setupVersion = BuildConfig.VERSION_CODE
+                syncTankMonitoring()
+            }
+            .create().also { dialog ->
+                dialog.setOnDismissListener {
+                    if (alertSetupDialog === dialog) alertSetupDialog = null
+                    binding.root.post { if (!isFinishing && !isDestroyed) syncTankMonitoring() }
+                }
+                dialog.show()
+            }
+    }
+
+    private fun requestAlertPermission() {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED) {
+            alertPermissionPending = true
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else if (!TankNotifications.canNotify(this, TankNotifications.ALERT_CHANNEL) ||
+            !TankNotifications.canNotify(this, TankNotifications.LEAK_CHANNEL)) {
+            showBlockedNotifications()
+        } else {
+            syncTankMonitoring()
+        }
+    }
+
+    private fun showBlockedNotifications() {
+        if (isFinishing || isDestroyed) return
+        alertSetupDialog = AlertDialog.Builder(this)
+            .setTitle(R.string.alert_setup_title)
+            .setMessage(R.string.tank_alert_permission_denied)
+            .setPositiveButton(R.string.tank_notification_settings) { _, _ ->
+                openTankNotificationSettings()
+            }
+            .setNegativeButton(R.string.alert_setup_later, null)
+            .create().also { dialog ->
+                dialog.setOnDismissListener {
+                    if (alertSetupDialog === dialog) alertSetupDialog = null
+                    binding.root.post { if (!isFinishing && !isDestroyed) syncTankMonitoring() }
+                }
+                dialog.show()
+            }
+    }
+
+    fun setTankAlertsEnabled(enabled: Boolean) {
+        tankAlertPrefs.enabled = enabled
+        if (enabled) {
+            tankAlertPrefs.setupVersion = BuildConfig.VERSION_CODE
+            requestAlertPermission()
+        } else {
+            TankMonitoringService.stop(this)
+        }
+    }
+
+    fun openTankNotificationSettings() {
+        startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName))
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -153,13 +282,20 @@ class MainActivity : AppCompatActivity() {
      * the binding and the nav controller), so the fragment reaches it through its host.
      */
     fun replayTutorial() {
-        val controller = tutorial ?: return
         pendingTutorialStart = true
-        // The tour's first step needs the Dashboard on screen, and its controller already
-        // knows how to get there (same popUpTo logic as any tab switch) — no navigation here.
-        // Settings and the Dashboard are siblings in this graph, so popping back to the
-        // Dashboard would rebuild it; letting the tour navigate keeps one code path.
-        controller.start()
+        startTutorialWhenReady()
+    }
+
+    private fun startTutorialWhenReady() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) ||
+            legalDialogShowing || alertSetupDialog?.isShowing == true || alertPermissionPending ||
+            tankAlertPrefs.setupVersion != BuildConfig.VERSION_CODE ||
+            !LegalConsentManager.hasCurrentConsent(this, uid) || tutorial?.isShowing == true) return
+        if (pendingTutorialStart || !TutorialPrefs.hasCompleted(this, uid)) {
+            pendingTutorialStart = false
+            tutorial?.start()
+        }
     }
 
     private fun setupNavigation() {
@@ -183,6 +319,7 @@ class MainActivity : AppCompatActivity() {
             // Nothing to tear down here: the controller removes its own overlay. Recorded so
             // a later save no longer treats the tour as pending.
             tourWasShowingOnSave = false
+            pendingTutorialStart = false
         }
         tutorial = controller
         // Offer the tour once per account. A newly registered account asks for it from the
@@ -197,12 +334,7 @@ class MainActivity : AppCompatActivity() {
         val resumeShowingTour = tourWasShowingOnSave
         if (resumeShowingTour || explicitlyRequested || neverCompleted) {
             pendingTutorialStart = true
-            // After layout: the first step needs the nav host and top bar measured. If the
-            // legal-consent dialog is due on this launch it is enforced from onResume and
-            // draws above the tour's dim layer, so the tour can start underneath it.
-            binding.root.post {
-                if (!isFinishing && !isDestroyed) controller.start()
-            }
+            // Consent and notification setup run first; syncTankMonitoring starts the tour.
         }
 
         // Update title, bottom nav visibility, and top-bar button based on destination
@@ -240,6 +372,12 @@ class MainActivity : AppCompatActivity() {
             binding.btnSettings.contentDescription = getString(
                 if (isSecondaryPage) R.string.navigate_up else R.string.settings
             )
+            binding.root.post {
+                if (!isFinishing && !isDestroyed) {
+                    enforceLegalConsent()
+                    syncTankMonitoring()
+                }
+            }
         }
 
         // Navigate to Settings (from main pages) or navigate up (from secondary pages).
@@ -277,6 +415,7 @@ class MainActivity : AppCompatActivity() {
             onAccepted = {
                 LegalConsentManager.recordConsent(this, user.uid)
                 legalDialogShowing = false
+                syncTankMonitoring()
             },
             onDeclined = {
                 legalDialogShowing = false
@@ -299,6 +438,10 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (tutorial?.isShowing == true) {
+                    tutorial?.finish()
+                    return
+                }
                 val currentDestination = navController.currentDestination?.id
 
                 // If on main screens (Dashboard, Monitoring, Control), handle double-tap to exit
@@ -344,6 +487,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        tutorial?.dispose()
+        alertSetupDialog?.dismiss()
+        alertSetupDialog = null
         super.onDestroy()
         clockHandler.removeCallbacks(clockRunnable)
         backPressHandler.removeCallbacksAndMessages(null)

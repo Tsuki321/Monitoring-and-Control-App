@@ -40,7 +40,7 @@ object FirebaseRealtimeSensorRepository {
         kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
     )
 
-    private val database: FirebaseDatabase by lazy {
+    internal val database: FirebaseDatabase by lazy {
         FirebaseDatabase.getInstance(DATABASE_URL).apply {
             // Only enable verbose Firebase logging in debug builds
             if (com.watermonitor.app.BuildConfig.DEBUG) {
