@@ -271,7 +271,7 @@ class TutorialOverlayView @JvmOverloads constructor(
         content.addView(actions, matchWidth(topMargin = dp(12)))
 
         balloonScroll.isFillViewport = false
-        balloonScroll.addView(content, ScrollView.LayoutParams(
+        balloonScroll.addView(content, LayoutParams(
             LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
         balloon.addView(balloonScroll, LayoutParams(
             LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
