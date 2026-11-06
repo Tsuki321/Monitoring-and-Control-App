@@ -42,7 +42,7 @@ class TutorialPlacementTest {
     @Test fun balloonStaysBetweenBarsOnShortLandscapeScreenAndContentCanScroll() {
         layout(640, 360)
         overlay.setUsableBand(60, 70)
-        overlay.showStep(TutorialStep.all.first { it.id == "control_pumps" },
+        overlay.showStep(TutorialStep.DEFAULT.first { it.id == "control_pumps" },
             RectF(20f, 80f, 620f, 210f), 12, 15, false)
         layout(640, 360)
         val balloon = overlay.descendants.filterIsInstance<MaterialCardView>().single()
@@ -56,7 +56,7 @@ class TutorialPlacementTest {
     @Test fun centeredWelcomeStaysWithinAsymmetricUsableBand() {
         layout(360, 800)
         overlay.setUsableBand(150, 50)
-        overlay.showStep(TutorialStep.all.first(), null, 0, 15, false)
+        overlay.showStep(TutorialStep.DEFAULT.first(), null, 0, 15, false)
         layout(360, 800)
         val balloon = overlay.descendants.filterIsInstance<MaterialCardView>().single()
         assertTrue(balloon.top >= 150)
@@ -67,7 +67,7 @@ class TutorialPlacementTest {
     @Test fun longerStepCanGrowAfterAShortStep() {
         layout(360, 800)
         overlay.setUsableBand(70, 70)
-        val pumps = TutorialStep.all.first { it.id == "control_pumps" }
+        val pumps = TutorialStep.DEFAULT.first { it.id == "control_pumps" }
         overlay.showStep(pumps.copy(bodyRes = R.string.tutorial_finish_title), null, 0, 2, false)
         layout(360, 800)
         val balloon = overlay.descendants.filterIsInstance<MaterialCardView>().single()
