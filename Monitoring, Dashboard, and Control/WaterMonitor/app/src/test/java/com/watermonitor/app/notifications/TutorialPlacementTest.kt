@@ -19,9 +19,11 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "mdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class TutorialPlacementTest {
     private lateinit var controller: ActivityController<AppCompatActivity>
     private lateinit var overlay: TutorialOverlayView
