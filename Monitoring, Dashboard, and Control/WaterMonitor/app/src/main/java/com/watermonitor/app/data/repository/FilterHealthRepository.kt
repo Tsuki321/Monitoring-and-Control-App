@@ -123,24 +123,10 @@ object FilterHealthRepository {
             initialized = true
         }
 
-        // Prefs read and 5 × 400-row fits are far too much for the main thread.
+        // Preserve legacy preferences on disk for audit; new shared state never migrates
+        // phone-local counters into the server's authoritative installation history.
         scope.launch {
             mutex.withLock {
-                val ctx = appContext ?: return@withLock
-                persisted = runCatching { FilterPrefs.load(ctx) }.getOrElse {
-                    Log.w(TAG, "Failed to load filter state; starting fresh", it)
-                    FilterPrefs.default()
-                }
-                // Old versions could persist demo-scaled wear before receiving a counter.
-                // Retire only that history; preserve measured history and service dates.
-                if (persisted.lastRuntimeSecondsB == null) {
-                    clearLegacySimulatedAccrual()
-                    FilterPrefs.save(ctx, persisted)
-                }
-                models = fitModels()
-                hardwareRuntimeSeen = false
-                // Anchor the save throttle so the first sample cannot trip it instantly.
-                lastSaveMillis = System.currentTimeMillis()
                 stateLoaded = true
                 publish()
             }

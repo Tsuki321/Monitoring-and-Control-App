@@ -131,6 +131,7 @@ function maintain(current, request, time, id) {
   }
   c.stages[spec.key] = request.action === "REPLACE" ? { ...newStage(time, old.revision + 1), serviceAt: time }
     : { ...old, usage: old.usage * .3, rinses: old.rinses + 1, revision: old.revision + 1, serviceAt: time };
+  event.after = c.stages[spec.key];
   c.applied ||= {}; c.applied[id] = event;
   return { ok: true, current: c, event };
 }
@@ -178,15 +179,20 @@ function forecast(rows, month, observations) {
   const latest = summary.samples.at(-1);
   const models = Object.fromEntries(specs.map(s => [s.key, train(s, observations)]));
   const stages = {};
+  const recentService = summary.events.filter(r => r.kind === "maintenance" && r.payload.after)
+    .sort((a, b) => b.time - a.time);
+  const validSamples = summary.samples.filter(r => valid(r.payload.sample.sensors));
+  const predictionWater = Object.fromEntries(["ph", "tds", "turbidity"].map(key =>
+    [key, validSamples.length ? validSamples.reduce((n, r) => n + r.payload.sample.sensors[key], 0) / validSamples.length : 0]));
   for (const spec of specs) {
-    const stage = latest?.payload.stages?.[spec.key];
+    const service = recentService.find(r => r.payload.stageKey === spec.key && r.time > (latest?.time ?? 0));
+    const stage = service?.payload.after || latest?.payload.stages?.[spec.key];
     const first = summary.samples[0];
     const span = latest && first ? (latest.time - first.time) / 1000 : 0;
     const duty = span > 0 ? clamp(summary.runtimeSeconds.B / span, 0, 1) : 0;
-    const sufficient = stage && valid(latest.payload.sample.sensors) && counter(latest.payload.sample.sensors.runtimeB)
+    const sufficient = stage && !service && valid(latest.payload.sample.sensors) && counter(latest.payload.sample.sensors.runtimeB)
       && summary.samples.length >= 60 && summary.coverage >= .1 && end - latest.time <= DAY && duty >= .001;
-    const x = summary.metrics.ph && summary.metrics.tds && summary.metrics.turbidity
-      ? features({ ph: summary.metrics.ph.mean, tds: summary.metrics.tds.mean, turbidity: summary.metrics.turbidity.mean }) : [1, 0, 0, 0];
+    const x = validSamples.length ? features(predictionWater) : [1, 0, 0, 0];
     const factor = load(models[spec.key].coefficients, x);
     const hoursLeft = stage ? Math.max(0, 1 - stage.usage) * spec.ratedHours / factor : 0;
     const due = sufficient ? Math.min(latest.time + hoursLeft / (24 * duty) * DAY, stage.installedAt + spec.ratedDays * DAY) : null;

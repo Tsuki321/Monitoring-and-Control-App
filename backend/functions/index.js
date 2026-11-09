@@ -28,6 +28,12 @@ exports.stampTelemetry = onValueWritten(options("/sensors"), async event => {
   }
   const sample = { id: hash(event.id), time: Date.parse(event.time), sensors };
   await root().child("current").transaction(current => model.advance(current, sample));
+  const previous = parse(event.data.before.val()) || {};
+  if (String(previous.rainDetected) !== String(raw.rainDetected) || String(previous.tankWarning) !== String(raw.tankWarning)) {
+    await root().child("latestAlert").transaction(old => !old || old.time < sample.time ||
+      (old.time === sample.time && old.id < sample.id) ? { id: sample.id, time: sample.time,
+        rainDetected: sensors.rainDetected ?? null, tankWarning: sensors.tankWarning ?? null } : undefined);
+  }
 });
 
 for (const [name, path, target] of [["stampPumpStatus", "/status", "latestStatus"], ["stampControl", "/control", "latestControl"]]) {
@@ -77,18 +83,19 @@ exports.ingestMonthlyBatch = onDocumentCreated({ document: "systems/{system}/mon
     }
     normalized.push({ id: row.id, time: row.time, kind: row.kind, payload });
   }
+  const unique = [...new Map(normalized.map(row => [row.id, row])).values()];
   await store.runTransaction(async tx => {
     const batchState = await tx.get(event.data.ref);
     if (batchState.get("status") === "ingested") return;
-    const refs = normalized.map(r => monthRef.collection("records").doc(hash(r.id)));
+    const refs = unique.map(r => monthRef.collection("records").doc(hash(r.id)));
     const existing = refs.length ? await tx.getAll(...refs) : [];
-    normalized.forEach((row, i) => { if (!existing[i].exists) tx.create(refs[i], { ...row, receivedAt: FieldValue.serverTimestamp() }); });
-    for (const row of normalized) {
+    unique.forEach((row, i) => { if (!existing[i].exists) tx.create(refs[i], { ...row, receivedAt: FieldValue.serverTimestamp() }); });
+    for (const row of unique) {
       const observation = row.kind === "maintenance" ? row.payload.observation : null;
       if (observation) tx.set(store.doc(`systems/${SYSTEM}/observations/${hash(row.id)}`), observation);
     }
     tx.set(monthRef, { month, dirty: true, lastIngestedAt: FieldValue.serverTimestamp() }, { merge: true });
-    tx.update(event.data.ref, { status: "ingested", accepted: normalized.length, rejected: rows.length - normalized.length });
+    tx.update(event.data.ref, { status: "ingested", accepted: unique.length, rejected: rows.length - normalized.length });
   });
 });
 

@@ -19,7 +19,10 @@ class MonthlyUploadWorker(context: Context, parameters: WorkerParameters) : Coro
             // Limit each run; the periodic task continues a large backlog without timing out.
             repeat(40) {
                 val pending = dao.pending(currentMonth)
-                if (pending.isEmpty()) return Result.success()
+                if (pending.isEmpty()) {
+                    HistoryRepository.status.value = "Completed months uploaded • this month is recorded locally"
+                    return Result.success()
+                }
                 val month = pending.first().month
                 val rows = pending.takeWhile { it.month == month }
                 val encoded = HistoryRepository.gson.toJson(rows.map { mapOf(

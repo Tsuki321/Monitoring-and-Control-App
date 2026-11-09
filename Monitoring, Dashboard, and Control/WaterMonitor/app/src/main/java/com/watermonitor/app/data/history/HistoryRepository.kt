@@ -24,7 +24,6 @@ object HistoryRepository {
     private var context: Context? = null
     private val listeners = mutableListOf<Pair<DatabaseReference, ValueEventListener>>()
     private var lastMinute = -1L
-    private var lastAlerts: String? = null
     val root: DatabaseReference get() = FirebaseDatabase.getInstance(DATABASE_URL)
         .getReference("systems/$SYSTEM_ID")
 
@@ -40,7 +39,6 @@ object HistoryRepository {
             listeners.clear()
             official.value = emptyMap()
             lastMinute = -1
-            lastAlerts = null
             FilterHealthRepository.clearSharedState()
             if (auth.currentUser == null) {
                 status.value = "Sign in to synchronize history"
@@ -53,17 +51,11 @@ object HistoryRepository {
                     val stages = value.mapAt("stages")
                     FilterHealthRepository.applySharedState(value)
                     val minute = time / 60_000
-                    if (minute != lastMinute) {
+                    if (minute > lastMinute) {
                         lastMinute = minute
                         record("sample-${sample["id"]}", "sample", time,
                             mapOf("sample" to sample, "stages" to stages,
                                 "runtimeHours" to value["runtimeHours"], "wallHours" to value["wallHours"]))
-                    }
-                    val sensors = sample.mapAt("sensors")
-                    val alerts = "${sensors["rainDetected"]}:${sensors["tankWarning"]}"
-                    if (alerts != lastAlerts) {
-                        lastAlerts = alerts
-                        record("alert-${sample["id"]}", "alert", time, sensors)
                     }
                     status.value = if (System.currentTimeMillis() - time > 180_000)
                         "Last shared reading is stale; missing periods appear as gaps"
@@ -71,6 +63,9 @@ object HistoryRepository {
                 }
                 listen("latestStatus") { value ->
                     if (value.longAt("time") > 0) record("status-${value["id"]}", "pump", value.longAt("time"), value)
+                }
+                listen("latestAlert") { value ->
+                    if (value.longAt("time") > 0) record("alert-${value["id"]}", "alert", value.longAt("time"), value)
                 }
                 listen("latestControl") { value ->
                     if (value.longAt("time") > 0) record("control-${value["id"]}", "control", value.longAt("time"), value)
@@ -123,6 +118,9 @@ object HistoryRepository {
                 complete: (String?) -> Unit) {
         val user = FirebaseAuth.getInstance().currentUser ?: return complete("Sign in first")
         val id = UUID.randomUUID().toString()
+        val submittedAt = System.currentTimeMillis()
+        record("request-$id", "command", submittedAt, mapOf("action" to "$action $stageKey",
+            "result" to "maintenance requested", "actor" to user.uid))
         root.child("requests/$id").setValue(mapOf("stageKey" to stageKey, "action" to action,
             "expectedRevision" to revision, "reason" to reason, "condition" to condition,
             "actor" to user.uid, "requestedAt" to ServerValue.TIMESTAMP)) { error, _ ->

@@ -7,6 +7,12 @@ HydroSense is Group 1's Android companion app for an ESP32 water filtration syst
 
 ## Current features
 
+The `revision/monthly-analytics` branch adds monthly Firestore archives, on-device history,
+shared filter maintenance, analytics charts, and fixed monthly service dates. Backend setup
+is required before enabling collection; see [deployment and data contract](backend/README.md).
+The [Word algorithm document](docs/algorithm/HydroSense_Machine_Learning_Algorithm.docx)
+explains the existing ridge model and revised monthly workflow.
+
 | Area | What the app provides |
 |---|---|
 | Dashboard | Animated tank level, water-quality readings, pump status and filter overview |

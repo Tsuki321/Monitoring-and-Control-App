@@ -19,6 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate backend model fixture for Kotlin parity check
+        run: |
+          mkdir -p 'Monitoring, Dashboard, and Control/WaterMonitor/app/src/test/resources'
+          node -e "process.stdout.write(JSON.stringify(require('./backend/functions/model').baseline))" > 'Monitoring, Dashboard, and Control/WaterMonitor/app/src/test/resources/monthly-prior-fixture.json'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

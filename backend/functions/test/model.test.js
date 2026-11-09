@@ -78,6 +78,17 @@ test("no data produces no fabricated date", () => {
     assert.equal(stage.dueDate, null);
   }
 });
+test("maintenance after the last sample cannot publish the replaced filter's forecast", () => {
+  const state = m.advance(null, sample("a", start, 0));
+  const result = m.maintain(state, { stageKey: "carbon", action: "REPLACE", expectedRevision: 0,
+    reason: "new cartridge", condition: "PREVENTIVE", actor: "user" }, start + 30000, "service");
+  const report = m.forecast([
+    { id: "a", kind: "sample", time: start, payload: { sample: state.sample, stages: state.stages } },
+    { id: "service", kind: "maintenance", time: start + 30000, payload: result.event }
+  ], "2026-10", []);
+  assert.equal(report.stages.carbon.installedAt, start + 30000);
+  assert.equal(report.stages.carbon.dueDate, null);
+});
 test("forecast dates are stable for fixed archived input and change after replacement", () => {
   const rows = []; let state;
   const begin = m.monthBounds("2026-10").end - 5 * m.DAY;
