@@ -64,6 +64,13 @@ class TankMonitoringService : Service() {
         if (!monitoring) {
             monitoredUser = uid
             monitoring = true
+            // Keep the shared archive recorder subscribed while background monitoring is enabled.
+            scope.launch {
+                com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository.sensorDataFlow.collect { }
+            }
+            scope.launch {
+                com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository.pumpControlFlow.collect { }
+            }
             val policy = TankFullAlertPolicy(prefs.fullHandled(uid))
             val leakPolicy = LeakAlertPolicy(prefs.leakHandled(uid))
             scope.launch {

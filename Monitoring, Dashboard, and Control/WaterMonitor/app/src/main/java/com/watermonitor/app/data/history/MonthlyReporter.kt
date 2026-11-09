@@ -3,6 +3,8 @@ package com.watermonitor.app.data.history
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
 import com.google.firebase.database.*
+import com.google.firebase.database.Transaction
+import com.google.firebase.firestore.Query
 import com.watermonitor.app.data.repository.FilterHealthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await

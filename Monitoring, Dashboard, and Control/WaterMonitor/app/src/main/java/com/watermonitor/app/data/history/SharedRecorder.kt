@@ -22,7 +22,7 @@ object SharedRecorder {
     fun initialize() {
         if (started) return
         started = true
-        val db = FirebaseDatabase.getInstance(HistoryRepository.DATABASE_URL)
+        val db = com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository.database
         fun observe(path: String, action: (DataSnapshot) -> Unit) {
             db.getReference(path).addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) = action(snapshot)

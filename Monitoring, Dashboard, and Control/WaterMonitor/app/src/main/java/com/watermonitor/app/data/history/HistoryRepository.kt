@@ -24,7 +24,7 @@ object HistoryRepository {
     private var context: Context? = null
     private val listeners = mutableListOf<Pair<DatabaseReference, ValueEventListener>>()
     private var lastMinute = -1L
-    val root: DatabaseReference get() = FirebaseDatabase.getInstance(DATABASE_URL)
+    val root: DatabaseReference get() = com.watermonitor.app.data.repository.FirebaseRealtimeSensorRepository.database
         .getReference("systems/$SYSTEM_ID")
 
     @Synchronized fun initialize(app: Context) {
