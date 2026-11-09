@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("org.jetbrains.kotlin.kapt") version "2.1.0"
+    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.google.services)
 }
 
