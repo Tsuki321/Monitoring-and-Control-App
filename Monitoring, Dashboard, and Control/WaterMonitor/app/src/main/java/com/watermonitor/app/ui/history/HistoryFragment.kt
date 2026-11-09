@@ -15,6 +15,7 @@ import com.google.firebase.firestore.Source
 import com.watermonitor.app.R
 import com.watermonitor.app.data.history.*
 import com.watermonitor.app.data.repository.FilterHealthRepository
+import com.watermonitor.app.data.model.FilterStageHealth
 import com.watermonitor.app.ui.filter.FilterFormatter
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -39,6 +40,8 @@ class HistoryFragment : Fragment() {
     private var cloud: List<HistoryRecord> = emptyList()
     private var monthJob: Job? = null
     private var cloudJob: Job? = null
+    private var renderJob: Job? = null
+    private var archivedReport: Map<String, Any?> = emptyMap()
     private val monthOptions = mutableListOf<String>()
     private val metrics = linkedMapOf("ph" to "pH", "tds" to "TDS (ppm)", "turbidity" to "Turbidity (NTU)", "tankLevel" to "Tank level (%)", "tankDistanceMm" to "Tank distance (mm)")
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
@@ -99,11 +102,7 @@ class HistoryFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { HistoryRepository.status.collect { sync.text = it } }
                 launch { HistoryDatabase.get(requireContext()).history().months().collect { updateMonths(it) } }
-                launch { FilterHealthRepository.filterHealthFlow.collect { state ->
-                    official.text = state.stages.joinToString("\n\n") {
-                        FilterFormatter.stageName(requireContext(), it.stageKey) + "\n" + FilterFormatter.forecastLabel(requireContext(), it)
-                    }.ifEmpty { getString(R.string.history_awaiting) }
-                } }
+                launch { FilterHealthRepository.filterHealthFlow.collect { refreshOfficial() } }
             }
         }
         updateMonths(emptyList()); observeMonth(); discoverMonths()
@@ -127,7 +126,8 @@ class HistoryFragment : Fragment() {
         }
     }
     private fun observeMonth() {
-        monthJob?.cancel(); cloudJob?.cancel(); local = emptyList(); cloud = emptyList()
+        monthJob?.cancel(); cloudJob?.cancel(); local = emptyList(); cloud = emptyList(); archivedReport = emptyMap()
+        refreshOfficial()
         monthJob = viewLifecycleOwner.lifecycleScope.launch {
             HistoryDatabase.get(requireContext()).history().observe(selectedMonth).collect { local = it; render() }
         }
@@ -140,6 +140,9 @@ class HistoryFragment : Fragment() {
         cloudJob = viewLifecycleOwner.lifecycleScope.launch {
             sync.setText(R.string.history_cloud_loading)
             try {
+                val report = FirebaseFirestore.getInstance().document(
+                    "systems/${HistoryRepository.SYSTEM_ID}/months/$month/reports/official").get(Source.SERVER).await()
+                if (month == selectedMonth) { archivedReport = report.data ?: emptyMap(); refreshOfficial() }
                 val records = mutableListOf<HistoryRecord>()
                 val query = FirebaseFirestore.getInstance().collection("systems/${HistoryRepository.SYSTEM_ID}/months/$month/records")
                     .orderBy(com.google.firebase.firestore.FieldPath.documentId()).limit(500)
@@ -158,19 +161,42 @@ class HistoryFragment : Fragment() {
             catch (error: Exception) { sync.text = getString(R.string.history_cloud_error, error.localizedMessage) }
         }
     }
+    private fun refreshOfficial() {
+        if (!::official.isInitialized) return
+        val stages = if (selectedMonth >= ArchiveCalendar.month(System.currentTimeMillis()))
+            FilterHealthRepository.filterHealthFlow.value.stages
+        else archivedReport.mapAt("stages").map { (key, raw) ->
+            @Suppress("UNCHECKED_CAST") val stage = raw as? Map<String, Any?> ?: emptyMap()
+            FilterStageHealth(stageKey = key, officialDueDate = stage["dueDate"] as? String,
+                officialMonth = selectedMonth, officialStatus = stage["status"] as? String ?: "INSUFFICIENT_DATA",
+                officialAction = stage["action"] as? String)
+        }
+        official.text = stages.joinToString("\n\n") {
+            FilterFormatter.stageName(requireContext(), it.stageKey) + "\n" + FilterFormatter.forecastLabel(requireContext(), it)
+        }.ifEmpty { getString(R.string.history_awaiting) }
+    }
     @Suppress("UNCHECKED_CAST") private fun payload(record: HistoryRecord): Map<String, Any?> =
         runCatching { HistoryRepository.gson.fromJson(record.payload, Map::class.java) as Map<String, Any?> }.getOrDefault(emptyMap())
     private fun render() {
         if (!::chart.isInitialized || !::timeline.isInitialized) return
-        val rows = (cloud + local).distinctBy { it.id }.sortedWith(compareBy({ it.time }, { it.id }))
+        renderJob?.cancel()
+        val sourceRows = cloud + local
+        val localRows = local
+        val month = selectedMonth
+        val metric = selectedMetric
+        val kind = selectedKind
+        val limit = eventLimit
+        val appContext = requireContext()
+        renderJob = viewLifecycleOwner.lifecycleScope.launch {
+        val display = withContext(Dispatchers.Default) {
+        val rows = sourceRows.distinctBy { it.id }.sortedWith(compareBy({ it.time }, { it.id }))
         val samples = rows.filter { it.kind == "sample" }.distinctBy { it.time / 60000 }
         val readings = samples.map { it to payload(it).mapAt("sample").mapAt("sensors") }
-        chart.points = readings.mapNotNull { (record, sensor) -> (sensor[selectedMetric] as? Number)?.toDouble()
+        val points = readings.mapNotNull { (record, sensor) -> (sensor[metric] as? Number)?.toDouble()
             ?.takeIf { it.isFinite() }?.let { record.time to it } }
-        chart.contentDescription = "${metrics[selectedMetric]}: ${chart.points.size} recorded readings"
-        val end = minOf(System.currentTimeMillis(), ArchiveCalendar.end(selectedMonth))
-        val minutes = ((end - ArchiveCalendar.start(selectedMonth)) / 60000.0).coerceAtLeast(1.0)
-        val lines = mutableListOf(getString(R.string.history_coverage, samples.size, samples.size / minutes * 100))
+        val end = minOf(System.currentTimeMillis(), ArchiveCalendar.end(month))
+        val minutes = ((end - ArchiveCalendar.start(month)) / 60000.0).coerceAtLeast(1.0)
+        val lines = mutableListOf(appContext.getString(R.string.history_coverage, samples.size, samples.size / minutes * 100))
         for ((key, name) in metrics) {
             val values = readings.mapNotNull { (_, sensor) -> (sensor[key] as? Number)?.toDouble()?.takeIf { it.isFinite() } }
             if (values.isNotEmpty()) lines += String.format(Locale.getDefault(), "%s: %.2f avg · %.2f–%.2f", name, values.average(), values.min(), values.max())
@@ -183,12 +209,11 @@ class HistoryFragment : Fragment() {
             }
             lines += String.format(Locale.getDefault(), "Pump %s: %.2f operating hours", pump, seconds / 3600.0)
         }
-        lines += getString(R.string.history_pending, local.count { !it.uploaded && it.month < ArchiveCalendar.month(System.currentTimeMillis()) })
-        summary.text = if (rows.isEmpty()) getString(R.string.history_empty) else lines.joinToString("\n")
-        timeline.removeAllViews()
+        lines += appContext.getString(R.string.history_pending, localRows.count { !it.uploaded && it.month < ArchiveCalendar.month(System.currentTimeMillis()) })
+        val summaryText = if (rows.isEmpty()) appContext.getString(R.string.history_empty) else lines.joinToString("\n")
         val format = DateTimeFormatter.ofPattern("MMM d, uuuu · HH:mm", Locale.getDefault()).withZone(ArchiveCalendar.zone)
-        val events = rows.asReversed().filter { it.kind != "sample" && (selectedKind == "all" || it.kind == selectedKind) }
-        for (event in events.take(eventLimit)) {
+        val events = rows.asReversed().filter { it.kind != "sample" && (kind == "all" || it.kind == kind) }
+        val eventText = events.take(limit).map { event ->
             val p = payload(event)
             val details = when (event.kind) {
                 "maintenance" -> "${p["stageKey"]} · ${p["action"]}\n${p["condition"]} · ${p["reason"] ?: ""}"
@@ -196,9 +221,17 @@ class HistoryFragment : Fragment() {
                 "alert" -> "Leak: ${p["rainDetected"] ?: "unknown"} · Tank warning: ${p["tankWarning"] ?: "unknown"}"
                 else -> p["value"]?.toString() ?: "Recorded state change"
             }
-            timeline.addView(label("${format.format(Instant.ofEpochMilli(event.time))} · ${event.kind}\n$details"))
+            "${format.format(Instant.ofEpochMilli(event.time))} · ${event.kind}\n$details"
         }
-        if (events.isEmpty()) timeline.addView(label(getString(R.string.history_empty)))
+        Triple(points, summaryText, eventText)
+        }
+        chart.points = display.first
+        chart.contentDescription = "${metrics[metric]}: ${display.first.size} recorded readings"
+        summary.text = display.second
+        timeline.removeAllViews()
+        display.third.forEach { timeline.addView(label(it)) }
+        if (display.third.isEmpty()) timeline.addView(label(getString(R.string.history_empty)))
+        }
     }
     override fun onSaveInstanceState(outState: Bundle) { outState.putString("month", selectedMonth); super.onSaveInstanceState(outState) }
 }

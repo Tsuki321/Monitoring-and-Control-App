@@ -9,7 +9,7 @@ const { createHash } = require("node:crypto");
 const model = require("./model");
 initializeApp();
 const REGION = "asia-southeast1", SYSTEM = "longos";
-const db = getDatabase("https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app");
+const db = getDatabase(process.env.HYDROSENSE_DATABASE_URL || "https://database-for-hydrosense-default-rtdb.asia-southeast1.firebasedatabase.app");
 const store = getFirestore();
 const hash = value => createHash("sha256").update(value).digest("hex");
 const root = () => db.ref(`systems/${SYSTEM}`);
@@ -61,19 +61,30 @@ exports.applyMaintenance = onValueCreated(options(`/systems/${SYSTEM}/requests/{
 exports.ingestMonthlyBatch = onDocumentCreated({ document: "systems/{system}/months/{month}/uploads/{batch}", region: REGION, retry: true }, async event => {
   if (event.params.system !== SYSTEM) return;
   const { month } = event.params;
-  const input = event.data.data(), { start, end } = model.monthBounds(month);
-  if (end > Date.now()) throw new Error("Current month upload rejected");
+  const input = event.data.data();
+  let start, end;
+  try {
+    ({ start, end } = model.monthBounds(month));
+    if (end > Date.now() || input.monthEnd !== end || input.month !== month) throw new Error("Invalid or unclosed month");
+  } catch (error) {
+    await event.data.ref.update({ status: "rejected", error: error.message }); return;
+  }
   let rows;
   try { rows = JSON.parse(input.rows); if (!Array.isArray(rows) || rows.length > 100) throw new Error("Invalid batch"); }
   catch (error) { await event.data.ref.update({ status: "rejected", error: error.message }); return; }
   const monthRef = store.doc(`systems/${SYSTEM}/months/${month}`);
   const normalized = [];
   for (const row of rows) {
-    if (typeof row.id !== "string" || !Number.isSafeInteger(row.time) || row.time < start || row.time >= end ||
+    if (!row || typeof row.id !== "string" || !/^[a-zA-Z0-9-]{1,160}$/.test(row.id) || !Number.isSafeInteger(row.time) || row.time < start || row.time >= end ||
       !["sample", "alert", "pump", "control", "command", "maintenance"].includes(row.kind)) continue;
     const payload = parse(row.payload);
     if (!payload || typeof payload !== "object") continue;
-    if (row.kind === "sample" && (!payload.sample || payload.sample.time !== row.time || typeof payload.sample.id !== "string" || !payload.sample.sensors)) continue;
+    if (row.kind === "sample" && (!payload.sample || payload.sample.time !== row.time || typeof payload.sample.id !== "string" || !payload.sample.sensors ||
+      !model.specs.every(spec => {
+        const stage = payload.stages?.[spec.key];
+        return stage && ["installedAt", "revision", "usage", "hours", "measuredHours"].every(k => Number.isFinite(stage[k]) && stage[k] >= 0)
+          && stage.installedAt <= row.time && Array.isArray(stage.sums) && stage.sums.length === 3 && stage.sums.every(Number.isFinite);
+      }))) continue;
     if (row.kind === "maintenance") {
       // Clients cannot manufacture training labels; only server-accepted maintenance is used.
       const accepted = (await root().child(`maintenance/${row.id.replace(/^maintenance-/, "")}`).get()).val();
@@ -125,7 +136,9 @@ exports.closeMonthlyReports = onSchedule({ schedule: "every 6 hours", timeZone: 
     const month = doc.id, { end } = model.monthBounds(month);
     if (month >= currentMonth) continue;
     const state = doc.data();
-    const rows = await readCollection(doc.ref.collection("records"));
+    const reportRef = doc.ref.collection("reports").doc("official");
+    let report = (await reportRef.get()).data();
+    const rows = state.dirty || !report ? await readCollection(doc.ref.collection("records")) : [];
     if (state.dirty) {
       const summary = model.summarize(rows, month);
       await doc.ref.collection("analytics").doc("summary").set({ metrics: summary.metrics, coverage: summary.coverage,
@@ -137,8 +150,6 @@ exports.closeMonthlyReports = onSchedule({ schedule: "every 6 hours", timeZone: 
         if (now.get("lastIngestedAt")?.isEqual(state.lastIngestedAt)) tx.update(doc.ref, { dirty: false });
       });
     }
-    const reportRef = doc.ref.collection("reports").doc("official");
-    let report = (await reportRef.get()).data();
     // 24-hour collection window after month-end; late data updates history, not the published forecast.
     if (!report && Date.now() >= end + model.DAY) {
       const observations = await readCollection(store.collection(`systems/${SYSTEM}/observations`));

@@ -51,7 +51,9 @@ object HistoryRepository {
                     val stages = value.mapAt("stages")
                     FilterHealthRepository.applySharedState(value)
                     val minute = time / 60_000
-                    if (minute > lastMinute) {
+                    val snapshotConsistent = stages.values.all { (it as? Map<*, *>)?.get("installedAt")
+                        .let { installed -> installed is Number && installed.toLong() <= time } }
+                    if (minute > lastMinute && snapshotConsistent) {
                         lastMinute = minute
                         record("sample-${sample["id"]}", "sample", time,
                             mapOf("sample" to sample, "stages" to stages,

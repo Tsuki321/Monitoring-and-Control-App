@@ -242,7 +242,7 @@
     <!-- Model diagnostics -->
     <string name="filter_model_title">Prediction Model</string>
     <string name="filter_model_explainer">A least-squares model learns how fast each stage wears from TDS, turbidity and pH, applied to the measured five-stage pump run time. Pump A is intake-only and never counts toward filter wear. The model starts from simulated wear data and begins learning from your recorded services once enough have accumulated.</string>
-    <string name="filter_model_row_format">%1$s — fit quality %2$d%%, %3$d real services logged</string>
+    <string name="filter_model_row_format">%1$s — synthetic-data R² %2$d%%, %3$d qualifying field records</string>
     <string name="filter_model_synthetic_only">Trained on simulated data only</string>
     <string name="filter_model_reset">Reset Filter History</string>
     <string name="filter_model_reset_confirm">Filter wear history cleared</string>

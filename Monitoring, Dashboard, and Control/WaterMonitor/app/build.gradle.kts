@@ -15,8 +15,10 @@ android {
         targetSdk = 35
         
         val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
-        versionCode = runNumber ?: 2
-        versionName = if (runNumber != null) "1.1.$runNumber" else "1.1.0"
+        // Workflow run numbers are independent. A new workflow must still produce an
+        // installable upgrade over the existing release without erasing local history.
+        versionCode = if (runNumber != null) ((System.currentTimeMillis() / 60_000L) - 26_297_280L).toInt() else 2
+        versionName = if (runNumber != null) "1.2.$runNumber" else "1.2.0"
         
         resValue("string", "about_version", "Version $versionName")
     }
