@@ -1,0 +1,36 @@
+<resources>
+    <string name="history_nav">Kasaysayan</string>
+    <string name="history_title">Pagsusuri at Kasaysayan</string>
+    <string name="history_replacement_date">Tinatayang pagpapalit: %1$s · ulat ng %2$s</string>
+    <string name="history_rinse_date">Tinatayang paglilinis: %1$s · ulat ng %2$s</string>
+    <string name="history_superseded">Napawalang-bisa ang dating tantiya · naghihintay ng buwanang tantiya</string>
+    <string name="history_insufficient">Kulang ang datos para sa buwanang petsa</string>
+    <string name="history_awaiting">Naghihintay ng buwanang tantiya</string>
+    <string name="history_condition">Naobserbahang kondisyon ng filter</string>
+    <string name="history_rinsed">Nilinis / na-backwash</string>
+    <string name="history_exhausted">Ubos na / hindi na epektibo</string>
+    <string name="history_preventive">Maagang pagpapalit / maaari pang gamitin</string>
+    <string name="history_damaged">Nasira / ibang problema</string>
+    <string name="history_reason">Dahilan o tala ng maintenance (opsyonal)</string>
+    <string name="history_record_service">Itala ang maintenance</string>
+    <string name="history_save">I-save</string>
+    <string name="history_service_pending">Nakapila ang maintenance; naghihintay ng kumpirmasyon</string>
+    <string name="history_service_saved">Nai-save ang maintenance sa lahat ng telepono</string>
+    <string name="history_sync">I-sync ang mga nakaraang buwan</string>
+    <string name="history_local">Nasa teleponong ito ang datos hanggang matapos ang buwan. Kasama sa cloud history ang mga na-upload ng ibang telepono.</string>
+    <string name="history_empty">Walang datos sa panahong ito. Makikita ang mga puwang sa pagtatala.</string>
+    <string name="history_chart">Takbo ng sensor readings</string>
+    <string name="history_timeline">Mga pangyayari</string>
+    <string name="history_more">Ipakita ang iba pang pangyayari</string>
+    <string name="history_all">Lahat ng pangyayari</string>
+    <string name="history_coverage">Minutong naitala: %1$d · Saklaw: %2$.1f%%</string>
+    <string name="history_coverage_note">Bilang ng minutong may reading ang saklaw. Ang putol na linya ay puwang na lampas tatlong minuto. Maaaring mabawi ang oras ng bomba gamit ang counter ngunit hindi ang kalidad ng tubig.</string>
+    <string name="history_pending">%1$d tala ang naghihintay ng upload para sa natapos na buwan</string>
+    <string name="history_cloud_loading">Kinukuha ang na-archive na kasaysayan…</string>
+    <string name="history_cloud_error">Hindi makuha ang cloud history: %1$s</string>
+    <string name="history_official">Opisyal na buwanang tantiya</string>
+    <string name="history_baseline_note">Generated data ang batayan sa simula. Ginagamit ang field records pagkatapos ng walong kwalipikadong end-of-life record bawat stage. Mga tantiya ang petsa.</string>
+    <string name="history_month">Buwan</string>
+    <string name="history_metric">Sukatan</string>
+    <string name="history_filter">Uri ng pangyayari</string>
+</resources>

@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function member(system) {
+      return request.auth != null && exists(/databases/$(database)/documents/systems/$(system)/members/$(request.auth.uid));
+    }
+    match /systems/{system}/members/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /systems/{system}/months/{month} {
+      allow read: if member(system);
+      allow write: if false;
+      match /uploads/{batch} {
+        allow read: if member(system);
+        allow create: if member(system)
+          && request.resource.data.keys().hasOnly(['schemaVersion', 'owner', 'month', 'monthEnd', 'rows', 'count', 'receivedAt'])
+          && request.resource.data.schemaVersion == 1
+          && request.resource.data.owner == request.auth.uid
+          && request.resource.data.month == month
+          && month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
+          && request.resource.data.monthEnd is int
+          && request.resource.data.monthEnd < request.time.toMillis()
+          && request.resource.data.rows is string && request.resource.data.rows.size() < 800000
+          && request.resource.data.count is int && request.resource.data.count > 0 && request.resource.data.count <= 100
+          && request.resource.data.receivedAt == request.time;
+        allow update, delete: if false;
+      }
+      match /records/{record} { allow read: if member(system); allow write: if false; }
+      match /analytics/{summary} { allow read: if member(system); allow write: if false; }
+      match /reports/{report} { allow read: if member(system); allow write: if false; }
+    }
+    match /systems/{system}/observations/{observation} { allow read: if member(system); allow write: if false; }
+  }
+}

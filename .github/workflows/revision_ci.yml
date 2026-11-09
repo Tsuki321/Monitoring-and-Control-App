@@ -1,0 +1,38 @@
+name: Analytics revision checks
+on:
+  push:
+    branches: ["revision/**"]
+  pull_request:
+    paths: ["backend/**", "Monitoring, Dashboard, and Control/WaterMonitor/**", ".github/workflows/revision_ci.yml"]
+  workflow_dispatch:
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check backend/functions/index.js
+      - run: npm test --prefix backend/functions
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test and assemble debug APK
+        working-directory: "Monitoring, Dashboard, and Control/WaterMonitor"
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: analytics-debug-and-reports
+          path: |
+            Monitoring, Dashboard, and Control/WaterMonitor/app/build/outputs/apk/debug/*.apk
+            Monitoring, Dashboard, and Control/WaterMonitor/app/build/reports/tests/

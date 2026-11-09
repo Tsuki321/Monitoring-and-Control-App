@@ -2,6 +2,11 @@ package com.watermonitor.app.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.watermonitor.app.data.history.HistoryRepository
+import com.watermonitor.app.data.history.mapAt
+import com.watermonitor.app.data.history.longAt
+import com.watermonitor.app.data.history.doubleAt
+import com.watermonitor.app.data.model.StageModelDiagnostics
 import com.watermonitor.app.data.ml.FilterLifeModel
 import com.watermonitor.app.data.ml.StageModel
 import com.watermonitor.app.data.ml.finiteOr
@@ -86,6 +91,18 @@ object FilterHealthRepository {
     private var persisted: FilterPersistedState = FilterPrefs.default()
     private var models: List<StageModel> = emptyList()
     private var lastSaveMillis = 0L
+    private var shared: Map<String, Any?> = emptyMap()
+
+    fun clearSharedState() { scope.launch { mutex.withLock { shared = emptyMap(); _state.value = FilterHealthState() } } }
+    fun refreshOfficial() { scope.launch { mutex.withLock { publish() } } }
+    fun applySharedState(value: Map<String, Any?>) {
+        scope.launch { mutex.withLock {
+            if (value.mapAt("sample").longAt("time") >= shared.mapAt("sample").longAt("time")) {
+                shared = value
+                publish()
+            }
+        } }
+    }
 
     /** True only while the latest snapshot contains usable measured runtime and quality. */
     private var hardwareRuntimeSeen = false
@@ -139,6 +156,8 @@ object FilterHealthRepository {
      * until the process dies.
      */
     suspend fun onSensorSample(data: SensorData) {
+        // Shared backend owns wear accrual. Local journal is independent of screen collectors.
+        if (initialized) return
         if (!stateLoaded) return
 
         mutex.withLock {
@@ -403,6 +422,10 @@ object FilterHealthRepository {
     // ── Publishing ─────────────────────────────────────────────────────────
 
     private fun publish() {
+        if (initialized) {
+            publishShared()
+            return
+        }
         val now = System.currentTimeMillis()
         val duty = observedDutyCycle()
 
@@ -435,6 +458,47 @@ object FilterHealthRepository {
             diagnostics = models.map { it.diagnostics },
             isWaitingForData = !hardwareRuntimeSeen || persisted.lastSampleWallMillis == 0L
         )
+    }
+
+    private fun publishShared() {
+        val sample = shared.mapAt("sample")
+        if (sample.longAt("time") == 0L) { _state.value = FilterHealthState(); return }
+        val now = System.currentTimeMillis()
+        val total = shared.doubleAt("runtimeHours")
+        val wall = shared.doubleAt("wallHours")
+        val duty = if (wall > 0) (total / wall).coerceIn(0.0, 1.0).takeIf { it > .001 } else null
+        val official = HistoryRepository.official.value
+        val stages = FilterSpecs.stages.map { spec ->
+            val stage = shared.mapAt("stages").mapAt(spec.key)
+            val report = official.mapAt("stages").mapAt(spec.key)
+            val matches = report.longAt("installedAt") == stage.longAt("installedAt") && report.isNotEmpty()
+            val b = (shared.mapAt("models").mapAt(spec.key)["coefficients"] as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toDouble() }?.toDoubleArray()
+            val sensors = sample.mapAt("sensors")
+            val load = if (b?.size == 4) FilterLifeModel.loadFactor(b,
+                FilterLifeModel.features(sensors.doubleAt("tds"), sensors.doubleAt("turbidity"), sensors.doubleAt("ph"))) else 1.0
+            FilterLifeModel.evaluate(spec, stage.doubleAt("usage"),
+                ((now - stage.longAt("installedAt")) / 86_400_000.0).coerceAtLeast(0.0), load,
+                stage.doubleAt("usage") * spec.ratedHours, duty).copy(
+                officialDueDate = if (matches) report["dueDate"] as? String else null,
+                officialMonth = official["month"] as? String,
+                officialStatus = if (matches) report["status"] as? String ?: "INSUFFICIENT_DATA"
+                    else if (report.isNotEmpty()) "SUPERSEDED" else "AWAITING_MONTHLY_ESTIMATE",
+                officialAction = if (matches) report["action"] as? String else null,
+                sharedRevision = stage.longAt("revision")
+            )
+        }
+        val diagnostics = FilterSpecs.stages.map { spec ->
+            val model = shared.mapAt("models").mapAt(spec.key)
+            StageModelDiagnostics(stageKey = spec.key, coefficients = (model["coefficients"] as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toDouble() } ?: emptyList(),
+                rSquared = model.doubleAt("syntheticFitR2"), syntheticSamples = model.longAt("syntheticSamples").toInt(),
+                realObservations = model.longAt("realObservations").toInt(), fittedOnRealData = model["fittedOnRealData"] == true)
+        }
+        val hasRuntime = sample.mapAt("sensors")["runtimeB"] is Number
+        _state.value = FilterHealthState(stages = stages,
+            runtimeSource = if (hasRuntime) RuntimeSource.HARDWARE else RuntimeSource.UNAVAILABLE,
+            totalRuntimeHours = total, dutyCycle = duty, diagnostics = diagnostics, isWaitingForData = !hasRuntime)
     }
 
     /**

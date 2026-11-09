@@ -42,6 +42,11 @@ data class FilterStageHealth(
      * Null means the UI must show operating hours instead of a date.
      */
     val daysRemaining: Double? = null,
+    val officialDueDate: String? = null,
+    val officialMonth: String? = null,
+    val officialStatus: String = "AWAITING_MONTHLY_ESTIMATE",
+    val officialAction: String? = null,
+    val sharedRevision: Long = -1,
     /** Accumulated quality-weighted pump-hours since this stage was last serviced. */
     val weightedHours: Double = 0.0,
     /** Calendar days since this stage was last replaced (rinsing does not reset this). */

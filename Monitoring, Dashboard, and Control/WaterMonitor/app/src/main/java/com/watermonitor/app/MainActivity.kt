@@ -346,6 +346,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.monitoringFragment -> getString(R.string.title_monitoring)
                 R.id.controlFragment -> getString(R.string.title_control)
                 R.id.filterFragment -> getString(R.string.title_filter)
+                R.id.historyFragment -> getString(R.string.history_title)
                 R.id.settingsFragment -> getString(R.string.title_settings)
                 R.id.aboutFragment -> getString(R.string.title_about)
                 R.id.loginFragment -> getString(R.string.title_login)

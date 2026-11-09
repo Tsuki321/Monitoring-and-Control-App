@@ -18,5 +18,6 @@ class HydroSenseApp : Application() {
     override fun onCreate() {
         super.onCreate()
         FilterHealthRepository.initialize(this)
+        com.watermonitor.app.data.history.HistoryRepository.initialize(this)
     }
 }

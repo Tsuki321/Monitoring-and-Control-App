@@ -1,0 +1,4 @@
+{ "indexes": [], "fieldOverrides": [
+  { "collectionGroup": "uploads", "fieldPath": "rows", "indexes": [] },
+  { "collectionGroup": "records", "fieldPath": "payload", "indexes": [] }
+] }

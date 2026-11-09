@@ -57,6 +57,9 @@ class FilterFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         buildStageRows()
 
+        // Shared records are an audit trail; a phone must not erase another phone's history.
+        binding.btnResetHistory.visibility = View.GONE
+
         binding.btnResetHistory.setOnClickListener {
             confirmDestructive(
                 titleRes = R.string.filter_confirm_reset_title,
@@ -88,8 +91,7 @@ class FilterFragment : Fragment() {
                 if (spec.action == ServiceAction.RINSE) View.VISIBLE else View.GONE
 
             row.btnRinse.setOnClickListener {
-                viewModel.rinseStage(spec.index)
-                AnimationUtils.pulseView(row.progressStage, scalePeak = 1.04f)
+                recordMaintenance(spec.key, "RINSE")
             }
             row.btnReplace.setOnClickListener {
                 confirmDestructive(
@@ -100,8 +102,7 @@ class FilterFragment : Fragment() {
                     ),
                     positiveRes = R.string.filter_action_replace_button
                 ) {
-                    viewModel.replaceStage(spec.index)
-                    AnimationUtils.pulseView(row.progressStage, scalePeak = 1.04f)
+                    recordMaintenance(spec.key, "REPLACE")
                 }
             }
 
@@ -270,6 +271,34 @@ class FilterFragment : Fragment() {
     }
 
     private fun color(resId: Int) = ContextCompat.getColor(requireContext(), resId)
+
+    private fun recordMaintenance(stageKey: String, action: String) {
+        val stage = viewModel.filterHealth.value.stages.firstOrNull { it.stageKey == stageKey } ?: return
+        if (stage.sharedRevision < 0) return
+        val conditions = if (action == "RINSE") arrayOf("RINSED") else arrayOf("EXHAUSTED", "PREVENTIVE", "DAMAGED")
+        val labels = if (action == "RINSE") arrayOf(getString(R.string.history_rinsed)) else
+            arrayOf(getString(R.string.history_exhausted), getString(R.string.history_preventive), getString(R.string.history_damaged))
+        MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.history_condition)
+            .setItems(labels) { _, selected ->
+                val reason = android.widget.EditText(requireContext()).apply {
+                    hint = getString(R.string.history_reason)
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    filters = arrayOf(android.text.InputFilter.LengthFilter(500))
+                    setPadding(32, 16, 32, 16)
+                }
+                MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.history_record_service).setView(reason)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.history_save) { _, _ ->
+                        Toast.makeText(requireContext(), R.string.history_service_pending, Toast.LENGTH_LONG).show()
+                        com.watermonitor.app.data.history.HistoryRepository.service(stageKey, action, stage.sharedRevision,
+                            reason.text.toString().trim(), conditions[selected]) { error ->
+                            activity?.runOnUiThread {
+                                context?.let { Toast.makeText(it, error ?: getString(R.string.history_service_saved), Toast.LENGTH_LONG).show() }
+                            }
+                        }
+                    }.show()
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()

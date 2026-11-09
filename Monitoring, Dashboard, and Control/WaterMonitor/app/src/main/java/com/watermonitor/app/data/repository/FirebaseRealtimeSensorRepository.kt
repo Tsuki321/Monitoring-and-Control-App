@@ -114,6 +114,7 @@ object FirebaseRealtimeSensorRepository {
 
     fun setPumpA(command: Boolean) {
         controlPumpARef.setValue(if (command) 1 else 0) { error, _ ->
+            com.watermonitor.app.data.history.HistoryRepository.command("pumpA", command, error?.message)
             if (error != null) Log.e(TAG, "setPumpA failed: ${error.message}")
             else Log.d(TAG, "Wrote /control/pumpA = ${if (command) 1 else 0}")
         }
@@ -121,6 +122,7 @@ object FirebaseRealtimeSensorRepository {
 
     fun setPumpB(command: Boolean) {
         controlPumpBRef.setValue(if (command) 1 else 0) { error, _ ->
+            com.watermonitor.app.data.history.HistoryRepository.command("pumpB", command, error?.message)
             if (error != null) Log.e(TAG, "setPumpB failed: ${error.message}")
             else Log.d(TAG, "Wrote /control/pumpB = ${if (command) 1 else 0}")
         }
@@ -128,6 +130,7 @@ object FirebaseRealtimeSensorRepository {
 
     fun setAutoMode(enabled: Boolean) {
         controlAutoRef.setValue(if (enabled) 1 else 0) { error, _ ->
+            com.watermonitor.app.data.history.HistoryRepository.command("autoMode", enabled, error?.message)
             if (error != null) Log.e(TAG, "setAutoMode failed: ${error.message}")
             else Log.d(TAG, "Wrote /control/auto = ${if (enabled) 1 else 0}")
         }

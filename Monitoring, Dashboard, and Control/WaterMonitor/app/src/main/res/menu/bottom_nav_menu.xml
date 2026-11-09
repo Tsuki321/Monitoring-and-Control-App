@@ -16,4 +16,5 @@
         android:icon="@drawable/ic_pump"
         android:title="@string/nav_control" />
 
+    <item android:id="@+id/historyFragment" android:icon="@drawable/ic_chart_history" android:title="@string/history_nav" />
 </menu>

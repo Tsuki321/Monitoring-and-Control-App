@@ -54,6 +54,23 @@ object FilterFormatter {
      * fabricated calendar date would be worse than an honest "≈480 operating hours".
      */
     fun forecastLabel(context: Context, stage: FilterStageHealth): String {
+        val officialDate = stage.officialDueDate
+        if (officialDate != null) {
+            val formatted = runCatching { java.time.LocalDate.parse(officialDate).format(
+                java.time.format.DateTimeFormatter.ofPattern("MMMM d, uuuu", context.resources.configuration.locales[0])) }.getOrNull()
+            if (formatted != null) return context.getString(
+                if (stage.officialAction == "RINSE") R.string.history_rinse_date else R.string.history_replacement_date,
+                formatted, stage.officialMonth ?: "")
+        }
+        return context.getString(when (stage.officialStatus) {
+            "SUPERSEDED" -> R.string.history_superseded
+            "INSUFFICIENT_DATA" -> R.string.history_insufficient
+            else -> R.string.history_awaiting
+        })
+    }
+
+    /** Kept for legacy callers; official dates always use the fixed published report. */
+    private fun legacyForecastLabel(context: Context, stage: FilterStageHealth): String {
         val days = stage.daysRemaining
         if (days != null && days.isFinite()) {
             val rounded = days.roundToLong().coerceAtLeast(0L)

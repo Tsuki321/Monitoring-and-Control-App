@@ -1,0 +1,4 @@
+{
+  "functions": [{ "source": "backend/functions", "codebase": "monthly-analytics" }],
+  "firestore": { "rules": "backend/firestore.rules", "indexes": "backend/firestore.indexes.json" }
+}

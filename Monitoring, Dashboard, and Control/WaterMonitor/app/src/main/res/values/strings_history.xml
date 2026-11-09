@@ -1,0 +1,36 @@
+<resources>
+    <string name="history_nav">History</string>
+    <string name="history_title">Analytics &amp; History</string>
+    <string name="history_replacement_date">Estimated replacement: %1$s · %2$s report</string>
+    <string name="history_rinse_date">Estimated rinse: %1$s · %2$s report</string>
+    <string name="history_superseded">Previous estimate superseded · awaiting monthly estimate</string>
+    <string name="history_insufficient">Insufficient data for a monthly date</string>
+    <string name="history_awaiting">Awaiting monthly estimate</string>
+    <string name="history_condition">Observed filter condition</string>
+    <string name="history_rinsed">Rinsed / backwashed</string>
+    <string name="history_exhausted">Exhausted / no longer effective</string>
+    <string name="history_preventive">Preventive replacement / still usable</string>
+    <string name="history_damaged">Damaged / other failure</string>
+    <string name="history_reason">Reason or maintenance notes (optional)</string>
+    <string name="history_record_service">Record maintenance</string>
+    <string name="history_save">Save</string>
+    <string name="history_service_pending">Maintenance queued; waiting for shared confirmation</string>
+    <string name="history_service_saved">Maintenance saved across phones</string>
+    <string name="history_sync">Sync completed months</string>
+    <string name="history_local">This month stays on this phone until month-end. Cloud history includes records uploaded by other phones.</string>
+    <string name="history_empty">No recorded data in this period. Unobserved periods remain gaps.</string>
+    <string name="history_chart">Sensor trends</string>
+    <string name="history_timeline">Event timeline</string>
+    <string name="history_more">Show more events</string>
+    <string name="history_all">All events</string>
+    <string name="history_coverage">Recorded minutes: %1$d · Coverage: %2$.1f%%</string>
+    <string name="history_coverage_note">Coverage counts minutes with readings. Broken chart lines show gaps over three minutes. Pump counters can recover runtime across gaps; water quality cannot be recovered.</string>
+    <string name="history_pending">%1$d records waiting for a completed-month upload</string>
+    <string name="history_cloud_loading">Loading archived history…</string>
+    <string name="history_cloud_error">Cloud history unavailable: %1$s</string>
+    <string name="history_official">Official monthly estimate</string>
+    <string name="history_baseline_note">Baseline uses generated training data. Field records are used after eight qualifying end-of-life observations per stage. Dates are estimates, not guarantees.</string>
+    <string name="history_month">Month</string>
+    <string name="history_metric">Metric</string>
+    <string name="history_filter">Event type</string>
+</resources>

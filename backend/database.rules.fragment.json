@@ -1,0 +1,22 @@
+{
+  "systems": {
+    "$system": {
+      ".read": "auth != null && root.child('systemMembers').child($system).child(auth.uid).val() == true",
+      "requests": {
+        "$request": {
+          ".write": "auth != null && root.child('systemMembers').child($system).child(auth.uid).val() == true && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['actor', 'stageKey', 'action', 'expectedRevision', 'reason', 'condition', 'requestedAt'])",
+          "actor": { ".validate": "newData.val() == auth.uid" },
+          "stageKey": { ".validate": "newData.val() == 'pumice' || newData.val() == 'pebbles' || newData.val() == 'lava_rock' || newData.val() == 'carbon' || newData.val() == 'multilayer_foam'" },
+          "action": { ".validate": "newData.val() == 'REPLACE' || newData.val() == 'RINSE'" },
+          "expectedRevision": { ".validate": "newData.isNumber() && newData.val() >= 0" },
+          "reason": { ".validate": "newData.isString() && newData.val().length <= 500" },
+          "condition": { ".validate": "newData.val() == 'EXHAUSTED' || newData.val() == 'PREVENTIVE' || newData.val() == 'DAMAGED' || newData.val() == 'RINSED'" },
+          "requestedAt": { ".validate": "newData.isNumber() && newData.val() <= now" },
+          "$other": { ".validate": false }
+        }
+      }
+    }
+  },
+  "systemMembers": { ".read": false, ".write": false }
+}
