@@ -75,7 +75,10 @@ object FirebaseRealtimeSensorRepository {
         // The runCatching is mandatory: an exception here cancels the sharing coroutine, and
         // WhileSubscribed does not restart after an upstream failure. One bad sample would
         // kill sensor data app-wide until the process died.
-        .onEach { runCatching { FilterHealthRepository.onSensorSample(it) } }
+        .onEach { runCatching {
+            FilterHealthRepository.onSensorSample(it)
+            com.watermonitor.app.data.history.SharedRecorder.onSensor(it)
+        } }
         .shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     /**
@@ -108,7 +111,8 @@ object FirebaseRealtimeSensorRepository {
                 )
             }
         }
-    }.shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+    }.onEach { runCatching { com.watermonitor.app.data.history.SharedRecorder.onPump(it) } }
+        .shareIn(repoScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     // ── Writers: app → ESP32 via /control ──────────────────────────────────
 

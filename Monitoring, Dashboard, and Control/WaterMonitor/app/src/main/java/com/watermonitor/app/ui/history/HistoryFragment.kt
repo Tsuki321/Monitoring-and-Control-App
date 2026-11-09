@@ -143,19 +143,7 @@ class HistoryFragment : Fragment() {
                 val report = FirebaseFirestore.getInstance().document(
                     "systems/${HistoryRepository.SYSTEM_ID}/months/$month/reports/official").get(Source.SERVER).await()
                 if (month == selectedMonth) { archivedReport = report.data ?: emptyMap(); refreshOfficial() }
-                val records = mutableListOf<HistoryRecord>()
-                val query = FirebaseFirestore.getInstance().collection("systems/${HistoryRepository.SYSTEM_ID}/months/$month/records")
-                    .orderBy(com.google.firebase.firestore.FieldPath.documentId()).limit(500)
-                var last: com.google.firebase.firestore.DocumentSnapshot? = null
-                do {
-                    val page = (last?.let { query.startAfter(it) } ?: query).get(Source.SERVER).await()
-                    records += page.documents.mapNotNull { doc ->
-                        val time = doc.getLong("time") ?: return@mapNotNull null
-                        HistoryRecord(doc.getString("id") ?: doc.id, month, time, doc.getString("kind") ?: "event",
-                            HistoryRepository.gson.toJson(doc.get("payload")), true)
-                    }
-                    last = if (page.size() == 500) page.documents.last() else null
-                } while (last != null)
+                val records = MonthlyReporter.readArchive(month)
                 if (month == selectedMonth) { cloud = records; render(); sync.text = HistoryRepository.status.value }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { sync.text = getString(R.string.history_cloud_error, error.localizedMessage) }

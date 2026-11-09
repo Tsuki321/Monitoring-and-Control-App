@@ -1,35 +1,89 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function member(system) {
-      return request.auth != null && exists(/databases/$(database)/documents/systems/$(system)/members/$(request.auth.uid));
-    }
-    match /systems/{system}/members/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false;
-    }
+    // Same project-authenticated operators as the existing pump controller.
+    function operator(system) { return system == 'longos' && request.auth != null; }
     match /systems/{system}/months/{month} {
-      allow read: if member(system);
-      allow write: if false;
+      function validMonth() {
+        return month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$');
+      }
+      function monthPath() { return /databases/$(database)/documents/systems/$(system)/months/$(month); }
+      function locked() {
+        let job = get(/databases/$(database)/documents/systems/$(system)/months/$(month)/jobs/report).data;
+        return job.owner == request.auth.uid && job.token == request.resource.data.jobToken
+          && job.expiresAt > request.time.toMillis();
+      }
+      function reportShape() {
+        let d = request.resource.data;
+        return d.month == month && d.cutoff == get(monthPath()).data.monthEnd
+          && d.uploadRevision == get(monthPath()).data.uploadRevision
+          && d.modelVersion == 'ridge-monthly-spark-v1'
+          && d.stages is map && d.models is map && d.metrics is map
+          && d.stages.size() == 5 && d.models.size() == 5
+          && d.coverage is number && d.coverage >= 0 && d.coverage <= 1
+          && d.inputRecordCount is int && d.inputRecordCount >= 0 && d.inputDigest is string;
+      }
+      allow read: if operator(system);
+      allow create, update: if operator(system) && validMonth()
+        && request.resource.data.keys().hasOnly(['month','monthEnd','lastBatch','uploadRevision','updatedAt'])
+        && request.resource.data.month == month
+        && request.resource.data.monthEnd is int && request.resource.data.monthEnd < request.time.toMillis()
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.uploadRevision == (exists(monthPath()) ? resource.data.uploadRevision + 1 : 1)
+        && (!exists(monthPath()) || request.resource.data.monthEnd == resource.data.monthEnd)
+        && !exists(/databases/$(database)/documents/systems/$(system)/months/$(month)/uploads/$(request.resource.data.lastBatch))
+        && getAfter(/databases/$(database)/documents/systems/$(system)/months/$(month)/uploads/$(request.resource.data.lastBatch)).data.receivedAt == request.time;
       match /uploads/{batch} {
-        allow read: if member(system);
-        allow create: if member(system)
-          && request.resource.data.keys().hasOnly(['schemaVersion', 'owner', 'month', 'monthEnd', 'rows', 'count', 'receivedAt'])
-          && request.resource.data.schemaVersion == 1
-          && request.resource.data.owner == request.auth.uid
-          && request.resource.data.month == month
-          && month.matches('^[0-9]{4}-(0[1-9]|1[0-2])$')
-          && request.resource.data.monthEnd is int
+        allow read: if operator(system);
+        allow create: if operator(system) && validMonth()
+          && request.resource.data.keys().hasOnly(['schemaVersion','owner','month','monthEnd','rows','count','receivedAt'])
+          && request.resource.data.schemaVersion == 1 && request.resource.data.owner == request.auth.uid
+          && request.resource.data.month == month && request.resource.data.monthEnd is int
           && request.resource.data.monthEnd < request.time.toMillis()
           && request.resource.data.rows is string && request.resource.data.rows.size() < 800000
           && request.resource.data.count is int && request.resource.data.count > 0 && request.resource.data.count <= 100
-          && request.resource.data.receivedAt == request.time;
-        allow update, delete: if false;
+          && request.resource.data.receivedAt == request.time
+          && getAfter(monthPath()).data.lastBatch == batch
+          && getAfter(monthPath()).data.monthEnd == request.resource.data.monthEnd;
       }
-      match /records/{record} { allow read: if member(system); allow write: if false; }
-      match /analytics/{summary} { allow read: if member(system); allow write: if false; }
-      match /reports/{report} { allow read: if member(system); allow write: if false; }
+      match /jobs/{job} {
+        allow read: if operator(system);
+        function validLease() {
+          let d = request.resource.data;
+          return job == 'report' && d.keys().hasOnly(['owner','token','expiresAt','updatedAt'])
+            && d.owner == request.auth.uid && d.token is string
+            && d.updatedAt == request.time && d.expiresAt is int
+            && (d.expiresAt == 0 || (d.expiresAt > request.time.toMillis()
+                && d.expiresAt <= request.time.toMillis() + 960000));
+        }
+        allow create: if operator(system) && validLease() && exists(monthPath());
+        allow update: if operator(system) && validLease()
+          && (resource.data.expiresAt <= request.time.toMillis()
+              || (resource.data.owner == request.auth.uid && resource.data.token == request.resource.data.token));
+      }
+      match /analytics/{summary} {
+        allow read: if operator(system);
+        allow create, update: if operator(system) && summary == 'summary' && locked() && reportShape()
+          && request.resource.data.updatedAt == request.time;
+      }
+      match /reports/{report} {
+        allow read: if operator(system);
+        allow create: if operator(system) && report == 'official' && locked() && reportShape()
+          && request.resource.data.publishedAt == request.time
+          && get(monthPath()).data.monthEnd + 86400000 <= request.time.toMillis();
+        // Update/delete are intentionally absent: late data never rewrites a published date.
+      }
     }
-    match /systems/{system}/observations/{observation} { allow read: if member(system); allow write: if false; }
+    match /systems/{system}/observations/{event} {
+      allow read: if operator(system);
+      allow create: if operator(system)
+        && request.resource.data.keys().hasOnly(['eventId','stageKey','time','features','target','month','batch'])
+        && request.resource.data.eventId == event
+        && request.resource.data.stageKey in ['pumice','pebbles','lava_rock','carbon','multilayer_foam']
+        && request.resource.data.time is int && request.resource.data.time < request.time.toMillis()
+        && request.resource.data.features is list && request.resource.data.features.size() == 4
+        && request.resource.data.target is number && request.resource.data.target >= 0.25 && request.resource.data.target <= 4
+        && getAfter(/databases/$(database)/documents/systems/$(system)/months/$(request.resource.data.month)/uploads/$(request.resource.data.batch)).data.monthEnd < request.time.toMillis();
+    }
   }
 }

@@ -35,7 +35,7 @@ interface HistoryDao {
     @Query("SELECT DISTINCT month FROM history ORDER BY month DESC")
     fun months(): Flow<List<String>>
 
-    @Query("SELECT * FROM history WHERE uploaded = 0 AND month < :currentMonth ORDER BY time LIMIT 100")
+    @Query("SELECT * FROM history WHERE uploaded = 0 AND month < :currentMonth ORDER BY time, id LIMIT 100")
     suspend fun pending(currentMonth: String): List<HistoryRecord>
 
     @Query("UPDATE history SET uploaded = 1 WHERE id IN (:ids)")

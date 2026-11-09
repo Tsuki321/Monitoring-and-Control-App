@@ -30,6 +30,7 @@ object HistoryRepository {
     @Synchronized fun initialize(app: Context) {
         if (context != null) return
         context = app.applicationContext
+        SharedRecorder.initialize()
         val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
         WorkManager.getInstance(app).enqueueUniquePeriodicWork("monthly-history", ExistingPeriodicWorkPolicy.KEEP,
             PeriodicWorkRequestBuilder<MonthlyUploadWorker>(6, TimeUnit.HOURS)
@@ -45,6 +46,15 @@ object HistoryRepository {
             } else {
                 status.value = "Waiting for shared telemetry"
                 listen("current") { value ->
+                    SharedRecorder.observeState(value)
+                    value.mapAt("applied").forEach { (id, raw) ->
+                        @Suppress("UNCHECKED_CAST") val event = raw as? Map<String, Any?> ?: return@forEach
+                        record("maintenance-$id", "maintenance", event.longAt("time"), event)
+                    }
+                    listOf("pump", "alert").forEach { kind ->
+                        val event = value.mapAt(kind)
+                        if (event.longAt("time") > 0) record("$kind-${event["id"]}", kind, event.longAt("time"), event)
+                    }
                     val sample = value.mapAt("sample")
                     val time = sample.longAt("time")
                     if (time <= 0) return@listen
@@ -53,35 +63,19 @@ object HistoryRepository {
                     val minute = time / 60_000
                     val snapshotConsistent = stages.values.all { (it as? Map<*, *>)?.get("installedAt")
                         .let { installed -> installed is Number && installed.toLong() <= time } }
-                    if (minute > lastMinute && snapshotConsistent) {
+                    if (minute > lastMinute && snapshotConsistent && time >= SharedRecorder.now() - 90_000) {
                         lastMinute = minute
                         record("sample-${sample["id"]}", "sample", time,
-                            mapOf("sample" to sample, "stages" to stages,
+                            mapOf("sample" to sample, "stages" to stages.mapValues { (_, raw) ->
+                                (raw as? Map<*, *>)?.filterKeys { it in listOf("installedAt", "revision", "usage", "hours") }
+                            },
                                 "runtimeHours" to value["runtimeHours"], "wallHours" to value["wallHours"]))
                     }
-                    status.value = if (System.currentTimeMillis() - time > 180_000)
+                    status.value = if (SharedRecorder.now() - time > 180_000)
                         "Last shared reading is stale; missing periods appear as gaps"
                     else "Recording locally • monthly archive enabled"
                 }
-                listen("latestStatus") { value ->
-                    if (value.longAt("time") > 0) record("status-${value["id"]}", "pump", value.longAt("time"), value)
-                }
-                listen("latestAlert") { value ->
-                    if (value.longAt("time") > 0) record("alert-${value["id"]}", "alert", value.longAt("time"), value)
-                }
-                listen("latestControl") { value ->
-                    if (value.longAt("time") > 0) record("control-${value["id"]}", "control", value.longAt("time"), value)
-                }
-                listen("maintenance") { values ->
-                    values.forEach { (id, raw) ->
-                        @Suppress("UNCHECKED_CAST") val event = raw as? Map<String, Any?> ?: return@forEach
-                        if (event.longAt("time") > 0) record("maintenance-$id", "maintenance", event.longAt("time"), event)
-                    }
-                }
-                listen("official") { value ->
-                    official.value = value
-                    FilterHealthRepository.refreshOfficial()
-                }
+                scope.launch { runCatching { MonthlyReporter.refreshOfficial() } }
                 uploadClosedMonths()
             }
         }
@@ -115,47 +109,11 @@ object HistoryRepository {
                 "actor" to FirebaseAuth.getInstance().currentUser?.uid))
     }
 
-    /** Server checks the current revision before applying maintenance, never last-write-wins. */
+    /** The database transaction rejects maintenance based on an outdated stage revision. */
     fun service(stageKey: String, action: String, revision: Long, reason: String, condition: String,
                 complete: (String?) -> Unit) {
-        val user = FirebaseAuth.getInstance().currentUser ?: return complete("Sign in first")
-        val id = UUID.randomUUID().toString()
-        val submittedAt = System.currentTimeMillis()
-        record("request-$id", "command", submittedAt, mapOf("action" to "$action $stageKey",
-            "result" to "maintenance requested", "actor" to user.uid))
-        root.child("requests/$id").setValue(mapOf("stageKey" to stageKey, "action" to action,
-            "expectedRevision" to revision, "reason" to reason, "condition" to condition,
-            "actor" to user.uid, "requestedAt" to ServerValue.TIMESTAMP)) { error, _ ->
-            if (error != null) complete(error.message) else {
-                val ref = root.child("results/$id")
-                var finished = false
-                val listener = object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (!snapshot.exists()) return
-                        if (finished) return
-                        finished = true
-                        ref.removeEventListener(this)
-                        complete(if (snapshot.child("ok").getValue(Boolean::class.java) == true) null
-                            else snapshot.child("message").getValue(String::class.java) ?: "Maintenance was not applied")
-                    }
-                    override fun onCancelled(error: DatabaseError) {
-                        ref.removeEventListener(this)
-                        if (!finished) { finished = true; complete(error.message) }
-                    }
-                }
-                ref.addValueEventListener(listener)
-                scope.launch(Dispatchers.Main) {
-                    delay(30_000)
-                    ref.removeEventListener(listener)
-                    if (!finished) {
-                        finished = true
-                        complete("Still waiting for the server. Check the maintenance history before trying again.")
-                    }
-                }
-            }
-        }
+        SharedRecorder.service(stageKey, action, revision, reason, condition, complete)
     }
-
     fun uploadClosedMonths() {
         val app = context ?: return
         WorkManager.getInstance(app).enqueueUniqueWork("upload-closed-months", ExistingWorkPolicy.KEEP,

@@ -1,6 +1,6 @@
 {
   "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
-  "database": { "rules": "database.test.rules.json" },
+  "database": { "rules": "database.rules.json" },
   "emulators": {
     "firestore": { "port": 8080 },
     "database": { "port": 9000 },

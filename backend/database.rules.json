@@ -1,0 +1,29 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sensors": { ".read": "auth != null", ".write": "auth != null" },
+    "control": { ".read": "auth != null", ".write": "auth != null" },
+    "status": { ".read": "auth != null", ".write": "auth != null" },
+    "systems": {
+      "longos": {
+        ".read": "auth != null",
+        "current": {
+          ".write": "auth != null && newData.exists()",
+          ".validate": "newData.hasChildren(['sample','stages','models','recorder','recorderUntil']) && newData.child('stages').numChildren() == 5 && newData.child('models').numChildren() == 5",
+          "sample": {
+            ".validate": "newData.hasChildren(['id','time','sensors']) && newData.child('id').isString() && newData.child('time').isNumber() && newData.child('time').val() <= now + 60000 && (!data.exists() || newData.child('time').val() >= data.child('time').val())"
+          },
+          "stages": {
+            "$stage": {
+              ".validate": "($stage == 'pumice' || $stage == 'pebbles' || $stage == 'lava_rock' || $stage == 'carbon' || $stage == 'multilayer_foam') && newData.hasChildren(['installedAt','revision','usage','hours','serviceAt','intervalComplete']) && newData.child('installedAt').isNumber() && newData.child('installedAt').val() > 0 && newData.child('revision').isNumber() && newData.child('revision').val() >= 0 && (!data.exists() || (newData.child('revision').val() >= data.child('revision').val() && newData.child('revision').val() <= data.child('revision').val() + 1)) && newData.child('usage').isNumber() && newData.child('usage').val() >= 0 && newData.child('hours').isNumber() && newData.child('hours').val() >= 0"
+            }
+          },
+          "recorder": { ".validate": "newData.isString()" },
+          "recorderUntil": { ".validate": "newData.isNumber() && newData.val() <= now + 210000" },
+          "applied": { ".validate": "newData.numChildren() <= 20" }
+        }
+      }
+    }
+  }
+}
