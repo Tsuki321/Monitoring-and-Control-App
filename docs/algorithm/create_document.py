@@ -40,7 +40,7 @@ doc.add_heading('HydroSense', 0)
 doc.add_heading('Machine-Learning Algorithm for Filter Lifespan Estimation', 1)
 p('Technical explanation and monthly data-processing design')
 p('Prepared for the post-defense application revisions • November 9, 2026')
-p('Implementation reference: ridge-monthly-v1. This document describes the existing Kotlin model and the revised monthly backend in this repository. Backend deployment, field validation, and rollout remain separate from code preparation. No experimental accuracy result is claimed.')
+p('Implementation reference: ridge-monthly-spark-v1. Monthly processing runs on an Android phone using the same Kotlin model as live estimates. Firebase Spark databases provide storage and coordination; no Cloud Functions or paid scheduler are required. No experimental accuracy result is claimed.')
 heading('1. Purpose and scope')
 p('The application estimates when each stage of the five-stage filtration assembly will require service. It learns a water-quality-dependent wear multiplier and combines that multiplier with measured Pump B operating time and a configured calendar limit. Pump A is an intake pump and does not drive filter wear. The published lifespan is an estimated service date, not a measurement of remaining media capacity or a guarantee of water safety.')
 p('The learning algorithm is supervised, ridge-regularized multiple linear regression. At startup it fits generated examples from a nonlinear wear model. After sufficient qualifying field observations are available, those observations receive greater weight in fitting. Raw pH, TDS, and turbidity readings alone are not observed lifespan labels.')
@@ -50,7 +50,7 @@ table(['Input', 'Meaning and use'], [
 ('TDS, ppm', 'Measured dissolved solids; normalized by 1,000 ppm and bounded to [0,1].'),
 ('Turbidity, NTU', 'Measured turbidity; normalized by 3,000 NTU. Values ≥2,999 NTU are treated as a fault for prediction eligibility.'),
 ('Pump B counter, seconds', 'Cumulative measured energized time. Nonnegative differences provide operating hours.'),
-('Source event timestamp and ID', 'Backend-assigned event time and stable event identifier; shared across phones.'),
+('Source event timestamp and ID', 'A recorder phone assigns a shared UUID and timestamp corrected by the RTDB server-time offset. These identify observed readings, not authenticated hardware acquisition times.'),
 ('Installation and maintenance', 'Stage, revision, action, time, actor, reason, and observed condition.'),
 ('Tank, pump, control and alert events', 'Historical analytics and operational context; these are not independent lifespan training labels.')])
 heading('3. Configured filter references')
@@ -75,20 +75,20 @@ p('These are simplified engineering priors implemented in the application. Their
 heading('6. Wear accumulation and live health')
 p('For consecutive credible Pump B counters, Δh = (counter₂ − counter₁)/3600. Negative counter changes re-anchor the counter. An increment larger than elapsed wall time plus five seconds is rejected as implausible. Repeated or older source events do not accrue additional wear.')
 p('Runtime usage increases by Δu_run = Δh·L/H_rated. Calendar usage is u_cal = days_since_installation/D_rated. Effective usage is max(u_run,u_cal), and the health percentage is bounded 100·(1−usage).')
-p('For source gaps longer than three minutes, the backend may recover runtime from cumulative counters, but accrues it at neutral L=1 and marks the service interval incomplete for training. It never creates missing water-quality readings. A runtime interval crossing a maintenance event is re-anchored for that stage rather than assigning pre-service runtime to new media.')
+p('For source gaps longer than three minutes, the shared reducer recovers plausible runtime from cumulative counters at neutral L=1 and marks the service interval incomplete for training. It never creates missing water-quality readings. The first interval crossing maintenance contributes conservative runtime but no water-quality features; at least 95% measured feature coverage is required for a training label.')
 p('A rinse removes 70% of modeled runtime wear (usage becomes 0.30 times its previous value) and does not reset calendar age. A replacement starts a new stage installation and revision. The recovery fraction is a model assumption; rinsed intervals are excluded from end-of-life training targets.')
 heading('7. Field observations and model adaptation')
-p('A useful label describes an actual service outcome. The revised workflow records whether replacement was due to exhaustion, preventive maintenance, or damage. A training observation requires explicit exhaustion, positive measured operating hours, no rinses, and complete measured coverage. Preventive and damage replacements remain in history without being interpreted as the filter’s natural end of life.')
+p('A useful label describes an actual service outcome. Replacement must be explicitly marked exhausted, have positive measured operating hours, no rinses, no invalid or long-gap intervals, and feature coverage for at least 95% of operating hours. Preventive and damaged replacements remain in history without becoming end-of-life labels.')
 p('For an eligible completed interval: x̄ is the Pump B runtime-weighted average feature vector, and y = clamp(H_rated/H_observed,0.25,4). Eight eligible observations for a stage enable adaptation. Each real observation has weight 25, implemented by multiplying its row and target by √25=5. The 400 synthetic rows remain as the prior.')
-p('The previous local implementation admitted replacement observations after modeled runtime usage reached 85% and retained at most 32 per stage. The revised backend archives observations and uses reported end-of-life condition and data completeness instead of treating the model’s own prediction as independent ground truth.')
+p('Up to 32 recent eligible observations per stage participate in a monthly fit. Their IDs and digest are retained with the report. The pipeline uses reported exhaustion and coverage instead of treating its own predicted usage as ground-truth failure. User-entered outcomes and phone-computed reports are trusted project-operator inputs, not independent laboratory validation.')
 heading('8. Local collection and monthly archive')
-p('Realtime Database provides live telemetry, current shared filter state, and service-event synchronization. Each connected phone writes a Room journal of one received source reading per minute and observed operational events. Phones keep detailed records locally during the month. When no phone records a period, that period remains a visible gap.')
-p('After the month closes in Asia/Manila time, WorkManager uploads immutable batches of up to 100 records to Firestore. Stable identifiers and content-addressed batches allow retry after interruption. The server normalizes source records and counts one deterministic source reading per minute across phones. Cumulative runtime differences are never summed separately for each phone.')
-p('The backend runs every six hours and provides a 24-hour upload window after month-end before publication. Android and connectivity can delay phone uploads. Late uploads improve historical analytics but never replace a published forecast for that month. Newly available training observations can contribute to the next publication.')
+p('Realtime Database provides raw telemetry and a small current shared filter snapshot. A connected phone takes a 150-second renewable recorder lease through a transaction and normally updates this snapshot at most once per minute; alert and pump transitions may update it sooner. Other phones journal the same canonical records into Room. A bounded buffer of 20 recent maintenance events supports handoff. Detailed monthly history stays on phones until month-end.')
+p('After the month closes in Asia/Manila time, WorkManager uploads immutable batches of at most 100 records and 700,000 UTF-8 bytes to Firestore. Each batch and its month upload revision commit atomically. The app marks rows uploaded only after reading their exact payload back from the server. Every phone can read all uploaded batches; record IDs and one deterministic sample per minute prevent duplicate analytics. Raw records are packed inside the batch rows field rather than written to individual cloud documents.')
+p('WorkManager attempts synchronization every six hours, on sign-in, and on manual sync; Android may defer work. After a 24-hour window following month-end, a phone obtains a 15-minute Firestore processing lease, downloads the archive, and calculates a report. Publication checks both the lease and the archive revision. Another phone can recover an expired lease. Late records update historical analytics and future training while the published report remains immutable. A month with no uploaded rows has no report.')
 heading('9. Monthly date calculation and publication')
-p('For a closed month, the backend reads archived observations and records. It fits each stage model, calculates observed pump duty cycle, uses average archived water conditions to predict future load, and starts from the last archived cumulative stage state. Monthly publication does not reinterpret every past wear increment under new coefficients; those increments retain their historical model context.')
+p('For a closed month, the selected phone reads archived observations and records and fits each stage using FilterLifeModel.kt. It estimates measured pump duty cycle, predicts load from average valid archived water conditions, and starts from the last archived cumulative stage state. Past wear increments keep their original model context. Records after the month cutoff never enter that monthly fit.')
 p('Remaining operating hours = max(0,1−u_run)·H_rated/L. Runtime-limited due time = last archived sample time + remaining_hours/(24·duty_cycle) days. Calendar-limited due time = installation time + D_rated days. The earlier due time becomes the service date.')
-p('A date requires at least 60 recorded minutes, at least 10% coverage of the full month, a valid sample within 24 hours of month-end, and a measurable duty cycle of at least 0.001. These software guards are not validated statistical confidence thresholds. Insufficient data produces an explicit status without a fabricated date.')
+p('A date requires at least 60 valid sampled minutes, valid samples for at least 10% of the full month, a valid latest sample within 24 hours of month-end, and measured duty cycle of at least 0.001. A service after the final archived sample also withholds a date for that stage. These are software guards, not validated statistical confidence thresholds. Insufficient data produces a status without a fabricated date.')
 p('Reports store the reporting month, source cutoff, publication time, model version, coefficient vectors, training observation IDs and digest, input record count/digest, coverage, and per-stage ISO date. The UI formats the date as Month Day, Year and never adds remaining days to the current date on each visit. A replacement supersedes the old installation’s forecast immediately; the new filter waits for its monthly report.')
 heading('10. Illustrative calculation')
 p('Consider activated carbon with a 350-hour reference, 100 accumulated equivalent hours, predicted future multiplier 1.20, and measured duty cycle 0.25. Remaining operating time is (350−100)/1.20 = 208.33 hours. Remaining elapsed time is 208.33/(24×0.25) = 34.72 days.')
@@ -99,7 +99,7 @@ font_path = Path('C:/Windows/Fonts/calibri.ttf')
 font = ImageFont.truetype(str(font_path), 32) if font_path.exists() else ImageFont.load_default()
 steps = [
  'ESP32 readings → Realtime Database',
- 'Server timestamps + shared filter state',
+ 'Recorder lease + shared current filter state',
  'Connected phones → local Room history',
  'Month closes → retryable Firestore uploads',
  'Validate, deduplicate, mark recording gaps',
@@ -133,36 +133,38 @@ ON MAINTENANCE:
 
 AFTER MONTH CLOSE:
   phones upload closed-month records with retry
-  server validates and deduplicates uploaded records
+  a leased phone validates and deduplicates archive batches
   update monthly analytics and coverage
   after collection window, if no published report exists:
     read archived qualifying outcomes
     fit weighted ridge model separately for each stage
     derive service date if publication guards are satisfied
-    create immutable report and mirror it to all phones
+    commit immutable report after checking the lease/revision
+    phones read the same official report from Firestore
   late uploads improve history and future training only'''
 run = doc.add_paragraph().add_run(code); run.font.name='Consolas'; run.font.size=Pt(9)
 heading('13. Validation and limitations')
 p('The existing R-squared value evaluates fit against generated baseline data. It is not field prediction accuracy, a confidence percentage, or evidence that the model predicts physical failure within a stated error. Field evaluation should reserve completed service intervals for evaluation and report date error or operating-hour error, sample size, and data coverage separately from training metrics.')
 p('The revision includes automated cases for source ordering, duplicate records across phones, counter resets, gaps, maintenance revisions, qualified observations, month boundaries, insufficient data, and stable dates. Android compilation and tests run in GitHub Actions. Device and deployed Firebase behavior require staging/rollout checks; the document does not claim they have already passed.')
-p('Other limits include configured ratings, no direct media-capacity sensor, shared source outages, phone recording gaps, reporting latency, uncertain user-reported exhaustion, changing flow conditions, and averages that may hide peaks. The backend and firmware paths currently represent one physical system. Cloud billing, security membership, and deployment must be configured before collection works.')
+p('Other limits include configured ratings, no direct capacity sensor, outages, recording gaps, processing delays, uncertain reported exhaustion, and averages that may hide peaks. One physical system (longos) is supported. Firebase Authentication accounts in this project are trusted operators, matching the existing pump controls. Rules enforce archive immutability and processing ownership, but cannot establish that a client supplied scientifically correct readings or calculations. Keep at least one phone collecting; no phone or server can reconstruct unseen sensor history.')
+p('Firestore offers 1 GiB stored data, 50,000 reads per day, and 20,000 writes per day on its free quota. Batched archive writes reduce usage; overlapping uploads, downloads, and long retention still consume quota. Quota exhaustion delays synchronization and leaves local records intact. Review usage before adding many phones; unlimited free retention is not promised.')
 heading('14. Implementation references')
 table(['File', 'Responsibility'], [
 ('data/ml/FilterLifeModel.kt','Original feature engineering, wear factor, and health calculations.'),
 ('data/ml/RidgeRegression.kt','Original ridge solver and fit diagnostic.'),
 ('data/ml/SyntheticWearData.kt','Original deterministic baseline generator.'),
-('backend/functions/model.js','Versioned monthly model, deduplication, service labels and forecast.'),
-('backend/functions/index.js','Telemetry triggers, maintenance transactions, ingestion and scheduled publication.'),
+('data/history/MonthlyAnalytics.kt','Monthly aggregation, data eligibility, ridge fitting, and fixed service dates.'),
+('data/history/SharedFilterEngine.kt; SharedRecorder.kt; MonthlyReporter.kt','Shared state transactions, recorder selection, maintenance, and monthly processing lease.'),
 ('data/history/*.kt','Room journal, shared state synchronization, closed-month upload.'),
 ('ui/history/*.kt; ui/filter/FilterFormatter.kt','History, charts, timeline, and fixed formatted dates.')])
 heading('15. Platform references')
 for text in [
  'Android Room persistence library: https://developer.android.com/training/data-storage/room',
  'Android WorkManager scheduling: https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work',
- 'Firebase Realtime Database events: https://firebase.google.com/docs/functions/database-events',
+ 'Firebase Realtime Database transactions: https://firebase.google.com/docs/database/android/read-and-write',
  'Firestore transactions and batches: https://firebase.google.com/docs/firestore/manage-data/transactions',
  'Firestore offline synchronization: https://firebase.google.com/docs/firestore/manage-data/enable-offline',
- 'Cloud Functions setup and deployment: https://firebase.google.com/docs/functions/get-started',
+ 'Cloud Firestore free quotas: https://firebase.google.com/docs/firestore/quotas',
 ]: p(text)
 p('Algorithm statements and numerical constants above are sourced from this repository’s implementation. The platform references describe the storage and scheduling facilities; they do not validate the filtration model or its physical parameters.')
 doc.core_properties.title='HydroSense Machine-Learning Algorithm for Filter Lifespan Estimation'

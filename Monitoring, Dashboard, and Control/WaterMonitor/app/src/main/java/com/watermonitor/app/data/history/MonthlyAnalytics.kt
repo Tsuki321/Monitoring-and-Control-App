@@ -46,8 +46,10 @@ object MonthlyAnalytics {
         val x = FilterLifeModel.features(predictionValues.getValue("tds").average().takeIf { it.isFinite() } ?: 0.0,
             predictionValues.getValue("turbidity").average().takeIf { it.isFinite() } ?: 0.0,
             predictionValues.getValue("ph").average().takeIf { it.isFinite() } ?: 7.0)
-        val training = observations.filter { it.longAt("time") < end }.distinctBy { it["eventId"] }
-            .sortedBy { it.longAt("time") }.mapNotNull {
+        val trainingInputs = observations.filter { it.longAt("time") < end && it.longAt("time") > 0 }
+            .distinctBy { it["eventId"] }.sortedBy { it.longAt("time") }
+            .groupBy { it["stageKey"] }.values.flatMap { it.takeLast(FilterSpecs.MAX_OBSERVATIONS_PER_STAGE) }
+        val training = trainingInputs.mapNotNull {
             val f = it["features"] as? List<*> ?: return@mapNotNull null
             if (f.size != 4 || f.any { value -> value !is Number || !value.toDouble().isFinite() }) return@mapNotNull null
             if (it.doubleAt("target") !in .25..4.0) return@mapNotNull null
@@ -81,6 +83,8 @@ object MonthlyAnalytics {
             "stages" to stages, "metrics" to metrics, "coverage" to coverage, "recordedMinutes" to samples.size,
             "gapMinutes" to max(0.0, (end - start) / 60000.0 - samples.size),
             "runtimeSeconds" to mapOf("A" to runtimeA, "B" to runtimeB),
+            "observationIds" to trainingInputs.map { it["eventId"] },
+            "observationDigest" to HistoryRepository.hash(HistoryRepository.gson.toJson(trainingInputs)),
             "eventCounts" to listOf("alert", "pump", "control", "command", "maintenance").associateWith { kind -> events.count { it.kind == kind } },
             "inputRecordCount" to rows.size, "inputDigest" to HistoryRepository.hash(rows.joinToString("\n") { it.id + it.payload }))
     }

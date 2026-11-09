@@ -10,7 +10,7 @@
         ".read": "auth != null",
         "current": {
           ".write": "auth != null && newData.exists()",
-          ".validate": "newData.hasChildren(['sample','stages','models','recorder','recorderUntil']) && newData.child('stages').numChildren() == 5 && newData.child('models').numChildren() == 5",
+          ".validate": "newData.hasChildren(['sample','stages','models','recorder','recorderUntil']) && newData.child('stages').hasChildren(['pumice','pebbles','lava_rock','carbon','multilayer_foam']) && newData.child('models').hasChildren(['pumice','pebbles','lava_rock','carbon','multilayer_foam'])",
           "sample": {
             ".validate": "newData.hasChildren(['id','time','sensors']) && newData.child('id').isString() && newData.child('time').isNumber() && newData.child('time').val() <= now + 60000 && (!data.exists() || newData.child('time').val() >= data.child('time').val())"
           },
@@ -21,7 +21,7 @@
           },
           "recorder": { ".validate": "newData.isString()" },
           "recorderUntil": { ".validate": "newData.isNumber() && newData.val() <= now + 210000" },
-          "applied": { ".validate": "newData.numChildren() <= 20" }
+          "applied": { ".validate": "newData.hasChildren()" }
         }
       }
     }
