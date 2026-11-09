@@ -66,4 +66,14 @@ class SharedHistoryTest {
         val serviced = MonthlyAnalytics.calculate(rows + maintenance, "2020-01", emptyList())
         assertNull(serviced.mapAt("stages").mapAt("carbon")["dueDate"])
     }
+    @Test fun overlappingMinuteRecordsChooseTheLatestSnapshotRegardlessOfUploadOrder() {
+        fun row(time: Long, turbidity: Double) = HistoryRecord("minute", "2020-01", time, "sample",
+            HistoryRepository.gson.toJson(mapOf("sample" to sample(time, turbidity = turbidity))))
+        val older = row(start, 10.0)
+        val newer = row(start + 1000, 20.0)
+        val first = MonthlyAnalytics.calculate(listOf(older, newer), "2020-01", emptyList())
+        val second = MonthlyAnalytics.calculate(listOf(newer, older), "2020-01", emptyList())
+        assertEquals(first, second)
+        assertEquals(20.0, first.mapAt("metrics").mapAt("turbidity").doubleAt("mean"), 0.0)
+    }
 }

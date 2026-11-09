@@ -17,8 +17,10 @@ object MonthlyAnalytics {
 
     fun calculate(records: List<HistoryRecord>, month: String, observations: List<Map<String, Any?>>): Map<String, Any?> {
         val start = ArchiveCalendar.start(month); val end = ArchiveCalendar.end(month)
-        val rows = records.filter { it.time in start until end }.distinctBy { it.id }.sortedWith(compareBy({ it.time }, { it.id }))
-        val samples = rows.filter { it.kind == "sample" }.distinctBy { it.time / 60_000 }
+        val rows = records.filter { it.time in start until end }
+            .sortedWith(compareByDescending<HistoryRecord> { it.time }.thenByDescending { it.payload })
+            .distinctBy { it.id }.sortedWith(compareBy({ it.time }, { it.id }))
+        val samples = rows.filter { it.kind == "sample" }.asReversed().distinctBy { it.time / 60_000 }.asReversed()
         val values = listOf("ph", "tds", "turbidity", "tankLevel", "tankDistanceMm").associateWith { mutableListOf<Double>() }
         val predictionValues = listOf("ph", "tds", "turbidity").associateWith { mutableListOf<Double>() }
         var previous: Pair<Long, Map<String, Any?>>? = null

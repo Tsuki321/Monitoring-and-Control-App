@@ -31,7 +31,11 @@ object MonthlyReporter {
                     for (row in rows) {
                         check(row.time in ArchiveCalendar.start(month) until ArchiveCalendar.end(month)) { "Archive date mismatch" }
                         check(row.kind in listOf("sample", "maintenance", "command", "alert", "pump", "control")) { "Invalid record kind" }
-                        unique.putIfAbsent(row.id, HistoryRecord(row.id, month, row.time, row.kind, row.payload, true))
+                        val record = HistoryRecord(row.id, month, row.time, row.kind, row.payload, true)
+                        val previous = unique[row.id]
+                        if (previous == null || compareValuesBy(record, previous, { it.time }, { it.payload }) > 0) {
+                            unique[row.id] = record
+                        }
                     }
                 }
             }
