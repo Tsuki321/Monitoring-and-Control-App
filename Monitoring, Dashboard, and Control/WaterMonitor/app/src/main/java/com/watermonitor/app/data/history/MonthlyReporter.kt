@@ -4,7 +4,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
 import com.google.firebase.database.*
 import com.google.firebase.database.Transaction
-import com.google.firebase.firestore.Query
 import com.watermonitor.app.data.repository.FilterHealthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -100,9 +99,10 @@ object MonthlyReporter {
 
     suspend fun refreshOfficial() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
-        val months = firestore.collection("systems/${HistoryRepository.SYSTEM_ID}/months")
-            .orderBy(FieldPath.documentId(), Query.Direction.DESCENDING).get(Source.SERVER).await()
-        for (month in months.documents) {
+        // YYYY-MM IDs sort chronologically. Sort locally so report discovery works
+        // without the descending document-ID index required by older APKs.
+        val months = firestore.collection("systems/${HistoryRepository.SYSTEM_ID}/months").get(Source.SERVER).await()
+        for (month in months.documents.sortedByDescending { it.id }) {
             val report = month.reference.collection("reports").document("official").get(Source.SERVER).await()
             if (!report.exists()) continue
             if (FirebaseAuth.getInstance().currentUser?.uid != user.uid) return

@@ -17,6 +17,7 @@
     <string name="history_service_pending">Maintenance queued; waiting for shared confirmation</string>
     <string name="history_service_saved">Maintenance saved across phones</string>
     <string name="history_sync">Sync completed months</string>
+    <string name="history_sync_pending">Monthly sync pending. We will retry automatically when connected. Local records are safely retained on this phone.</string>
     <string name="history_local">This month stays on this phone until month-end. Cloud history includes records uploaded by other phones.</string>
     <string name="history_empty">No recorded data in this period. Unobserved periods remain gaps.</string>
     <string name="history_chart">Sensor trends</string>

@@ -17,6 +17,7 @@
     <string name="history_service_pending">Nakapila ang maintenance; naghihintay ng kumpirmasyon</string>
     <string name="history_service_saved">Nai-save ang maintenance sa lahat ng telepono</string>
     <string name="history_sync">I-sync ang mga nakaraang buwan</string>
+    <string name="history_sync_pending">Naghihintay ang buwanang sync. Awtomatikong susubukan muli kapag may koneksyon. Ligtas na nakatago ang mga tala sa teleponong ito.</string>
     <string name="history_local">Nasa teleponong ito ang datos hanggang matapos ang buwan. Kasama sa cloud history ang mga na-upload ng ibang telepono.</string>
     <string name="history_empty">Walang datos sa panahong ito. Makikita ang mga puwang sa pagtatala.</string>
     <string name="history_chart">Takbo ng sensor readings</string>

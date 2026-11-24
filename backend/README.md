@@ -14,6 +14,10 @@ firebase deploy --project database-for-hydrosense --only firestore,database
 
 The production configuration in `firebase.json` intentionally excludes Functions. The old JavaScript implementation is retained only as a model parity fixture and reference. The old `database.rules.fragment.json` and `database.test.rules.json` are legacy files; deploy `backend/database.rules.json`.
 
+`backend/firestore.indexes.json` includes the collection-scope `months / __name__ DESCENDING` index needed by older installed APKs when they look up the latest official report. Deploy index-only fixes with `firebase deploy --project database-for-hydrosense --only firestore:indexes` and wait until the index is `READY` before retrying sync. Updated APKs fetch the months without an explicit descending query and sort their `YYYY-MM` IDs locally, preserving newest-report selection without that index dependency. Keep the index for phones that have not updated.
+
+Check index changes against the real Firestore database: the emulator does not enforce compound indexes and cannot reproduce a missing-index failure.
+
 All signed-in Firebase Authentication accounts in this project are trusted system operators, matching the existing pump controller. No manual membership documents are required. The rules preserve authenticated access to the existing `sensors`, `control`, and `status` paths and add scoped access for the `longos` shared state. Anonymous requests are denied. Firestore was empty with deny-all rules before this revision; the deployment does not replace another app's collections.
 
 Install the signed release APK as an update to retain local history. Keep at least one signed-in phone connected and allow its existing background monitoring to run. Uninstalling or clearing app storage loses that phone's unuploaded journal. No unseen sensor samples can be recovered.

@@ -1,4 +1,8 @@
-{ "indexes": [], "fieldOverrides": [
+{ "indexes": [
+  { "collectionGroup": "months", "queryScope": "COLLECTION", "fields": [
+    { "fieldPath": "__name__", "order": "DESCENDING" }
+  ] }
+], "fieldOverrides": [
   { "collectionGroup": "uploads", "fieldPath": "rows", "indexes": [] },
   { "collectionGroup": "records", "fieldPath": "payload", "indexes": [] }
 ] }

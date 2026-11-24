@@ -1,10 +1,12 @@
 package com.watermonitor.app.data.history
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.*
+import com.watermonitor.app.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.tasks.await
 
@@ -67,7 +69,8 @@ class MonthlyUploadWorker(app: Context, params: WorkerParameters) : CoroutineWor
             return Result.retry()
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (error: Exception) {
-            HistoryRepository.status.value = "Monthly sync pending: ${error.localizedMessage}. Local records retained."
+            Log.w("MonthlyUploadWorker", "Monthly synchronization failed; local records retained", error)
+            HistoryRepository.status.value = applicationContext.getString(R.string.history_sync_pending)
             return Result.retry()
         }
     }
