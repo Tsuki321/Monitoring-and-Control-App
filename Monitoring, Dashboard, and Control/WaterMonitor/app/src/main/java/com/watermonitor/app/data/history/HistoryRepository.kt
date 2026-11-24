@@ -114,9 +114,11 @@ object HistoryRepository {
                 complete: (String?) -> Unit) {
         SharedRecorder.service(stageKey, action, revision, reason, condition, complete)
     }
-    fun uploadClosedMonths() {
+    fun uploadClosedMonths(retryNow: Boolean = false) {
         val app = context ?: return
-        WorkManager.getInstance(app).enqueueUniqueWork("upload-closed-months", ExistingWorkPolicy.KEEP,
+        // An explicit retry must replace a failed request waiting in WorkManager backoff.
+        val policy = if (retryNow) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+        WorkManager.getInstance(app).enqueueUniqueWork("upload-closed-months", policy,
             OneTimeWorkRequestBuilder<MonthlyUploadWorker>()
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
     }

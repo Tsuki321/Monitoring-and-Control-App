@@ -69,7 +69,7 @@ class HistoryFragment : Fragment() {
         sync = label(""); top.addView(sync)
         top.addView(MaterialButton(requireContext()).apply {
             setText(R.string.history_sync)
-            setOnClickListener { HistoryRepository.uploadClosedMonths(); loadCloud(); discoverMonths() }
+            setOnClickListener { HistoryRepository.uploadClosedMonths(retryNow = true); loadCloud(); discoverMonths() }
         })
         top.addView(label(getString(R.string.history_month)))
         monthPicker = Spinner(requireContext()); top.addView(monthPicker)

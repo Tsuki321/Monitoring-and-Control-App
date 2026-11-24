@@ -18,6 +18,8 @@ The production configuration in `firebase.json` intentionally excludes Functions
 
 Check index changes against the real Firestore database: the emulator does not enforce compound indexes and cannot reproduce a missing-index failure.
 
+In updated APKs, **Sync completed months** replaces a failed one-time request waiting in WorkManager backoff, so operators can retry after an outage or index deployment. Automatic sign-in requests still keep existing work. Retried batches remain immutable and are acknowledged locally only after the exact server payload is confirmed.
+
 All signed-in Firebase Authentication accounts in this project are trusted system operators, matching the existing pump controller. No manual membership documents are required. The rules preserve authenticated access to the existing `sensors`, `control`, and `status` paths and add scoped access for the `longos` shared state. Anonymous requests are denied. Firestore was empty with deny-all rules before this revision; the deployment does not replace another app's collections.
 
 Install the signed release APK as an update to retain local history. Keep at least one signed-in phone connected and allow its existing background monitoring to run. Uninstalling or clearing app storage loses that phone's unuploaded journal. No unseen sensor samples can be recovered.
